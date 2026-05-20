@@ -1,0 +1,90 @@
+# Verifies the committed openapi.json matches the prod Aethex backend.
+#
+# Runs on every PR (so a backend change merged ahead of the SDK fails the SDK's
+# next PR build) and on a weekly cron (so dormant repos still notice drift).
+#
+# When this job fails, the fix is:
+#   1. git pull both repos locally
+#   2. python scripts/sync_from_prod.py --apply
+#   3. commit openapi.json + src/aethexai/_generated/ + open a PR
+
+name: sync-check
+
+on:
+  # Manual-only for now: this job requires a BACKEND_REPO_TOKEN secret with
+  # read access to the private backend repo. Enable the cron + pull_request
+  # triggers once the secret is provisioned in repo settings.
+  workflow_dispatch: {}
+  # schedule:
+  #   - cron: "0 9 * * 1"
+  # pull_request:
+
+# TODO: pin once the backend repo's default branch / org confirms. The
+# checkout step below assumes `aethexai-core/aethex` -- update if the
+# canonical path differs.
+env:
+  BACKEND_REPO: aethexai-core/aethex
+  BACKEND_REF: main
+  # TODO: replace with the real secret name once it's provisioned in repo
+  # settings. The token needs `repo:read` on the backend repo (PAT, GitHub
+  # App installation token, or fine-grained token scoped to that single repo).
+  # If the backend repo is public, this whole secret can be dropped and the
+  # checkout's `token:` line removed.
+  BACKEND_TOKEN_SECRET_NAME: BACKEND_REPO_TOKEN
+
+jobs:
+  sync-check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out SDK
+        uses: actions/checkout@v4
+        with:
+          path: sdk
+
+      - name: Check out backend
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ env.BACKEND_REPO }}
+          ref: ${{ env.BACKEND_REF }}
+          # TODO: confirm the secret name above and that this token has
+          # access to the private backend repo. For public repos, remove
+          # this line.
+          token: ${{ secrets.BACKEND_REPO_TOKEN }}
+          path: backend
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+
+      - name: Install backend dependencies
+        # The dump script imports aethex.main:create_app, which requires the
+        # backend's runtime deps. ``uv sync`` honours the backend's lockfile
+        # so we don't have to reason about which extras are needed for
+        # ``openapi()`` (it's effectively all of them -- routers are
+        # collected at app construction).
+        working-directory: backend
+        run: uv sync --frozen
+
+      - name: Install SDK dependencies
+        working-directory: sdk
+        run: uv sync --frozen
+
+      - name: Check OpenAPI drift
+        working-directory: sdk
+        env:
+          AETHEX_BACKEND_PATH: ${{ github.workspace }}/backend
+        # The script exits 1 if openapi.json has drifted from the backend.
+        # We re-emit a more actionable message on failure than the script's
+        # own stderr (which is also visible above this step in the log).
+        run: |
+          set -e
+          if ! uv run python scripts/sync_from_prod.py --verbose; then
+            echo "::error title=Backend drift detected::Backend has changed since openapi.json was last synced. Run 'python scripts/sync_from_prod.py --apply' locally and commit the result."
+            exit 1
+          fi

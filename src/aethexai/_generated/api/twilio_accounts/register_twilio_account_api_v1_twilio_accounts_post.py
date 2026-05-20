@@ -1,0 +1,273 @@
+from http import HTTPStatus
+from typing import Any, cast
+from urllib.parse import quote
+
+import httpx
+
+from ...client import AuthenticatedClient, Client
+from ...types import Response, UNSET
+from ... import errors
+
+from ...models.http_validation_error import HTTPValidationError
+from ...models.twilio_account_create import TwilioAccountCreate
+from ...models.twilio_account_response import TwilioAccountResponse
+from typing import cast
+
+
+def _get_kwargs(
+    *,
+    body: TwilioAccountCreate,
+) -> dict[str, Any]:
+    headers: dict[str, Any] = {}
+
+    _kwargs: dict[str, Any] = {
+        "method": "post",
+        "url": "/api/v1/twilio-accounts",
+    }
+
+    _kwargs["json"] = body.to_dict()
+
+    headers["Content-Type"] = "application/json"
+
+    _kwargs["headers"] = headers
+    return _kwargs
+
+
+def _parse_response(
+    *, client: AuthenticatedClient | Client, response: httpx.Response
+) -> HTTPValidationError | TwilioAccountResponse | None:
+    if response.status_code == 201:
+        response_201 = TwilioAccountResponse.from_dict(response.json())
+
+        return response_201
+
+    if response.status_code == 422:
+        response_422 = HTTPValidationError.from_dict(response.json())
+
+        return response_422
+
+    if client.raise_on_unexpected_status:
+        raise errors.UnexpectedStatus(response.status_code, response.content)
+    else:
+        return None
+
+
+def _build_response(
+    *, client: AuthenticatedClient | Client, response: httpx.Response
+) -> Response[HTTPValidationError | TwilioAccountResponse]:
+    return Response(
+        status_code=HTTPStatus(response.status_code),
+        content=response.content,
+        headers=response.headers,
+        parsed=_parse_response(client=client, response=response),
+    )
+
+
+def sync_detailed(
+    *,
+    client: AuthenticatedClient,
+    body: TwilioAccountCreate,
+) -> Response[HTTPValidationError | TwilioAccountResponse]:
+    """Register Twilio Account
+
+     Register a Twilio Account SID for this tenant.
+
+    Validates the supplied ``account_sid`` + ``auth_token`` pair by
+    fetching the account from Twilio. Persists the SID and the (encrypted)
+    auth token; the token is needed at runtime for inbound-webhook
+    signature verification and outbound API calls and is decrypted via
+    the ``EncryptedString`` column type.
+
+    Status codes:
+      * 422 -- Twilio rejected the request (400/401/403/404): bad
+        credentials, or a SID that doesn't exist or that the supplied
+        token can't access; or the fetched SID does not match the
+        supplied SID.
+      * 409 -- the Account SID is already claimed by another active row,
+        or the tenant has reached the active-account cap.
+      * 429 -- per-tenant registration rate limit exceeded.
+      * 503 -- server-side service issue: encryption key not configured,
+        Twilio API unreachable / 5xx / 429, Twilio did not respond
+        within the configured timeout, or the rate limiter (Redis) is
+        offline -- this endpoint is destructive enough that we fail
+        closed when admission control can't run, rather than silently
+        unthrottling Twilio API and worker-slot pressure.
+
+    Args:
+        body (TwilioAccountCreate): Request body for ``POST /api/v1/twilio-accounts``.
+
+            ``auth_token`` is required at registration time so we can verify the
+            SID/token pair with Twilio before persisting.
+
+    Raises:
+        errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
+        httpx.TimeoutException: If the request takes longer than Client.timeout.
+
+    Returns:
+        Response[HTTPValidationError | TwilioAccountResponse]
+    """
+
+    kwargs = _get_kwargs(
+        body=body,
+    )
+
+    response = client.get_httpx_client().request(
+        **kwargs,
+    )
+
+    return _build_response(client=client, response=response)
+
+
+def sync(
+    *,
+    client: AuthenticatedClient,
+    body: TwilioAccountCreate,
+) -> HTTPValidationError | TwilioAccountResponse | None:
+    """Register Twilio Account
+
+     Register a Twilio Account SID for this tenant.
+
+    Validates the supplied ``account_sid`` + ``auth_token`` pair by
+    fetching the account from Twilio. Persists the SID and the (encrypted)
+    auth token; the token is needed at runtime for inbound-webhook
+    signature verification and outbound API calls and is decrypted via
+    the ``EncryptedString`` column type.
+
+    Status codes:
+      * 422 -- Twilio rejected the request (400/401/403/404): bad
+        credentials, or a SID that doesn't exist or that the supplied
+        token can't access; or the fetched SID does not match the
+        supplied SID.
+      * 409 -- the Account SID is already claimed by another active row,
+        or the tenant has reached the active-account cap.
+      * 429 -- per-tenant registration rate limit exceeded.
+      * 503 -- server-side service issue: encryption key not configured,
+        Twilio API unreachable / 5xx / 429, Twilio did not respond
+        within the configured timeout, or the rate limiter (Redis) is
+        offline -- this endpoint is destructive enough that we fail
+        closed when admission control can't run, rather than silently
+        unthrottling Twilio API and worker-slot pressure.
+
+    Args:
+        body (TwilioAccountCreate): Request body for ``POST /api/v1/twilio-accounts``.
+
+            ``auth_token`` is required at registration time so we can verify the
+            SID/token pair with Twilio before persisting.
+
+    Raises:
+        errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
+        httpx.TimeoutException: If the request takes longer than Client.timeout.
+
+    Returns:
+        HTTPValidationError | TwilioAccountResponse
+    """
+
+    return sync_detailed(
+        client=client,
+        body=body,
+    ).parsed
+
+
+async def asyncio_detailed(
+    *,
+    client: AuthenticatedClient,
+    body: TwilioAccountCreate,
+) -> Response[HTTPValidationError | TwilioAccountResponse]:
+    """Register Twilio Account
+
+     Register a Twilio Account SID for this tenant.
+
+    Validates the supplied ``account_sid`` + ``auth_token`` pair by
+    fetching the account from Twilio. Persists the SID and the (encrypted)
+    auth token; the token is needed at runtime for inbound-webhook
+    signature verification and outbound API calls and is decrypted via
+    the ``EncryptedString`` column type.
+
+    Status codes:
+      * 422 -- Twilio rejected the request (400/401/403/404): bad
+        credentials, or a SID that doesn't exist or that the supplied
+        token can't access; or the fetched SID does not match the
+        supplied SID.
+      * 409 -- the Account SID is already claimed by another active row,
+        or the tenant has reached the active-account cap.
+      * 429 -- per-tenant registration rate limit exceeded.
+      * 503 -- server-side service issue: encryption key not configured,
+        Twilio API unreachable / 5xx / 429, Twilio did not respond
+        within the configured timeout, or the rate limiter (Redis) is
+        offline -- this endpoint is destructive enough that we fail
+        closed when admission control can't run, rather than silently
+        unthrottling Twilio API and worker-slot pressure.
+
+    Args:
+        body (TwilioAccountCreate): Request body for ``POST /api/v1/twilio-accounts``.
+
+            ``auth_token`` is required at registration time so we can verify the
+            SID/token pair with Twilio before persisting.
+
+    Raises:
+        errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
+        httpx.TimeoutException: If the request takes longer than Client.timeout.
+
+    Returns:
+        Response[HTTPValidationError | TwilioAccountResponse]
+    """
+
+    kwargs = _get_kwargs(
+        body=body,
+    )
+
+    response = await client.get_async_httpx_client().request(**kwargs)
+
+    return _build_response(client=client, response=response)
+
+
+async def asyncio(
+    *,
+    client: AuthenticatedClient,
+    body: TwilioAccountCreate,
+) -> HTTPValidationError | TwilioAccountResponse | None:
+    """Register Twilio Account
+
+     Register a Twilio Account SID for this tenant.
+
+    Validates the supplied ``account_sid`` + ``auth_token`` pair by
+    fetching the account from Twilio. Persists the SID and the (encrypted)
+    auth token; the token is needed at runtime for inbound-webhook
+    signature verification and outbound API calls and is decrypted via
+    the ``EncryptedString`` column type.
+
+    Status codes:
+      * 422 -- Twilio rejected the request (400/401/403/404): bad
+        credentials, or a SID that doesn't exist or that the supplied
+        token can't access; or the fetched SID does not match the
+        supplied SID.
+      * 409 -- the Account SID is already claimed by another active row,
+        or the tenant has reached the active-account cap.
+      * 429 -- per-tenant registration rate limit exceeded.
+      * 503 -- server-side service issue: encryption key not configured,
+        Twilio API unreachable / 5xx / 429, Twilio did not respond
+        within the configured timeout, or the rate limiter (Redis) is
+        offline -- this endpoint is destructive enough that we fail
+        closed when admission control can't run, rather than silently
+        unthrottling Twilio API and worker-slot pressure.
+
+    Args:
+        body (TwilioAccountCreate): Request body for ``POST /api/v1/twilio-accounts``.
+
+            ``auth_token`` is required at registration time so we can verify the
+            SID/token pair with Twilio before persisting.
+
+    Raises:
+        errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
+        httpx.TimeoutException: If the request takes longer than Client.timeout.
+
+    Returns:
+        HTTPValidationError | TwilioAccountResponse
+    """
+
+    return (
+        await asyncio_detailed(
+            client=client,
+            body=body,
+        )
+    ).parsed
