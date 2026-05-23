@@ -4,7 +4,9 @@
 Pipeline:
 
     1. Run ``scripts/dump_openapi.py`` against a local backend checkout,
-       writing ``openapi.json.new`` next to the existing ``openapi.json``.
+       writing ``openapi.json.new`` next to the existing ``openapi.json``;
+       or, when ``--spec-path`` is provided, copy that already-captured
+       OpenAPI spec into ``openapi.json.new``.
     2. Compute a drift report between the committed spec and the fresh one.
     3. If ``--apply``, swap the new spec into place and re-run the generator
        so ``src/aethexai/_generated/`` matches. Otherwise, print what would
@@ -157,6 +159,40 @@ def run_dump(backend_path: str | None) -> int:
         cmd.extend(["--backend-path", backend_path])
     result = subprocess.run(cmd, check=False)
     return result.returncode
+
+
+def use_spec_file(spec_path: str) -> int:
+    """Use an existing OpenAPI JSON file as ``openapi.json.new``.
+
+    This is the deploy automation path: the backend workflow captures the spec
+    from the running app pod, then asks the SDK repo to diff/regenerate from
+    that exact deployed contract.
+    """
+    path = Path(spec_path).expanduser().resolve()
+    if not path.is_file():
+        print(f"error: spec path does not exist or is not a file: {path}", file=sys.stderr)
+        return 2
+
+    try:
+        with path.open() as fh:
+            spec = json.load(fh)
+    except Exception as exc:
+        print(
+            f"error: failed to read OpenAPI spec from {path}: {type(exc).__name__}: {exc}",
+            file=sys.stderr,
+        )
+        return 2
+
+    NEW_SPEC_PATH.write_text(json.dumps(spec, indent=2, sort_keys=True) + "\n")
+    paths = spec.get("paths") or {}
+    components = spec.get("components") or {}
+    schemas = components.get("schemas") if isinstance(components, dict) else {}
+    print(
+        f"loaded {path} "
+        f"(paths={len(paths) if isinstance(paths, dict) else 0}, "
+        f"schemas={len(schemas) if isinstance(schemas, dict) else 0})"
+    )
+    return 0
 
 
 def git_diff(old: Path, new: Path) -> str | None:
@@ -347,6 +383,14 @@ def main(argv: list[str] | None = None) -> int:
         help="Forwarded to dump_openapi.py.",
     )
     parser.add_argument(
+        "--spec-path",
+        default=None,
+        help=(
+            "Use an existing OpenAPI JSON file instead of importing a backend "
+            "checkout. When set, this takes precedence over --backend-path."
+        ),
+    )
+    parser.add_argument(
         "--apply",
         action="store_true",
         help="Replace openapi.json with the fresh dump and regenerate the client.",
@@ -358,9 +402,10 @@ def main(argv: list[str] | None = None) -> int:
     )
     args = parser.parse_args(argv)
 
-    dump_rc = run_dump(args.backend_path)
+    dump_rc = use_spec_file(args.spec_path) if args.spec_path else run_dump(args.backend_path)
     if dump_rc != 0:
-        print(f"error: dump_openapi.py failed with exit code {dump_rc}", file=sys.stderr)
+        source = "--spec-path" if args.spec_path else "dump_openapi.py"
+        print(f"error: {source} failed with exit code {dump_rc}", file=sys.stderr)
         return 2
 
     old_spec = _load_json(SPEC_PATH)
