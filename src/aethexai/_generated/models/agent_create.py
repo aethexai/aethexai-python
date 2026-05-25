@@ -28,7 +28,6 @@ class AgentCreate:
         name (str):
         system_prompt (str):
         voice_id (str):
-        background_audio_url (None | str | Unset):
         content_guardrail_enabled (bool | Unset):  Default: False.
         custom_guardrails (list[CustomGuardrail] | None | Unset):
         dialect_style (str | Unset):  Default: 'formal'.
@@ -42,7 +41,6 @@ class AgentCreate:
         idle_check_in_after_secs (float | None | Unset):
         inbound_lobby_audio_preset (AgentCreateInboundLobbyAudioPreset | Unset):  Default:
             AgentCreateInboundLobbyAudioPreset.AMBIENT.
-        inbound_lobby_audio_url (None | str | Unset):
         inbound_lobby_enabled (bool | Unset):  Default: False.
         inbound_lobby_max_wait_seconds (int | None | Unset):  Default: 45.
         inbound_lobby_message (None | str | Unset):
@@ -74,7 +72,6 @@ class AgentCreate:
     name: str
     system_prompt: str
     voice_id: str
-    background_audio_url: None | str | Unset = UNSET
     content_guardrail_enabled: bool | Unset = False
     custom_guardrails: list[CustomGuardrail] | None | Unset = UNSET
     dialect_style: str | Unset = "formal"
@@ -89,7 +86,6 @@ class AgentCreate:
     inbound_lobby_audio_preset: AgentCreateInboundLobbyAudioPreset | Unset = (
         AgentCreateInboundLobbyAudioPreset.AMBIENT
     )
-    inbound_lobby_audio_url: None | str | Unset = UNSET
     inbound_lobby_enabled: bool | Unset = False
     inbound_lobby_max_wait_seconds: int | None | Unset = 45
     inbound_lobby_message: None | str | Unset = UNSET
@@ -128,12 +124,6 @@ class AgentCreate:
         system_prompt = self.system_prompt
 
         voice_id = self.voice_id
-
-        background_audio_url: None | str | Unset
-        if isinstance(self.background_audio_url, Unset):
-            background_audio_url = UNSET
-        else:
-            background_audio_url = self.background_audio_url
 
         content_guardrail_enabled = self.content_guardrail_enabled
 
@@ -191,12 +181,6 @@ class AgentCreate:
         inbound_lobby_audio_preset: str | Unset = UNSET
         if not isinstance(self.inbound_lobby_audio_preset, Unset):
             inbound_lobby_audio_preset = self.inbound_lobby_audio_preset.value
-
-        inbound_lobby_audio_url: None | str | Unset
-        if isinstance(self.inbound_lobby_audio_url, Unset):
-            inbound_lobby_audio_url = UNSET
-        else:
-            inbound_lobby_audio_url = self.inbound_lobby_audio_url
 
         inbound_lobby_enabled = self.inbound_lobby_enabled
 
@@ -321,8 +305,6 @@ class AgentCreate:
                 "voice_id": voice_id,
             }
         )
-        if background_audio_url is not UNSET:
-            field_dict["background_audio_url"] = background_audio_url
         if content_guardrail_enabled is not UNSET:
             field_dict["content_guardrail_enabled"] = content_guardrail_enabled
         if custom_guardrails is not UNSET:
@@ -347,8 +329,6 @@ class AgentCreate:
             field_dict["idle_check_in_after_secs"] = idle_check_in_after_secs
         if inbound_lobby_audio_preset is not UNSET:
             field_dict["inbound_lobby_audio_preset"] = inbound_lobby_audio_preset
-        if inbound_lobby_audio_url is not UNSET:
-            field_dict["inbound_lobby_audio_url"] = inbound_lobby_audio_url
         if inbound_lobby_enabled is not UNSET:
             field_dict["inbound_lobby_enabled"] = inbound_lobby_enabled
         if inbound_lobby_max_wait_seconds is not UNSET:
@@ -416,15 +396,6 @@ class AgentCreate:
         system_prompt = d.pop("system_prompt")
 
         voice_id = d.pop("voice_id")
-
-        def _parse_background_audio_url(data: object) -> None | str | Unset:
-            if data is None:
-                return data
-            if isinstance(data, Unset):
-                return data
-            return cast(None | str | Unset, data)
-
-        background_audio_url = _parse_background_audio_url(d.pop("background_audio_url", UNSET))
 
         content_guardrail_enabled = d.pop("content_guardrail_enabled", UNSET)
 
@@ -526,17 +497,6 @@ class AgentCreate:
             inbound_lobby_audio_preset = AgentCreateInboundLobbyAudioPreset(
                 _inbound_lobby_audio_preset
             )
-
-        def _parse_inbound_lobby_audio_url(data: object) -> None | str | Unset:
-            if data is None:
-                return data
-            if isinstance(data, Unset):
-                return data
-            return cast(None | str | Unset, data)
-
-        inbound_lobby_audio_url = _parse_inbound_lobby_audio_url(
-            d.pop("inbound_lobby_audio_url", UNSET)
-        )
 
         inbound_lobby_enabled = d.pop("inbound_lobby_enabled", UNSET)
 
@@ -712,7 +672,6 @@ class AgentCreate:
             name=name,
             system_prompt=system_prompt,
             voice_id=voice_id,
-            background_audio_url=background_audio_url,
             content_guardrail_enabled=content_guardrail_enabled,
             custom_guardrails=custom_guardrails,
             dialect_style=dialect_style,
@@ -725,7 +684,6 @@ class AgentCreate:
             frequency_penalty=frequency_penalty,
             idle_check_in_after_secs=idle_check_in_after_secs,
             inbound_lobby_audio_preset=inbound_lobby_audio_preset,
-            inbound_lobby_audio_url=inbound_lobby_audio_url,
             inbound_lobby_enabled=inbound_lobby_enabled,
             inbound_lobby_max_wait_seconds=inbound_lobby_max_wait_seconds,
             inbound_lobby_message=inbound_lobby_message,

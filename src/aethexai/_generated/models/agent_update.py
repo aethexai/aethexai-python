@@ -27,7 +27,6 @@ T = TypeVar("T", bound="AgentUpdate")
 class AgentUpdate:
     """
     Attributes:
-        background_audio_url (None | str | Unset):
         content_guardrail_enabled (bool | None | Unset):
         custom_guardrails (list[CustomGuardrail] | None | Unset):
         dialect_style (None | str | Unset):
@@ -40,7 +39,6 @@ class AgentUpdate:
         frequency_penalty (float | None | Unset):
         idle_check_in_after_secs (float | None | Unset):
         inbound_lobby_audio_preset (AgentUpdateInboundLobbyAudioPresetType0 | None | Unset):
-        inbound_lobby_audio_url (None | str | Unset):
         inbound_lobby_enabled (bool | None | Unset):
         inbound_lobby_max_wait_seconds (int | None | Unset):
         inbound_lobby_message (None | str | Unset):
@@ -72,7 +70,6 @@ class AgentUpdate:
         voicemail_message (None | str | Unset):
     """
 
-    background_audio_url: None | str | Unset = UNSET
     content_guardrail_enabled: bool | None | Unset = UNSET
     custom_guardrails: list[CustomGuardrail] | None | Unset = UNSET
     dialect_style: None | str | Unset = UNSET
@@ -85,7 +82,6 @@ class AgentUpdate:
     frequency_penalty: float | None | Unset = UNSET
     idle_check_in_after_secs: float | None | Unset = UNSET
     inbound_lobby_audio_preset: AgentUpdateInboundLobbyAudioPresetType0 | None | Unset = UNSET
-    inbound_lobby_audio_url: None | str | Unset = UNSET
     inbound_lobby_enabled: bool | None | Unset = UNSET
     inbound_lobby_max_wait_seconds: int | None | Unset = UNSET
     inbound_lobby_message: None | str | Unset = UNSET
@@ -121,12 +117,6 @@ class AgentUpdate:
         from ..models.agent_update_dynamic_variables_type_0 import AgentUpdateDynamicVariablesType0
         from ..models.agent_update_metadata_type_0 import AgentUpdateMetadataType0
         from ..models.custom_guardrail import CustomGuardrail
-
-        background_audio_url: None | str | Unset
-        if isinstance(self.background_audio_url, Unset):
-            background_audio_url = UNSET
-        else:
-            background_audio_url = self.background_audio_url
 
         content_guardrail_enabled: bool | None | Unset
         if isinstance(self.content_guardrail_enabled, Unset):
@@ -212,12 +202,6 @@ class AgentUpdate:
             inbound_lobby_audio_preset = self.inbound_lobby_audio_preset.value
         else:
             inbound_lobby_audio_preset = self.inbound_lobby_audio_preset
-
-        inbound_lobby_audio_url: None | str | Unset
-        if isinstance(self.inbound_lobby_audio_url, Unset):
-            inbound_lobby_audio_url = UNSET
-        else:
-            inbound_lobby_audio_url = self.inbound_lobby_audio_url
 
         inbound_lobby_enabled: bool | None | Unset
         if isinstance(self.inbound_lobby_enabled, Unset):
@@ -398,8 +382,6 @@ class AgentUpdate:
         field_dict: dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update({})
-        if background_audio_url is not UNSET:
-            field_dict["background_audio_url"] = background_audio_url
         if content_guardrail_enabled is not UNSET:
             field_dict["content_guardrail_enabled"] = content_guardrail_enabled
         if custom_guardrails is not UNSET:
@@ -424,8 +406,6 @@ class AgentUpdate:
             field_dict["idle_check_in_after_secs"] = idle_check_in_after_secs
         if inbound_lobby_audio_preset is not UNSET:
             field_dict["inbound_lobby_audio_preset"] = inbound_lobby_audio_preset
-        if inbound_lobby_audio_url is not UNSET:
-            field_dict["inbound_lobby_audio_url"] = inbound_lobby_audio_url
         if inbound_lobby_enabled is not UNSET:
             field_dict["inbound_lobby_enabled"] = inbound_lobby_enabled
         if inbound_lobby_max_wait_seconds is not UNSET:
@@ -494,15 +474,6 @@ class AgentUpdate:
         from ..models.custom_guardrail import CustomGuardrail
 
         d = dict(src_dict)
-
-        def _parse_background_audio_url(data: object) -> None | str | Unset:
-            if data is None:
-                return data
-            if isinstance(data, Unset):
-                return data
-            return cast(None | str | Unset, data)
-
-        background_audio_url = _parse_background_audio_url(d.pop("background_audio_url", UNSET))
 
         def _parse_content_guardrail_enabled(data: object) -> bool | None | Unset:
             if data is None:
@@ -661,17 +632,6 @@ class AgentUpdate:
 
         inbound_lobby_audio_preset = _parse_inbound_lobby_audio_preset(
             d.pop("inbound_lobby_audio_preset", UNSET)
-        )
-
-        def _parse_inbound_lobby_audio_url(data: object) -> None | str | Unset:
-            if data is None:
-                return data
-            if isinstance(data, Unset):
-                return data
-            return cast(None | str | Unset, data)
-
-        inbound_lobby_audio_url = _parse_inbound_lobby_audio_url(
-            d.pop("inbound_lobby_audio_url", UNSET)
         )
 
         def _parse_inbound_lobby_enabled(data: object) -> bool | None | Unset:
@@ -954,7 +914,6 @@ class AgentUpdate:
         voicemail_message = _parse_voicemail_message(d.pop("voicemail_message", UNSET))
 
         agent_update = cls(
-            background_audio_url=background_audio_url,
             content_guardrail_enabled=content_guardrail_enabled,
             custom_guardrails=custom_guardrails,
             dialect_style=dialect_style,
@@ -967,7 +926,6 @@ class AgentUpdate:
             frequency_penalty=frequency_penalty,
             idle_check_in_after_secs=idle_check_in_after_secs,
             inbound_lobby_audio_preset=inbound_lobby_audio_preset,
-            inbound_lobby_audio_url=inbound_lobby_audio_url,
             inbound_lobby_enabled=inbound_lobby_enabled,
             inbound_lobby_max_wait_seconds=inbound_lobby_max_wait_seconds,
             inbound_lobby_message=inbound_lobby_message,

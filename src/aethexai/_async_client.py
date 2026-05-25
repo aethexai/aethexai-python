@@ -686,67 +686,6 @@ class AsyncAethexAI:
 
         return await self._call(_op.asyncio_detailed, UUID(str(recording_id)))
 
-    # ─── sip_trunks ────────────────────────────────────────────────────
-
-    async def list_sip_trunks(self, *, offset: int | Unset = 0, limit: int | Unset = 50) -> Any:
-        """List SIP trunks."""
-        from aethexai._generated.api.sip_trunks import list_sip_trunks_api_v1_sip_trunks_get as _op
-
-        return await self._call(_op.asyncio_detailed, offset=offset, limit=limit)
-
-    async def create_sip_trunk(self, **fields: Any) -> Any:
-        """Create a SIP trunk."""
-        from aethexai._generated.api.sip_trunks import (
-            create_sip_trunk_api_v1_sip_trunks_post as _op,
-        )
-        from aethexai._generated.models.sip_trunk_create import SipTrunkCreate
-
-        return await self._call(_op.asyncio_detailed, body=SipTrunkCreate.from_dict(fields))
-
-    async def get_sip_trunk(self, trunk_id: str | UUID) -> Any:
-        """Retrieve a SIP trunk by id."""
-        from aethexai._generated.api.sip_trunks import (
-            get_sip_trunk_api_v1_sip_trunks_trunk_id_get as _op,
-        )
-
-        return await self._call(_op.asyncio_detailed, UUID(str(trunk_id)))
-
-    async def update_sip_trunk(self, trunk_id: str | UUID, **fields: Any) -> Any:
-        """Update a SIP trunk."""
-        from aethexai._generated.api.sip_trunks import (
-            update_sip_trunk_api_v1_sip_trunks_trunk_id_patch as _op,
-        )
-        from aethexai._generated.models.sip_trunk_update import SipTrunkUpdate
-
-        return await self._call(
-            _op.asyncio_detailed, UUID(str(trunk_id)), body=SipTrunkUpdate.from_dict(fields)
-        )
-
-    async def delete_sip_trunk(self, trunk_id: str | UUID) -> Any:
-        """Delete a SIP trunk."""
-        from aethexai._generated.api.sip_trunks import (
-            delete_sip_trunk_api_v1_sip_trunks_trunk_id_delete as _op,
-        )
-
-        return await self._call(_op.asyncio_detailed, UUID(str(trunk_id)))
-
-    async def onboard_sip_trunk(self, **fields: Any) -> Any:
-        """Onboard an external SIP trunk."""
-        from aethexai._generated.api.sip_trunks import (
-            onboard_sip_trunk_api_v1_sip_trunks_onboard_post as _op,
-        )
-        from aethexai._generated.models.sip_trunk_onboard_request import SipTrunkOnboardRequest
-
-        return await self._call(_op.asyncio_detailed, body=SipTrunkOnboardRequest.from_dict(fields))
-
-    async def set_default_outbound_sip_trunk(self, trunk_id: str | UUID) -> Any:
-        """Mark a SIP trunk as the default for outbound calls."""
-        from aethexai._generated.api.sip_trunks import (
-            set_default_outbound_trunk_api_v1_sip_trunks_trunk_id_set_default_outbound_patch as _op,
-        )
-
-        return await self._call(_op.asyncio_detailed, UUID(str(trunk_id)))
-
     # ─── transcription ─────────────────────────────────────────────────
 
     async def transcribe_audio(self, *, body: Any) -> Any:

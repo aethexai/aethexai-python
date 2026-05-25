@@ -84,7 +84,11 @@ def sync_detailed(
 
     Args:
         session_id (str):
-        body (SmallWebRTCPatchRequest):
+        body (SmallWebRTCPatchRequest): Small WebRTC transport session arguments for the runner.
+
+            Parameters:
+                pc_id: Identifier for the peer connection.
+                candidates: A list of ICE candidate patches.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -126,7 +130,11 @@ def sync(
 
     Args:
         session_id (str):
-        body (SmallWebRTCPatchRequest):
+        body (SmallWebRTCPatchRequest): Small WebRTC transport session arguments for the runner.
+
+            Parameters:
+                pc_id: Identifier for the peer connection.
+                candidates: A list of ICE candidate patches.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -163,7 +171,11 @@ async def asyncio_detailed(
 
     Args:
         session_id (str):
-        body (SmallWebRTCPatchRequest):
+        body (SmallWebRTCPatchRequest): Small WebRTC transport session arguments for the runner.
+
+            Parameters:
+                pc_id: Identifier for the peer connection.
+                candidates: A list of ICE candidate patches.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -203,7 +215,11 @@ async def asyncio(
 
     Args:
         session_id (str):
-        body (SmallWebRTCPatchRequest):
+        body (SmallWebRTCPatchRequest): Small WebRTC transport session arguments for the runner.
+
+            Parameters:
+                pc_id: Identifier for the peer connection.
+                candidates: A list of ICE candidate patches.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
