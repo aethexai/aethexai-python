@@ -29,7 +29,6 @@ class AgentResponse:
     Attributes:
         id (str):
         name (str):
-        background_audio_url (None | str | Unset):
         content_guardrail_enabled (bool | Unset):  Default: False.
         created_at (None | str | Unset):
         custom_guardrails (list[CustomGuardrail] | None | Unset):
@@ -43,7 +42,6 @@ class AgentResponse:
         idle_check_in_after_secs (float | None | Unset):
         inbound_lobby_audio_preset (AgentResponseInboundLobbyAudioPreset | Unset):  Default:
             AgentResponseInboundLobbyAudioPreset.AMBIENT.
-        inbound_lobby_audio_url (None | str | Unset):
         inbound_lobby_enabled (bool | Unset):  Default: False.
         inbound_lobby_max_wait_seconds (int | None | Unset):  Default: 45.
         inbound_lobby_message (None | str | Unset):
@@ -79,7 +77,6 @@ class AgentResponse:
 
     id: str
     name: str
-    background_audio_url: None | str | Unset = UNSET
     content_guardrail_enabled: bool | Unset = False
     created_at: None | str | Unset = UNSET
     custom_guardrails: list[CustomGuardrail] | None | Unset = UNSET
@@ -94,7 +91,6 @@ class AgentResponse:
     inbound_lobby_audio_preset: AgentResponseInboundLobbyAudioPreset | Unset = (
         AgentResponseInboundLobbyAudioPreset.AMBIENT
     )
-    inbound_lobby_audio_url: None | str | Unset = UNSET
     inbound_lobby_enabled: bool | Unset = False
     inbound_lobby_max_wait_seconds: int | None | Unset = 45
     inbound_lobby_message: None | str | Unset = UNSET
@@ -139,12 +135,6 @@ class AgentResponse:
         id = self.id
 
         name = self.name
-
-        background_audio_url: None | str | Unset
-        if isinstance(self.background_audio_url, Unset):
-            background_audio_url = UNSET
-        else:
-            background_audio_url = self.background_audio_url
 
         content_guardrail_enabled = self.content_guardrail_enabled
 
@@ -206,12 +196,6 @@ class AgentResponse:
         inbound_lobby_audio_preset: str | Unset = UNSET
         if not isinstance(self.inbound_lobby_audio_preset, Unset):
             inbound_lobby_audio_preset = self.inbound_lobby_audio_preset.value
-
-        inbound_lobby_audio_url: None | str | Unset
-        if isinstance(self.inbound_lobby_audio_url, Unset):
-            inbound_lobby_audio_url = UNSET
-        else:
-            inbound_lobby_audio_url = self.inbound_lobby_audio_url
 
         inbound_lobby_enabled = self.inbound_lobby_enabled
 
@@ -361,8 +345,6 @@ class AgentResponse:
                 "name": name,
             }
         )
-        if background_audio_url is not UNSET:
-            field_dict["background_audio_url"] = background_audio_url
         if content_guardrail_enabled is not UNSET:
             field_dict["content_guardrail_enabled"] = content_guardrail_enabled
         if created_at is not UNSET:
@@ -387,8 +369,6 @@ class AgentResponse:
             field_dict["idle_check_in_after_secs"] = idle_check_in_after_secs
         if inbound_lobby_audio_preset is not UNSET:
             field_dict["inbound_lobby_audio_preset"] = inbound_lobby_audio_preset
-        if inbound_lobby_audio_url is not UNSET:
-            field_dict["inbound_lobby_audio_url"] = inbound_lobby_audio_url
         if inbound_lobby_enabled is not UNSET:
             field_dict["inbound_lobby_enabled"] = inbound_lobby_enabled
         if inbound_lobby_max_wait_seconds is not UNSET:
@@ -467,15 +447,6 @@ class AgentResponse:
         id = d.pop("id")
 
         name = d.pop("name")
-
-        def _parse_background_audio_url(data: object) -> None | str | Unset:
-            if data is None:
-                return data
-            if isinstance(data, Unset):
-                return data
-            return cast(None | str | Unset, data)
-
-        background_audio_url = _parse_background_audio_url(d.pop("background_audio_url", UNSET))
 
         content_guardrail_enabled = d.pop("content_guardrail_enabled", UNSET)
 
@@ -584,17 +555,6 @@ class AgentResponse:
             inbound_lobby_audio_preset = AgentResponseInboundLobbyAudioPreset(
                 _inbound_lobby_audio_preset
             )
-
-        def _parse_inbound_lobby_audio_url(data: object) -> None | str | Unset:
-            if data is None:
-                return data
-            if isinstance(data, Unset):
-                return data
-            return cast(None | str | Unset, data)
-
-        inbound_lobby_audio_url = _parse_inbound_lobby_audio_url(
-            d.pop("inbound_lobby_audio_url", UNSET)
-        )
 
         inbound_lobby_enabled = d.pop("inbound_lobby_enabled", UNSET)
 
@@ -813,7 +773,6 @@ class AgentResponse:
         agent_response = cls(
             id=id,
             name=name,
-            background_audio_url=background_audio_url,
             content_guardrail_enabled=content_guardrail_enabled,
             created_at=created_at,
             custom_guardrails=custom_guardrails,
@@ -826,7 +785,6 @@ class AgentResponse:
             frequency_penalty=frequency_penalty,
             idle_check_in_after_secs=idle_check_in_after_secs,
             inbound_lobby_audio_preset=inbound_lobby_audio_preset,
-            inbound_lobby_audio_url=inbound_lobby_audio_url,
             inbound_lobby_enabled=inbound_lobby_enabled,
             inbound_lobby_max_wait_seconds=inbound_lobby_max_wait_seconds,
             inbound_lobby_message=inbound_lobby_message,

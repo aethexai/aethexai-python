@@ -81,7 +81,14 @@ def sync_detailed(
 
     Args:
         session_id (str):
-        body (SmallWebRTCRequest):
+        body (SmallWebRTCRequest): Small WebRTC transport session arguments for the runner.
+
+            Parameters:
+                sdp: The SDP string (Session Description Protocol).
+                type: The type of the SDP, either "offer" or "answer".
+                pc_id: Optional identifier for the peer connection.
+                restart_pc: Optional whether to restart the peer connection.
+                request_data: Optional custom data sent by the customer.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -120,7 +127,14 @@ def sync(
 
     Args:
         session_id (str):
-        body (SmallWebRTCRequest):
+        body (SmallWebRTCRequest): Small WebRTC transport session arguments for the runner.
+
+            Parameters:
+                sdp: The SDP string (Session Description Protocol).
+                type: The type of the SDP, either "offer" or "answer".
+                pc_id: Optional identifier for the peer connection.
+                restart_pc: Optional whether to restart the peer connection.
+                request_data: Optional custom data sent by the customer.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -154,7 +168,14 @@ async def asyncio_detailed(
 
     Args:
         session_id (str):
-        body (SmallWebRTCRequest):
+        body (SmallWebRTCRequest): Small WebRTC transport session arguments for the runner.
+
+            Parameters:
+                sdp: The SDP string (Session Description Protocol).
+                type: The type of the SDP, either "offer" or "answer".
+                pc_id: Optional identifier for the peer connection.
+                restart_pc: Optional whether to restart the peer connection.
+                request_data: Optional custom data sent by the customer.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -191,7 +212,14 @@ async def asyncio(
 
     Args:
         session_id (str):
-        body (SmallWebRTCRequest):
+        body (SmallWebRTCRequest): Small WebRTC transport session arguments for the runner.
+
+            Parameters:
+                sdp: The SDP string (Session Description Protocol).
+                type: The type of the SDP, either "offer" or "answer".
+                pc_id: Optional identifier for the peer connection.
+                restart_pc: Optional whether to restart the peer connection.
+                request_data: Optional custom data sent by the customer.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.

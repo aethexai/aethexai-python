@@ -31,7 +31,6 @@ from .batch_call_create import BatchCallCreate
 from .batch_call_response import BatchCallResponse
 from .batch_recipient import BatchRecipient
 from .batch_recipient_variables import BatchRecipientVariables
-from .body_api_transcribe_api_transcribe_post import BodyApiTranscribeApiTranscribePost
 from .body_transcribe_async_api_v1_transcribe_async_post import (
     BodyTranscribeAsyncApiV1TranscribeAsyncPost,
 )
@@ -61,8 +60,6 @@ from .conversation_response import ConversationResponse
 from .conversation_turn_response import ConversationTurnResponse
 from .custom_guardrail import CustomGuardrail
 from .dashboard_overview import DashboardOverview
-from .destination_allowlist import DestinationAllowlist
-from .destination_allowlist_mode import DestinationAllowlistMode
 from .developer_response import DeveloperResponse
 from .developer_session_summary import DeveloperSessionSummary
 from .developer_sessions_response import DeveloperSessionsResponse
@@ -112,24 +109,6 @@ from .select_plan_request import SelectPlanRequest
 from .select_plan_response import SelectPlanResponse
 from .setup_intent_response import SetupIntentResponse
 from .sip_register_request import SipRegisterRequest
-from .sip_trunk_create import SipTrunkCreate
-from .sip_trunk_create_auth_mode import SipTrunkCreateAuthMode
-from .sip_trunk_create_media_encryption import SipTrunkCreateMediaEncryption
-from .sip_trunk_create_transport import SipTrunkCreateTransport
-from .sip_trunk_create_type import SipTrunkCreateType
-from .sip_trunk_onboard_request import SipTrunkOnboardRequest
-from .sip_trunk_onboard_request_auth_mode import SipTrunkOnboardRequestAuthMode
-from .sip_trunk_onboard_request_media_encryption import SipTrunkOnboardRequestMediaEncryption
-from .sip_trunk_onboard_request_transport import SipTrunkOnboardRequestTransport
-from .sip_trunk_onboard_response import SipTrunkOnboardResponse
-from .sip_trunk_response import SipTrunkResponse
-from .sip_trunk_response_auth_mode import SipTrunkResponseAuthMode
-from .sip_trunk_response_media_encryption import SipTrunkResponseMediaEncryption
-from .sip_trunk_response_transport import SipTrunkResponseTransport
-from .sip_trunk_response_type import SipTrunkResponseType
-from .sip_trunk_update import SipTrunkUpdate
-from .sip_trunk_update_auth_mode_type_0 import SipTrunkUpdateAuthModeType0
-from .sip_trunk_update_status_type_0 import SipTrunkUpdateStatusType0
 from .small_web_rtc_patch_request import SmallWebRTCPatchRequest
 from .small_web_rtc_request import SmallWebRTCRequest
 from .tool_result_request import ToolResultRequest
@@ -200,7 +179,6 @@ __all__ = (
     "BatchCallResponse",
     "BatchRecipient",
     "BatchRecipientVariables",
-    "BodyApiTranscribeApiTranscribePost",
     "BodyTranscribeAsyncApiV1TranscribeAsyncPost",
     "BodyTranscribeSyncApiV1TranscribePost",
     "BodyUploadKnowledgeDocApiV1AgentsAgentIdKnowledgeBasePost",
@@ -224,8 +202,6 @@ __all__ = (
     "ConversationTurnResponse",
     "CustomGuardrail",
     "DashboardOverview",
-    "DestinationAllowlist",
-    "DestinationAllowlistMode",
     "DeveloperResponse",
     "DeveloperSessionsResponse",
     "DeveloperSessionSummary",
@@ -273,24 +249,6 @@ __all__ = (
     "SelectPlanResponse",
     "SetupIntentResponse",
     "SipRegisterRequest",
-    "SipTrunkCreate",
-    "SipTrunkCreateAuthMode",
-    "SipTrunkCreateMediaEncryption",
-    "SipTrunkCreateTransport",
-    "SipTrunkCreateType",
-    "SipTrunkOnboardRequest",
-    "SipTrunkOnboardRequestAuthMode",
-    "SipTrunkOnboardRequestMediaEncryption",
-    "SipTrunkOnboardRequestTransport",
-    "SipTrunkOnboardResponse",
-    "SipTrunkResponse",
-    "SipTrunkResponseAuthMode",
-    "SipTrunkResponseMediaEncryption",
-    "SipTrunkResponseTransport",
-    "SipTrunkResponseType",
-    "SipTrunkUpdate",
-    "SipTrunkUpdateAuthModeType0",
-    "SipTrunkUpdateStatusType0",
     "SmallWebRTCPatchRequest",
     "SmallWebRTCRequest",
     "ToolResultRequest",
