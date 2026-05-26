@@ -49,6 +49,7 @@ from .call_response_metadata import CallResponseMetadata
 from .call_response_provider import CallResponseProvider
 from .call_status_response import CallStatusResponse
 from .call_status_response_provider import CallStatusResponseProvider
+from .cancel_transcription_job_response import CancelTranscriptionJobResponse
 from .connect_request import ConnectRequest
 from .conversation_diagnostic_event_response import ConversationDiagnosticEventResponse
 from .conversation_diagnostic_event_response_metadata_type_0 import (
@@ -193,6 +194,7 @@ __all__ = (
     "CallResponseProvider",
     "CallStatusResponse",
     "CallStatusResponseProvider",
+    "CancelTranscriptionJobResponse",
     "ConnectRequest",
     "ConversationDiagnosticEventResponse",
     "ConversationDiagnosticEventResponseMetadataType0",

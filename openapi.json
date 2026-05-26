@@ -2359,6 +2359,24 @@
         "title": "CallStatusResponse",
         "type": "object"
       },
+      "CancelTranscriptionJobResponse": {
+        "properties": {
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "status": {
+            "default": "cancelled",
+            "title": "Status",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id"
+        ],
+        "title": "CancelTranscriptionJobResponse",
+        "type": "object"
+      },
       "ConnectRequest": {
         "properties": {
           "agent_id": {
@@ -10531,7 +10549,9 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/CancelTranscriptionJobResponse"
+                }
               }
             },
             "description": "Successful Response"

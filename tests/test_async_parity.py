@@ -192,3 +192,29 @@ async def test_parity_delete_agent(sync_client: AethexAI, async_client: AsyncAet
     # 204 -> parsed is None on both sides.
     assert sync_out is None
     assert async_out is None
+
+
+# ─── cancel_transcription_job (typed response, AET-1538) ────────────────────
+
+
+@respx.mock
+async def test_parity_cancel_transcription_job(
+    sync_client: AethexAI, async_client: AsyncAethexAI
+) -> None:
+    """Sync and async wrappers both return ``CancelTranscriptionJobResponse``."""
+    from aethexai._generated.models.cancel_transcription_job_response import (
+        CancelTranscriptionJobResponse,
+    )
+
+    job_id = uuid4()
+    respx.delete(f"{BASE_URL}/api/v1/transcribe/{job_id}").mock(
+        return_value=httpx.Response(200, json={"id": str(job_id), "status": "cancelled"})
+    )
+
+    sync_out = sync_client.cancel_transcription_job(job_id)
+    async_out = await async_client.cancel_transcription_job(job_id)
+
+    assert isinstance(sync_out, CancelTranscriptionJobResponse)
+    assert isinstance(async_out, CancelTranscriptionJobResponse)
+    assert sync_out.id == str(job_id) == async_out.id
+    assert sync_out.status == async_out.status == "cancelled"
