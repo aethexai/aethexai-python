@@ -273,6 +273,9 @@ def regenerate_client() -> int:
     patch_rc = _apply_post_codegen_patches()
     if patch_rc != 0:
         return patch_rc
+    http_patch_rc = _apply_http_validation_error_patch()
+    if http_patch_rc != 0:
+        return http_patch_rc
     return result.returncode
 
 
@@ -364,6 +367,96 @@ def _apply_post_codegen_patches() -> int:
     print(
         "post-codegen patch: applied secret-fields-repr-suppression to "
         f"{client_py.relative_to(REPO_ROOT)}"
+    )
+    return 0
+
+
+def _apply_http_validation_error_patch() -> int:
+    """Re-apply the AET-1523 patch to ``_generated/models/http_validation_error.py``.
+
+    The OpenAPI spec types every 422 response as FastAPI's
+    ``HTTPValidationError`` (``detail: list[ValidationError]``), but the real
+    aethex API returns ``{error, code, detail: <string>, request_id}``. The
+    stock codegen ``from_dict`` iterates ``detail`` and calls
+    ``ValidationError.from_dict(<string>)`` -> ``dict(<string>)`` -> ``ValueError``.
+    That escapes ``_call`` and customers see a stdlib crash instead of
+    ``aethexai.ValidationError``.
+
+    This patch rewrites ``from_dict`` to leave ``detail`` as ``UNSET`` when it
+    isn't list-of-dicts shaped and stashes the raw envelope in
+    ``additional_properties``. ``_call`` then reaches
+    ``_map_status_to_exception`` and raises the documented typed exception.
+
+    The patch is idempotent: it bails out when the ``AETHEX-PATCH (AET-1523)``
+    sentinel is already present.
+    """
+    target = GENERATED_DIR / "models" / "http_validation_error.py"
+    if not target.exists():
+        print(f"warn: http-validation-error patch skipped; {target} not found", file=sys.stderr)
+        return 0
+
+    source = target.read_text()
+    if "AETHEX-PATCH (AET-1523)" in source:
+        print("post-codegen patch: http-validation-error already applied (sentinel present)")
+        return 0
+
+    needle = (
+        "        d = dict(src_dict)\n"
+        '        _detail = d.pop("detail", UNSET)\n'
+        "        detail: list[ValidationError] | Unset = UNSET\n"
+        "        if _detail is not UNSET:\n"
+        "            detail = []\n"
+        "            for detail_item_data in _detail:\n"
+        "                detail_item = ValidationError.from_dict(detail_item_data)\n"
+        "\n"
+        "                detail.append(detail_item)\n"
+    )
+    replacement = (
+        "        # AETHEX-PATCH (AET-1523): tolerate the aethex unified error envelope.\n"
+        "        # The OpenAPI spec types 422 as FastAPI's ``HTTPValidationError``\n"
+        "        # (``detail: list[ValidationError]``), but the real API returns\n"
+        "        # ``{error, code, detail: <string>, request_id}``. Without this guard,\n"
+        "        # ``ValidationError.from_dict(<string>)`` crashes with a ``ValueError``\n"
+        "        # from ``dict(src_dict)``. The generated ``_parse_response`` then\n"
+        "        # propagates the crash to ``_call``, which never reaches\n"
+        "        # ``_map_status_to_exception`` and never raises the documented\n"
+        "        # ``aethexai.ValidationError``. By leaving ``detail`` as ``UNSET`` when\n"
+        "        # it isn't list-of-dicts shaped, and stashing the envelope in\n"
+        "        # ``additional_properties``, ``_parse_response`` stays total: the\n"
+        "        # wrapper layer sees ``response.status_code == 422`` and raises the\n"
+        "        # typed exception via ``_map_status_to_exception(status, response.content, ...)``,\n"
+        "        # which parses the envelope directly. This patch is re-applied by\n"
+        "        # ``scripts/sync_from_prod.py`` after every regeneration.\n"
+        "        d = dict(src_dict)\n"
+        '        _detail = d.pop("detail", UNSET)\n'
+        "        detail: list[ValidationError] | Unset = UNSET\n"
+        "        if _detail is not UNSET and isinstance(_detail, list):\n"
+        "            try:\n"
+        "                detail = [ValidationError.from_dict(item) for item in _detail]\n"
+        "            except (ValueError, TypeError, KeyError):\n"
+        "                # Items don't match the FastAPI shape — stash the raw value\n"
+        "                # and let the wrapper layer raise via the envelope parser.\n"
+        "                detail = UNSET\n"
+        '                d["detail"] = _detail\n'
+        "        elif _detail is not UNSET:\n"
+        "            # ``detail`` is a string / non-list — aethex envelope. Preserve\n"
+        "            # the raw value in additional_properties for any caller that\n"
+        '            # introspects ``http_validation_error["detail"]``.\n'
+        '            d["detail"] = _detail\n'
+    )
+    if needle not in source:
+        print(
+            "warn: http-validation-error patch could not locate the stock "
+            "``from_dict`` body in _generated/models/http_validation_error.py. "
+            "openapi-python-client may have changed its output shape — the "
+            "AET-1523 422 crash is at risk of regressing.",
+            file=sys.stderr,
+        )
+        return 2
+    target.write_text(source.replace(needle, replacement))
+    print(
+        "post-codegen patch: applied http-validation-error envelope tolerance to "
+        f"{target.relative_to(REPO_ROOT)}"
     )
     return 0
 
