@@ -92,6 +92,20 @@ def test_kora_list_voices_with_language_filter(kora: Kora) -> None:
 
 
 @respx.mock
+def test_kora_list_voices_forwards_tag_param(kora: Kora) -> None:
+    route = respx.get(f"{BASE_URL}/api/v1/voices").mock(return_value=httpx.Response(200, json=[]))
+
+    kora.list_voices(tag="warm", supports_dialect_style=True, limit=5, offset=10)
+
+    req = route.calls.last.request
+    qs = dict(req.url.params)
+    assert qs.get("tag") == "warm"
+    assert qs.get("supports_dialect_style") == "true"
+    assert qs.get("limit") == "5"
+    assert qs.get("offset") == "10"
+
+
+@respx.mock
 def test_kora_get_voice_path_param(kora: Kora) -> None:
     route = respx.get(f"{BASE_URL}/api/v1/voices/fatima").mock(
         return_value=httpx.Response(
