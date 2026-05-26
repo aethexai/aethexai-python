@@ -48,17 +48,39 @@ class HTTPValidationError:
 
     @classmethod
     def from_dict(cls: type[T], src_dict: Mapping[str, Any]) -> T:
+        # AETHEX-PATCH (AET-1523): tolerate the aethex unified error envelope.
+        # The OpenAPI spec types 422 as FastAPI's ``HTTPValidationError``
+        # (``detail: list[ValidationError]``), but the real API returns
+        # ``{error, code, detail: <string>, request_id}``. Without this guard,
+        # ``ValidationError.from_dict(<string>)`` crashes with a ``ValueError``
+        # from ``dict(src_dict)``. The generated ``_parse_response`` then
+        # propagates the crash to ``_call``, which never reaches
+        # ``_map_status_to_exception`` and never raises the documented
+        # ``aethexai.ValidationError``. By leaving ``detail`` as ``UNSET`` when
+        # it isn't list-of-dicts shaped, and stashing the envelope in
+        # ``additional_properties``, ``_parse_response`` stays total: the
+        # wrapper layer sees ``response.status_code == 422`` and raises the
+        # typed exception via ``_map_status_to_exception(status, response.content, ...)``,
+        # which parses the envelope directly. This patch is re-applied by
+        # ``scripts/sync_from_prod.py`` after every regeneration.
         from ..models.validation_error import ValidationError
 
         d = dict(src_dict)
         _detail = d.pop("detail", UNSET)
         detail: list[ValidationError] | Unset = UNSET
-        if _detail is not UNSET:
-            detail = []
-            for detail_item_data in _detail:
-                detail_item = ValidationError.from_dict(detail_item_data)
-
-                detail.append(detail_item)
+        if _detail is not UNSET and isinstance(_detail, list):
+            try:
+                detail = [ValidationError.from_dict(item) for item in _detail]
+            except (ValueError, TypeError, KeyError):
+                # Items don't match the FastAPI shape — stash the raw value
+                # and let the wrapper layer raise via the envelope parser.
+                detail = UNSET
+                d["detail"] = _detail
+        elif _detail is not UNSET:
+            # ``detail`` is a string / non-list — aethex envelope. Preserve
+            # the raw value in additional_properties for any caller that
+            # introspects ``http_validation_error["detail"]``.
+            d["detail"] = _detail
 
         http_validation_error = cls(
             detail=detail,

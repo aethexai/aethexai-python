@@ -233,6 +233,38 @@ def test_delete_agent_uses_delete(client: AethexAI) -> None:
     assert result is None
 
 
+# ─── transcription ──────────────────────────────────────────────────────────
+
+
+@respx.mock
+def test_cancel_transcription_job_returns_typed_model(client: AethexAI) -> None:
+    """AET-1538: DELETE /transcribe/{job_id} parses to ``CancelTranscriptionJobResponse``.
+
+    Previously the route had an empty 200 response schema, so the generated
+    parser returned a raw dict and the SDK wrapper exposed ``Any``. The
+    backend now declares ``CancelTranscriptionJobResponse``; this pins that
+    the wrapper returns the typed model (parity with ``get_transcription_job``).
+    """
+    from aethexai._generated.models.cancel_transcription_job_response import (
+        CancelTranscriptionJobResponse,
+    )
+
+    job_uuid = uuid4()
+    route = respx.delete(f"{BASE_URL}/api/v1/transcribe/{job_uuid}").mock(
+        return_value=httpx.Response(200, json={"id": str(job_uuid), "status": "cancelled"})
+    )
+
+    result = client.cancel_transcription_job(job_uuid)
+
+    assert route.called
+    req = route.calls.last.request
+    assert req.method == "DELETE"
+    assert req.url.path == f"/api/v1/transcribe/{job_uuid}"
+    assert isinstance(result, CancelTranscriptionJobResponse)
+    assert result.id == str(job_uuid)
+    assert result.status == "cancelled"
+
+
 # ─── calls ──────────────────────────────────────────────────────────────────
 
 
