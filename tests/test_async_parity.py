@@ -71,6 +71,29 @@ async def test_parity_list_voices(sync_client: AethexAI, async_client: AsyncAeth
     assert [v.name for v in sync_voices] == [v.name for v in async_voices]
 
 
+# ─── list_tag_vocabulary ────────────────────────────────────────────────────
+
+
+@respx.mock
+async def test_parity_list_tag_vocabulary(
+    sync_client: AethexAI, async_client: AsyncAethexAI
+) -> None:
+    payload = {
+        "tone": ["warm", "calm"],
+        "voice_texture": ["smooth", "deep"],
+        "delivery_style": ["natural", "expressive"],
+        "business_persona": ["professional", "trustworthy"],
+    }
+    respx.get(f"{BASE_URL}/api/v1/voices/tag-vocabulary").mock(
+        return_value=httpx.Response(200, json=payload)
+    )
+
+    sync_vocab = sync_client.list_tag_vocabulary()
+    async_vocab = await async_client.list_tag_vocabulary()
+
+    assert _attrs(sync_vocab) == _attrs(async_vocab) == payload
+
+
 # ─── list_agents (paginated) ────────────────────────────────────────────────
 
 

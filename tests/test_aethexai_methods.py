@@ -95,6 +95,31 @@ def test_get_voice_uses_path_param(client: AethexAI) -> None:
     assert voice.id == "fatima"
 
 
+@respx.mock
+def test_list_tag_vocabulary_returns_typed_model(client: AethexAI) -> None:
+    payload = {
+        "tone": ["warm", "calm"],
+        "voice_texture": ["smooth", "deep"],
+        "delivery_style": ["natural", "expressive"],
+        "business_persona": ["professional", "trustworthy"],
+    }
+    route = respx.get(f"{BASE_URL}/api/v1/voices/tag-vocabulary").mock(
+        return_value=httpx.Response(200, json=payload)
+    )
+
+    vocab = client.list_tag_vocabulary()
+
+    assert route.called
+    req = route.calls.last.request
+    assert req.method == "GET"
+    assert req.url.path == "/api/v1/voices/tag-vocabulary"
+
+    # Returns a typed model (not a raw dict) — exercise its to_dict round-trip.
+    assert not isinstance(vocab, dict)
+    assert hasattr(vocab, "to_dict")
+    assert vocab.to_dict() == payload
+
+
 # ─── agents ─────────────────────────────────────────────────────────────────
 
 
