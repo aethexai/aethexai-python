@@ -27,14 +27,24 @@ def async_client() -> AsyncAethexAI:
     return AsyncAethexAI(api_key="ak_test_dummy", base_url="https://dev-api.aethexai.com")
 
 
+def _missing_fields(err: ValidationError) -> set[str]:
+    """Extract the set of missing field names from the structured envelope.
+
+    The pre-flight envelope mirrors the server's 422 shape: ``response["detail"]``
+    is a list of ``{"type": "missing", "loc": ["body", <field>], ...}`` entries.
+    """
+    detail = err.response.get("detail", [])
+    return {entry["loc"][1] for entry in detail if entry.get("type") == "missing"}
+
+
 def test_missing_single_field_raises_validation_error(sync_client: AethexAI) -> None:
     """Missing one required field surfaces as typed ValidationError naming the field."""
     with pytest.raises(ValidationError) as exc_info:
         sync_client.preview_voice()
     err = exc_info.value
-    assert err.code == "missing_fields"
+    assert err.code == "validation_error"
     assert err.status_code == 422
-    assert err.response.get("missing_fields") == ["voice_id"]
+    assert _missing_fields(err) == {"voice_id"}
     assert "voice_id" in err.message
 
 
@@ -47,8 +57,7 @@ def test_missing_multiple_fields_lists_all(sync_client: AethexAI) -> None:
     """
     with pytest.raises(ValidationError) as exc_info:
         sync_client.presign_upload()
-    missing = exc_info.value.response.get("missing_fields")
-    assert missing == ["content_type", "kind"]
+    assert _missing_fields(exc_info.value) == {"content_type", "kind"}
 
 
 def test_not_keyerror(sync_client: AethexAI) -> None:
@@ -67,17 +76,39 @@ def test_not_keyerror(sync_client: AethexAI) -> None:
 def test_create_agent_lists_all_missing(sync_client: AethexAI) -> None:
     with pytest.raises(ValidationError) as exc_info:
         sync_client.create_agent()
-    missing = exc_info.value.response.get("missing_fields")
-    # AgentCreate requires name, system_prompt, voice_id (order from attrs.fields).
-    assert set(missing) == {"name", "system_prompt", "voice_id"}
+    # AgentCreate requires name, system_prompt, voice_id.
+    assert _missing_fields(exc_info.value) == {"name", "system_prompt", "voice_id"}
 
 
 def test_partial_kwargs_still_reports_remaining(sync_client: AethexAI) -> None:
     with pytest.raises(ValidationError) as exc_info:
         sync_client.create_agent(name="Bot")
-    missing = exc_info.value.response.get("missing_fields")
+    missing = _missing_fields(exc_info.value)
     assert "name" not in missing
-    assert set(missing) == {"system_prompt", "voice_id"}
+    assert missing == {"system_prompt", "voice_id"}
+
+
+def test_envelope_matches_server_shape(sync_client: AethexAI) -> None:
+    """Pre-flight envelope mirrors the server's 422 so one handler covers both paths.
+
+    Server emits ``code="validation_error"``, ``detail=[{type,loc,msg,input}, ...]``
+    with ``fields`` mirroring ``detail``. The pre-flight path emits the same shape
+    so callers can write a single ``except ValidationError`` handler that iterates
+    ``e.response["detail"]`` regardless of origin.
+    """
+    with pytest.raises(ValidationError) as exc_info:
+        sync_client.create_agent()
+    err = exc_info.value
+    assert err.code == "validation_error"
+    assert err.response["code"] == "validation_error"
+    detail = err.response["detail"]
+    assert isinstance(detail, list)
+    assert err.response["fields"] == detail
+    for entry in detail:
+        assert entry["type"] == "missing"
+        assert entry["loc"][0] == "body"
+        assert entry["msg"] == "Field required"
+        assert "input" in entry
 
 
 async def test_async_client_also_raises_validation_error(
@@ -86,4 +117,4 @@ async def test_async_client_also_raises_validation_error(
     """Parity: async wrappers raise the same typed error before the wire call."""
     with pytest.raises(ValidationError) as exc_info:
         await async_client.preview_voice()
-    assert exc_info.value.response.get("missing_fields") == ["voice_id"]
+    assert _missing_fields(exc_info.value) == {"voice_id"}

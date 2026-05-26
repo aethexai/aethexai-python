@@ -49,10 +49,22 @@ def build_body(model_cls: type[T], fields: dict[str, Any]) -> T:
         else:
             joined = ", ".join(repr(n) for n in missing)
             msg = f"Missing required fields for {model_name}: {joined}"
+        # Mirror the server's 422 envelope so callers can write one handler
+        # that iterates `response["detail"]` regardless of whether the error
+        # came from the SDK pre-flight or the server.
+        detail = [
+            {
+                "type": "missing",
+                "loc": ["body", name],
+                "msg": "Field required",
+                "input": fields,
+            }
+            for name in missing
+        ]
         raise ValidationError(
             message=msg,
-            code="missing_fields",
+            code="validation_error",
             status_code=422,
-            response={"detail": msg, "missing_fields": missing},
+            response={"code": "validation_error", "detail": detail, "fields": detail},
         )
-    return model_cls.from_dict(fields)  # type: ignore[attr-defined]
+    return model_cls.from_dict(fields)  # type: ignore[attr-defined,no-any-return]
