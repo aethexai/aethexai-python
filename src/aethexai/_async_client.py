@@ -926,15 +926,7 @@ class AsyncAethexAI:
         return await self._call(_op.asyncio_detailed, body=VoicePreviewRequest.from_dict(fields))
 
     async def list_tag_vocabulary(self) -> Any:
-        """Return the closed-vocabulary tag set used by voice tagging.
-
-        The response groups tokens into four UI buckets (``tone``,
-        ``voice_texture``, ``delivery_style``, ``business_persona``), but
-        the underlying storage is a flat list — ``GET /voices?tag=...``
-        accepts any token from any bucket. ``VoiceMetadataUpdate.tags``
-        rejects tokens outside this set, so this endpoint is the canonical
-        place to discover the supported values.
-        """
+        """Return the closed tag vocabulary for voices."""
         from aethexai._generated.api.voices import (
             list_tag_vocabulary_api_v1_voices_tag_vocabulary_get as _op,
         )

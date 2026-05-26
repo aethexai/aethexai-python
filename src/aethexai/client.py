@@ -929,13 +929,12 @@ class AethexAI:
         return self._call(_op.sync_detailed, body=VoicePreviewRequest.from_dict(fields))
 
     def list_tag_vocabulary(self) -> Any:
-        """Return the closed-vocabulary tag set used by voice tagging.
+        """Return the closed tag vocabulary for voices.
 
         The response groups tokens into four UI buckets (``tone``,
         ``voice_texture``, ``delivery_style``, ``business_persona``), but
-        the underlying storage is a flat list — ``GET /voices?tag=...``
-        accepts any token from any bucket. ``VoiceMetadataUpdate.tags``
-        rejects tokens outside this set, so this endpoint is the canonical
+        the underlying storage is a flat list — ``list_voices(tag=...)``
+        accepts any token from any bucket. This endpoint is the canonical
         place to discover the supported values.
 
         See https://docs.aethexai.com/voices.
