@@ -212,3 +212,102 @@ def test_kora_rate_limit_retry_after_header_is_exposed(kora: Kora) -> None:
         kora.list_voices()
     assert info.value.status_code == 429
     assert info.value.retry_after == 12.0
+
+
+# ─── AET-1523: 422 must accept the aethex unified envelope ─────────────────
+
+
+_AETHEX_422_ENVELOPE = {
+    "error": "Invalid upload_id",
+    "code": "validation_error",
+    "request_id": "042f6f8d-1234-4d56-9abc-cafef00dbabe",
+    "detail": "Invalid upload_id",
+}
+
+
+@respx.mock
+def test_kora_422_aethex_envelope_raises_typed_validation_error(kora: Kora) -> None:
+    """Regression: prior to AET-1523, a 422 with the aethex envelope crashed
+    inside ``HTTPValidationError.from_dict`` with
+    ``ValueError: dictionary update sequence element #0 has length 1; 2 is required``
+    instead of raising the documented ``aethexai.ValidationError``.
+    """
+    respx.get(VOICES_URL).mock(return_value=httpx.Response(422, json=_AETHEX_422_ENVELOPE))
+
+    with pytest.raises(ValidationError) as info:
+        kora.list_voices()
+    exc = info.value
+    assert exc.status_code == 422
+    assert exc.code == "validation_error"
+    assert exc.message == "Invalid upload_id"
+    assert "Invalid upload_id" in str(exc)
+    assert exc.response == _AETHEX_422_ENVELOPE
+
+
+@respx.mock
+def test_aethex_422_aethex_envelope_raises_typed_validation_error() -> None:
+    """Same regression, exercised through the high-level ``AethexAI`` wrapper."""
+    respx.get(VOICES_URL).mock(return_value=httpx.Response(422, json=_AETHEX_422_ENVELOPE))
+
+    client = AethexAI(api_key="ae_live_test", base_url=BASE_URL)
+    try:
+        with pytest.raises(ValidationError) as info:
+            client.list_voices()
+        exc = info.value
+        assert exc.status_code == 422
+        assert exc.code == "validation_error"
+        assert exc.message == "Invalid upload_id"
+        assert exc.response["request_id"] == _AETHEX_422_ENVELOPE["request_id"]
+    finally:
+        client.close()
+
+
+@respx.mock
+async def test_async_aethex_422_aethex_envelope_raises_typed_validation_error() -> None:
+    """Same regression on the async client."""
+    respx.get(VOICES_URL).mock(return_value=httpx.Response(422, json=_AETHEX_422_ENVELOPE))
+
+    client = AsyncAethexAI(api_key="ae_live_test", base_url=BASE_URL)
+    try:
+        with pytest.raises(ValidationError) as info:
+            await client.list_voices()
+        exc = info.value
+        assert exc.status_code == 422
+        assert exc.code == "validation_error"
+        assert exc.message == "Invalid upload_id"
+    finally:
+        await client.close()
+
+
+def test_http_validation_error_from_dict_tolerates_aethex_envelope() -> None:
+    """Unit-level guard on the generated ``from_dict`` patch.
+
+    The OpenAPI spec types ``detail`` as ``list[ValidationError]``; the real
+    API returns a string. ``from_dict`` must not raise — it should leave the
+    typed ``detail`` field as UNSET and preserve the raw envelope in
+    ``additional_properties`` so the wrapper layer can build the proper
+    typed exception from ``response.content``.
+    """
+    from aethexai._generated.models.http_validation_error import HTTPValidationError
+    from aethexai._generated.types import UNSET
+
+    parsed = HTTPValidationError.from_dict(_AETHEX_422_ENVELOPE)
+    assert parsed.detail is UNSET
+    assert parsed.additional_properties["detail"] == "Invalid upload_id"
+    assert parsed.additional_properties["code"] == "validation_error"
+    assert parsed.additional_properties["error"] == "Invalid upload_id"
+
+
+def test_http_validation_error_from_dict_still_parses_fastapi_shape() -> None:
+    """The FastAPI-shaped ``detail`` (list of ValidationError dicts) must
+    continue to parse — we only fall back when the list/items don't match.
+    """
+    from aethexai._generated.models.http_validation_error import HTTPValidationError
+
+    payload = {
+        "detail": [{"loc": ["body", "language"], "msg": "field required", "type": "value_error"}]
+    }
+    parsed = HTTPValidationError.from_dict(payload)
+    assert isinstance(parsed.detail, list)
+    assert len(parsed.detail) == 1
+    assert parsed.detail[0].msg == "field required"

@@ -7,6 +7,7 @@ All notable changes to this project are documented here. Format based on [Keep a
 ### Fixed
 
 - Binary audio endpoints no longer crash with `UnicodeDecodeError` on success (AET-1522). `openapi.json` declares the 200 response of `preview_voice` and `stream_audio` / `get_conversation_audio` as `application/json`, but the API actually returns `audio/wav`; the generated client eagerly called `response.json()` on the WAV bytes. These methods now bypass the generated parser and return raw `bytes` across `AethexAI`, `AsyncAethexAI`, and `Kora`.
+- 422 responses with the aethex unified error envelope (`{error, code, detail: <string>, request_id}`) now raise the documented `aethexai.ValidationError` instead of crashing inside the generated `HTTPValidationError.from_dict` with `ValueError: dictionary update sequence element #0 has length 1; 2 is required`. The FastAPI-shaped `detail: list[ValidationError]` shape continues to parse. (AET-1523)
 - `AethexAI.list_voices`, `AsyncAethexAI.list_voices`, and `Kora.list_voices` now forward the OpenAPI `tag` query parameter (and `supports_dialect_style` for `Kora.list_voices`), which were silently dropped by the wrappers. (AET-1534)
 
 ## [0.2.1] — 2026-05-20
