@@ -95,6 +95,59 @@ def test_get_voice_uses_path_param(client: AethexAI) -> None:
     assert voice.id == "fatima"
 
 
+# AET-1522: preview_voice and stream_audio return ``audio/wav`` bytes even
+# though ``openapi.json`` declares ``application/json``. The wrappers must
+# bypass the generated JSON parser and return raw bytes. We use a binary
+# payload (non-UTF-8 leading bytes) so a regression would surface as a
+# ``UnicodeDecodeError`` rather than silently being swallowed by a payload
+# that happens to be valid ASCII.
+_WAV_PAYLOAD = b"RIFF\x24\x00\x00\x00WAVE\xc0\x92\xbabinaryaudiopayload"
+
+
+@respx.mock
+def test_preview_voice_returns_audio_bytes(client: AethexAI) -> None:
+    route = respx.post(f"{BASE_URL}/api/v1/voices/preview").mock(
+        return_value=httpx.Response(
+            200, content=_WAV_PAYLOAD, headers={"content-type": "audio/wav"}
+        )
+    )
+
+    audio = client.preview_voice(voice_id="fatima", text="Hello.")
+
+    assert route.called
+    req = route.calls.last.request
+    assert req.method == "POST"
+    assert req.url.path == "/api/v1/voices/preview"
+    import json as _json
+
+    sent = _json.loads(req.content.decode())
+    assert sent["voice_id"] == "fatima"
+    assert sent["text"] == "Hello."
+    assert isinstance(audio, bytes)
+    assert audio == _WAV_PAYLOAD
+
+
+@respx.mock
+def test_stream_audio_returns_audio_bytes(client: AethexAI) -> None:
+    conv_id = uuid4()
+    route = respx.get(f"{BASE_URL}/api/v1/conversations/{conv_id}/audio.wav").mock(
+        return_value=httpx.Response(
+            200, content=_WAV_PAYLOAD, headers={"content-type": "audio/wav"}
+        )
+    )
+
+    audio = client.stream_audio(conv_id, token="t-abc", range_="bytes=0-1023")
+
+    assert route.called
+    req = route.calls.last.request
+    assert req.method == "GET"
+    assert req.url.path == f"/api/v1/conversations/{conv_id}/audio.wav"
+    assert dict(req.url.params).get("token") == "t-abc"
+    assert req.headers.get("range") == "bytes=0-1023"
+    assert isinstance(audio, bytes)
+    assert audio == _WAV_PAYLOAD
+
+
 # ─── agents ─────────────────────────────────────────────────────────────────
 
 

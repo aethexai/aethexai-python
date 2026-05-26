@@ -176,6 +176,36 @@ async def test_parity_stream_speech(sync_client: AethexAI, async_client: AsyncAe
     assert b"".join(sync_chunks) == b"".join(async_chunks) == payload
 
 
+# ─── preview_voice / stream_audio (binary) — AET-1522 ───────────────────────
+
+
+@respx.mock
+async def test_parity_preview_voice(sync_client: AethexAI, async_client: AsyncAethexAI) -> None:
+    payload = b"RIFF\x24\x00\x00\x00WAVE\xc0\x92\xbaPAYLOAD"
+    respx.post(f"{BASE_URL}/api/v1/voices/preview").mock(
+        return_value=httpx.Response(200, content=payload, headers={"content-type": "audio/wav"})
+    )
+
+    sync_out = sync_client.preview_voice(voice_id="fatima", text="hello")
+    async_out = await async_client.preview_voice(voice_id="fatima", text="hello")
+
+    assert sync_out == async_out == payload
+
+
+@respx.mock
+async def test_parity_stream_audio(sync_client: AethexAI, async_client: AsyncAethexAI) -> None:
+    conv_id = uuid4()
+    payload = b"RIFF\x24\x00\x00\x00WAVE\xc0\x92\xbaPAYLOAD"
+    respx.get(f"{BASE_URL}/api/v1/conversations/{conv_id}/audio.wav").mock(
+        return_value=httpx.Response(200, content=payload, headers={"content-type": "audio/wav"})
+    )
+
+    sync_out = sync_client.stream_audio(conv_id)
+    async_out = await async_client.stream_audio(conv_id)
+
+    assert sync_out == async_out == payload
+
+
 # ─── delete_agent (no body) ─────────────────────────────────────────────────
 
 
