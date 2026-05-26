@@ -32,7 +32,13 @@ from io import BytesIO
 from typing import Any, BinaryIO
 from uuid import UUID
 
-from aethexai._exceptions import _map_status_to_exception
+import httpx
+
+from aethexai._exceptions import (
+    APIConnectionError,
+    APITimeoutError,
+    _map_status_to_exception,
+)
 from aethexai._generated.api.agents import (
     create_agent_api_v1_agents_post as _create_agent_op,
 )
@@ -75,9 +81,6 @@ from aethexai._generated.api.conversations import (
 from aethexai._generated.api.conversations import (
     list_conversations_api_v1_conversations_get as _list_conversations_op,
 )
-from aethexai._generated.api.conversations import (
-    stream_audio_api_v1_conversations_conversation_id_audio_wav_get as _stream_audio_op,
-)
 from aethexai._generated.api.transcription import (
     get_transcription_job_api_v1_transcribe_job_id_get as _get_transcribe_job_op,
 )
@@ -95,9 +98,6 @@ from aethexai._generated.api.voices import (
 )
 from aethexai._generated.api.voices import (
     list_voices_api_v1_voices_get as _list_voices_op,
-)
-from aethexai._generated.api.voices import (
-    preview_voice_api_v1_voices_preview_post as _preview_voice_op,
 )
 from aethexai._generated.client import AuthenticatedClient
 from aethexai._generated.models.agent_create import AgentCreate
@@ -175,8 +175,6 @@ class Kora:
         # 2026-05-17 pre-launch audit). Kora was the easiest leak vector
         # because both ``Kora._api_key`` and ``AuthenticatedClient.token``
         # carried the same secret.
-        import httpx
-
         timeout_arg: httpx.Timeout | None = httpx.Timeout(timeout) if timeout is not None else None
         self._client = AuthenticatedClient(
             base_url=base_url,
@@ -359,15 +357,32 @@ class Kora:
         """Fetch metadata for a single voice."""
         return self._call(_get_voice_op.sync_detailed, voice_id)
 
-    def preview_voice(self, voice_id: str, text: str | None = None) -> Any:
-        """Generate a short voice preview for ``voice_id`` speaking ``text``."""
+    def preview_voice(self, voice_id: str, text: str | None = None) -> bytes:
+        """Generate a short voice preview for ``voice_id`` speaking ``text``.
+
+        The 200 response is ``audio/wav`` even though ``openapi.json`` declares it
+        as ``application/json``; we bypass the generated parser to avoid a
+        ``UnicodeDecodeError`` (AET-1522). Mirrors :meth:`synthesize_speech`.
+        """
         body_kwargs: dict[str, Any] = {"voice_id": voice_id}
         if text is not None:
             body_kwargs["text"] = text
-        return self._call(
-            _preview_voice_op.sync_detailed,
-            body=VoicePreviewRequest(**body_kwargs),
-        )
+        body = VoicePreviewRequest(**body_kwargs)
+        httpx_client = self._client.get_httpx_client()
+        try:
+            response = httpx_client.post(
+                "/api/v1/voices/preview",
+                json=body.to_dict(),
+                headers={"Content-Type": "application/json"},
+            )
+        except httpx.TimeoutException as exc:
+            raise APITimeoutError() from exc
+        except httpx.HTTPError as exc:
+            raise APIConnectionError(cause=exc) from exc
+        status = int(response.status_code)
+        if 200 <= status < 300:
+            return response.content
+        raise _map_status_to_exception(status, response.content, response.headers)
 
     # ── Text-to-speech (kora_speak) ───────────────────────────────────────
 
@@ -514,8 +529,28 @@ class Kora:
         return self._call(_get_transcript_op.sync_detailed, _to_uuid(conversation_id))
 
     def get_conversation_audio(self, conversation_id: str | UUID) -> bytes:
-        """Fetch the raw audio bytes for a conversation recording (WAV)."""
-        return self._call_bytes(_stream_audio_op.sync_detailed, _to_uuid(conversation_id))
+        """Fetch the raw audio bytes for a conversation recording (WAV).
+
+        The 200 response is ``audio/wav`` even though ``openapi.json`` declares it
+        as ``application/json``; we bypass the generated parser to avoid a
+        ``UnicodeDecodeError`` (AET-1522). Mirrors :meth:`synthesize_speech`.
+        """
+        from urllib.parse import quote
+
+        url = "/api/v1/conversations/{conversation_id}/audio.wav".format(
+            conversation_id=quote(str(_to_uuid(conversation_id)), safe=""),
+        )
+        httpx_client = self._client.get_httpx_client()
+        try:
+            response = httpx_client.get(url)
+        except httpx.TimeoutException as exc:
+            raise APITimeoutError() from exc
+        except httpx.HTTPError as exc:
+            raise APIConnectionError(cause=exc) from exc
+        status = int(response.status_code)
+        if 200 <= status < 300:
+            return response.content
+        raise _map_status_to_exception(status, response.content, response.headers)
 
     def get_conversation_audio_url(self, conversation_id: str | UUID) -> Any:
         """Fetch a short-lived signed URL pointing to the conversation audio."""

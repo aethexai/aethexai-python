@@ -4,6 +4,10 @@ All notable changes to this project are documented here. Format based on [Keep a
 
 ## [Unreleased]
 
+### Fixed
+
+- Binary audio endpoints no longer crash with `UnicodeDecodeError` on success (AET-1522). `openapi.json` declares the 200 response of `preview_voice` and `stream_audio` / `get_conversation_audio` as `application/json`, but the API actually returns `audio/wav`; the generated client eagerly called `response.json()` on the WAV bytes. These methods now bypass the generated parser and return raw `bytes` across `AethexAI`, `AsyncAethexAI`, and `Kora`.
+
 ## [0.2.1] — 2026-05-20
 
 Initial release.
