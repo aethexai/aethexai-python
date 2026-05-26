@@ -344,13 +344,19 @@ class Kora:
         self,
         *,
         language: str | None = None,
+        supports_dialect_style: bool | None = None,
+        tag: str | None = None,
         limit: int | None = None,
         offset: int | None = None,
     ) -> Any:
-        """List available TTS voices, optionally filtered by ``language``."""
+        """List available TTS voices, optionally filtered by ``language`` or ``tag``."""
         return self._call(
             _list_voices_op.sync_detailed,
             language=language if language is not None else UNSET,
+            supports_dialect_style=(
+                supports_dialect_style if supports_dialect_style is not None else UNSET
+            ),
+            tag=tag if tag is not None else UNSET,
             limit=limit if limit is not None else UNSET,
             offset=offset if offset is not None else UNSET,
         )
