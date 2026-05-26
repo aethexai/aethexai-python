@@ -919,6 +919,7 @@ class AsyncAethexAI:
         *,
         language: str | None | Unset = UNSET,
         supports_dialect_style: bool | None | Unset = UNSET,
+        tag: str | None | Unset = UNSET,
         limit: int | Unset = 100,
         offset: int | Unset = 0,
     ) -> Any:
@@ -929,6 +930,7 @@ class AsyncAethexAI:
             _op.asyncio_detailed,
             language=language,
             supports_dialect_style=supports_dialect_style,
+            tag=tag,
             limit=limit,
             offset=offset,
         )

@@ -68,12 +68,13 @@ def test_list_voices_get_voices(client: AethexAI) -> None:
 def test_list_voices_forwards_query_params(client: AethexAI) -> None:
     route = respx.get(f"{BASE_URL}/api/v1/voices").mock(return_value=httpx.Response(200, json=[]))
 
-    client.list_voices(language="french", limit=10, offset=5)
+    client.list_voices(language="french", tag="warm", limit=10, offset=5)
 
     req = route.calls.last.request
     # respx exposes the query string as `params`
     qs = dict(req.url.params)
     assert qs.get("language") == "french"
+    assert qs.get("tag") == "warm"
     assert qs.get("limit") == "10"
     assert qs.get("offset") == "5"
 
