@@ -190,7 +190,7 @@ class AsyncDeveloperClient:
 
         return await self._call(_op.asyncio_detailed)
 
-    async def select_plan(self, slug: str, *, body: Any | Unset = UNSET) -> Any:
+    async def select_plan(self, slug: str, *, body: Any | None = None) -> Any:
         from aethexai._generated.api.billing import (
             select_plan_api_v1_billing_plans_slug_select_post as _op,
         )

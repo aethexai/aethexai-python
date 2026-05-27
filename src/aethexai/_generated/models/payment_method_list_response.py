@@ -11,7 +11,7 @@ from ..types import UNSET, Unset
 from typing import cast
 
 if TYPE_CHECKING:
-    from ..models.payment_method_card import PaymentMethodCard
+    from ..models.payment_method_summary import PaymentMethodSummary
 
 
 T = TypeVar("T", bound="PaymentMethodListResponse")
@@ -23,16 +23,17 @@ class PaymentMethodListResponse:
 
     Attributes:
         has_payment_method (bool): Cached ``vo_tenants.has_payment_method`` flag. True iff the tenant has at least one
-            card attached. Used by the portal to gate the upgrade button: no card -> redirect to attach flow first.
-        payment_methods (list[PaymentMethodCard]):
+            ``card`` or Stripe ``link`` payment method attached (the two PM types ``select_plan`` and the PAYG cron can
+            charge). Used by the portal to gate the upgrade button: no payment method -> redirect to attach flow first.
+        payment_methods (list[PaymentMethodSummary]):
     """
 
     has_payment_method: bool
-    payment_methods: list[PaymentMethodCard]
+    payment_methods: list[PaymentMethodSummary]
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
-        from ..models.payment_method_card import PaymentMethodCard
+        from ..models.payment_method_summary import PaymentMethodSummary
 
         has_payment_method = self.has_payment_method
 
@@ -54,7 +55,7 @@ class PaymentMethodListResponse:
 
     @classmethod
     def from_dict(cls: type[T], src_dict: Mapping[str, Any]) -> T:
-        from ..models.payment_method_card import PaymentMethodCard
+        from ..models.payment_method_summary import PaymentMethodSummary
 
         d = dict(src_dict)
         has_payment_method = d.pop("has_payment_method")
@@ -62,7 +63,7 @@ class PaymentMethodListResponse:
         payment_methods = []
         _payment_methods = d.pop("payment_methods")
         for payment_methods_item_data in _payment_methods:
-            payment_methods_item = PaymentMethodCard.from_dict(payment_methods_item_data)
+            payment_methods_item = PaymentMethodSummary.from_dict(payment_methods_item_data)
 
             payment_methods.append(payment_methods_item)
 

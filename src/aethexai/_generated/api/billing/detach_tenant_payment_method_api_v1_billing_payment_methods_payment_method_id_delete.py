@@ -62,13 +62,13 @@ def sync_detailed(
 ) -> Response[Any | HTTPValidationError]:
     r"""Detach Tenant Payment Method
 
-     Detach a card from the tenant's Stripe Customer.
+     Detach a payment method from the tenant's Stripe Customer.
 
     Ownership is verified server-side BEFORE the detach call. Stripe's
     detach endpoint takes only the PM id (no customer scope), so a
     leaked ``pm_*`` id from logs / dashboard transcripts / accidental
     client-side console output would otherwise let any
-    portal-authenticated tenant nuke another tenant's card. We
+    portal-authenticated tenant nuke another tenant's PM. We
     retrieve the PM, compare ``pm.customer`` to the JWT-bound
     tenant's ``stripe_customer_id``, and 404 on mismatch (same
     response as a non-existent id, so a probe can't distinguish
@@ -117,13 +117,13 @@ def sync(
 ) -> Any | HTTPValidationError | None:
     r"""Detach Tenant Payment Method
 
-     Detach a card from the tenant's Stripe Customer.
+     Detach a payment method from the tenant's Stripe Customer.
 
     Ownership is verified server-side BEFORE the detach call. Stripe's
     detach endpoint takes only the PM id (no customer scope), so a
     leaked ``pm_*`` id from logs / dashboard transcripts / accidental
     client-side console output would otherwise let any
-    portal-authenticated tenant nuke another tenant's card. We
+    portal-authenticated tenant nuke another tenant's PM. We
     retrieve the PM, compare ``pm.customer`` to the JWT-bound
     tenant's ``stripe_customer_id``, and 404 on mismatch (same
     response as a non-existent id, so a probe can't distinguish
@@ -167,13 +167,13 @@ async def asyncio_detailed(
 ) -> Response[Any | HTTPValidationError]:
     r"""Detach Tenant Payment Method
 
-     Detach a card from the tenant's Stripe Customer.
+     Detach a payment method from the tenant's Stripe Customer.
 
     Ownership is verified server-side BEFORE the detach call. Stripe's
     detach endpoint takes only the PM id (no customer scope), so a
     leaked ``pm_*`` id from logs / dashboard transcripts / accidental
     client-side console output would otherwise let any
-    portal-authenticated tenant nuke another tenant's card. We
+    portal-authenticated tenant nuke another tenant's PM. We
     retrieve the PM, compare ``pm.customer`` to the JWT-bound
     tenant's ``stripe_customer_id``, and 404 on mismatch (same
     response as a non-existent id, so a probe can't distinguish
@@ -220,13 +220,13 @@ async def asyncio(
 ) -> Any | HTTPValidationError | None:
     r"""Detach Tenant Payment Method
 
-     Detach a card from the tenant's Stripe Customer.
+     Detach a payment method from the tenant's Stripe Customer.
 
     Ownership is verified server-side BEFORE the detach call. Stripe's
     detach endpoint takes only the PM id (no customer scope), so a
     leaked ``pm_*`` id from logs / dashboard transcripts / accidental
     client-side console output would otherwise let any
-    portal-authenticated tenant nuke another tenant's card. We
+    portal-authenticated tenant nuke another tenant's PM. We
     retrieve the PM, compare ``pm.customer`` to the JWT-bound
     tenant's ``stripe_customer_id``, and 404 on mismatch (same
     response as a non-existent id, so a probe can't distinguish
