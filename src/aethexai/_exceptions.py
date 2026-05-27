@@ -52,7 +52,7 @@ class APIStatusError(AethexError):
         body: dict[str, Any],
         headers: dict[str, str] | None = None,
     ) -> APIStatusError:
-        error_msg = body.get("detail", body.get("error", "Unknown error"))
+        error_msg = body.get("error") or body.get("detail") or "Unknown error"
         if isinstance(error_msg, list):
             error_msg = "; ".join(str(e) for e in error_msg)
         error_code = body.get("code", "internal_error")

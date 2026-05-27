@@ -63,6 +63,19 @@ def test_validation_error_list_detail_is_joined():
     assert "field required" in exc.message
 
 
+def test_unified_envelope_422_prefers_error_over_list_detail():
+    """The aethex unified 422 envelope carries both a human ``error`` sentence and a
+    list-shaped ``detail``. The message must surface the readable ``error``, not a dump
+    of the ``detail`` list."""
+    exc = _map_status_to_exception(
+        422,
+        b'{"error": "Validation failed", "code": "validation_error", '
+        b'"request_id": "req_123", "detail": [{"msg": "field required"}]}',
+    )
+    assert isinstance(exc, ValidationError)
+    assert exc.message == "Validation failed"
+
+
 def test_rate_limit_retry_after_from_header():
     exc = _map_status_to_exception(429, b'{"detail": "slow down"}', headers={"retry-after": "5.0"})
     assert isinstance(exc, RateLimitError)
