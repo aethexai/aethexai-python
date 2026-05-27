@@ -171,6 +171,43 @@ def test_select_plan() -> None:
 
 
 @respx.mock
+def test_select_plan_default_body_no_unset_crash() -> None:
+    # Regression for AET-1581: the natural ``select_plan('pro')`` call must
+    # issue the POST without raising ``TypeError: Object of type Unset is not
+    # JSON serializable`` before the request. Body is optional (slug is the
+    # only required input), so no JSON body should be sent.
+    route = respx.post(f"{BASE_URL}/api/v1/billing/plans/pro/select").respond(
+        200,
+        json={"plan_slug": "pro", "status": "active"},
+    )
+    c = DeveloperClient(ACCESS, base_url=BASE_URL)
+    try:
+        resp = c.select_plan("pro")
+        assert route.called
+        assert route.calls.last.request.content == b""
+        assert resp.plan_slug == "pro"
+    finally:
+        c.close()
+
+
+@respx.mock
+async def test_select_plan_default_body_no_unset_crash_async() -> None:
+    # Async counterpart of the AET-1581 regression.
+    route = respx.post(f"{BASE_URL}/api/v1/billing/plans/pro/select").respond(
+        200,
+        json={"plan_slug": "pro", "status": "active"},
+    )
+    c = AsyncDeveloperClient(ACCESS, base_url=BASE_URL)
+    try:
+        resp = await c.select_plan("pro")
+        assert route.called
+        assert route.calls.last.request.content == b""
+        assert resp.plan_slug == "pro"
+    finally:
+        await c.close()
+
+
+@respx.mock
 def test_list_invoices() -> None:
     route = respx.get(f"{BASE_URL}/api/v1/billing/invoices").respond(
         200, json={"invoices": [], "next_cursor": None, "has_more": False}

@@ -250,8 +250,14 @@ class DeveloperClient:
 
         return self._call(_op.sync_detailed)
 
-    def select_plan(self, slug: str, *, body: Any | Unset = UNSET) -> Any:
-        """Select a billing plan by slug."""
+    def select_plan(self, slug: str, *, body: Any | None = None) -> Any:
+        """Select a billing plan by slug.
+
+        The body is optional — the plan ``slug`` is the only required input
+        (path param). When ``body`` is ``None`` no JSON body is sent and the
+        server defaults to monthly billing. Pass a ``SelectPlanRequest`` to
+        select a different interval.
+        """
         from aethexai._generated.api.billing import (
             select_plan_api_v1_billing_plans_slug_select_post as _op,
         )
