@@ -14,6 +14,7 @@ from typing import Any
 
 import httpx
 
+from aethexai._body import build_body
 from aethexai._exceptions import (
     APIConnectionError,
     APITimeoutError,
@@ -157,7 +158,7 @@ class AsyncDeveloperClient:
         )
         from aethexai._generated.models.developer_update import DeveloperUpdate
 
-        return await self._call(_op.asyncio_detailed, body=DeveloperUpdate.from_dict(fields))
+        return await self._call(_op.asyncio_detailed, body=build_body(DeveloperUpdate, fields))
 
     async def delete_me(self) -> None:
         """Delete the current developer account."""
