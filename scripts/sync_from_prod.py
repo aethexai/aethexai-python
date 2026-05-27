@@ -276,6 +276,9 @@ def regenerate_client() -> int:
     http_patch_rc = _apply_http_validation_error_patch()
     if http_patch_rc != 0:
         return http_patch_rc
+    created_201_rc = _apply_created_201_patch()
+    if created_201_rc != 0:
+        return created_201_rc
     return result.returncode
 
 
@@ -458,6 +461,115 @@ def _apply_http_validation_error_patch() -> int:
         "post-codegen patch: applied http-validation-error envelope tolerance to "
         f"{target.relative_to(REPO_ROOT)}"
     )
+    return 0
+
+
+# AET-1580: endpoints whose backend now returns HTTP 201 Created on success
+# (aethex PR #955 / AET-1566) but whose OpenAPI spec — and therefore the
+# generated ``_parse_response`` — still only branches on ``200``. Each path is
+# relative to ``src/aethexai/_generated/api/``. Keep this list in sync with the
+# ``status_code=201`` resource-creation routes in the backend.
+_CREATED_201_ENDPOINTS = (
+    "agents/create_agent_api_v1_agents_post.py",
+    "agents/duplicate_agent_api_v1_agents_agent_id_duplicate_post.py",
+    "agents/add_tool_api_v1_agents_agent_id_tools_post.py",
+    "agents/upload_knowledge_doc_api_v1_agents_agent_id_knowledge_base_post.py",
+    "agents/upload_knowledge_doc_by_upload_api_v1_agents_agent_id_knowledge_base_by_upload_post.py",
+    "api_keys/create_api_key_api_v1_api_keys_post.py",
+    "calls/create_call_record_api_v1_calls_post.py",
+    "calls/batch_calls_api_v1_calls_batch_post.py",
+    "conversation/connect_api_v1_conversation_connect_post.py",
+    "dashboard/create_my_api_key_api_v1_dashboard_api_keys_post.py",
+    "phone_numbers/register_twilio_api_v1_phone_numbers_twilio_register_post.py",
+    "phone_numbers/register_sip_api_v1_phone_numbers_sip_register_post.py",
+    "tts/batch_synthesize_api_v1_tts_batch_post.py",
+)
+
+_CREATED_201_SENTINEL = "# AETHEX-PATCH (AET-1580)"
+
+
+def _patch_created_201_source(source: str) -> str | None:
+    """Add a ``201`` branch mirroring the ``200`` branch in a ``_parse_response``.
+
+    Returns the patched source, ``None`` if the file is already patched, or
+    raises ``ValueError`` if the expected ``200`` branch can't be located.
+
+    openapi-python-client emits the success branch as either an untyped
+    pass-through::
+
+        if response.status_code == 200:
+            response_200 = response.json()
+            return response_200
+
+    or a typed model parse::
+
+        if response.status_code == 200:
+            response_200 = SomeModel.from_dict(response.json())
+
+            return response_200
+
+    Both forms are duplicated verbatim with ``200`` -> ``201`` so a 201 Created
+    response is parsed into the same model (or raw body) instead of falling
+    through to ``return None``.
+    """
+    if _CREATED_201_SENTINEL in source:
+        return None
+
+    match = re.search(
+        r"( {4}if response\.status_code == 200:\n(?: {8}.*\n|\n)*? {8}return response_200\n)",
+        source,
+    )
+    if match is None:
+        raise ValueError("could not locate the stock 200 branch in _parse_response")
+
+    block_200 = match.group(1)
+    block_201 = (
+        f"    {_CREATED_201_SENTINEL}: backend returns 201 Created on this resource POST\n"
+        "    # (aethex PR #955). Parse it exactly like 200 so the wrapper layer returns\n"
+        "    # the created resource instead of None. Re-applied by sync_from_prod.py.\n"
+        + block_200.replace("status_code == 200", "status_code == 201").replace(
+            "response_200", "response_201"
+        )
+    )
+    insert_at = match.start()
+    return source[:insert_at] + block_201 + "\n" + source[insert_at:]
+
+
+def _apply_created_201_patch() -> int:
+    """Re-apply the AET-1580 patch: parse HTTP 201 create responses like 200.
+
+    Idempotent via the ``AETHEX-PATCH (AET-1580)`` sentinel. Each target file is
+    patched independently; a single miss is fatal (return 2) so the regression
+    surfaces loudly rather than silently letting create wrappers return ``None``.
+    """
+    api_dir = GENERATED_DIR / "api"
+    patched = 0
+    for rel in _CREATED_201_ENDPOINTS:
+        target = api_dir / rel
+        if not target.exists():
+            print(
+                f"warn: created-201 patch could not find {target.relative_to(REPO_ROOT)}; "
+                "the endpoint may have been renamed or removed. Update "
+                "_CREATED_201_ENDPOINTS in scripts/sync_from_prod.py.",
+                file=sys.stderr,
+            )
+            return 2
+        source = target.read_text()
+        try:
+            new_source = _patch_created_201_source(source)
+        except ValueError as exc:
+            print(
+                f"warn: created-201 patch failed for {target.relative_to(REPO_ROOT)}: {exc}. "
+                "openapi-python-client may have changed its output shape — the AET-1580 "
+                "201 fix is at risk of regressing.",
+                file=sys.stderr,
+            )
+            return 2
+        if new_source is None:
+            continue  # already patched
+        target.write_text(new_source)
+        patched += 1
+    print(f"post-codegen patch: applied created-201 handling to {patched} endpoint(s)")
     return 0
 
 
