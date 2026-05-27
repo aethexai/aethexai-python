@@ -20,6 +20,7 @@ from uuid import UUID
 
 import httpx
 
+from aethexai._body import build_body
 from aethexai._exceptions import (
     APIConnectionError,
     APITimeoutError,
@@ -124,7 +125,7 @@ class AsyncAethexAI:
         from aethexai._generated.api.agents import create_agent_api_v1_agents_post as _op
         from aethexai._generated.models.agent_create import AgentCreate
 
-        return await self._call(_op.asyncio_detailed, body=AgentCreate.from_dict(fields))
+        return await self._call(_op.asyncio_detailed, body=build_body(AgentCreate, fields))
 
     async def get_agent(self, agent_id: str | UUID) -> Any:
         """Retrieve an agent by id."""
@@ -138,7 +139,7 @@ class AsyncAethexAI:
         from aethexai._generated.models.agent_update import AgentUpdate
 
         return await self._call(
-            _op.asyncio_detailed, UUID(str(agent_id)), body=AgentUpdate.from_dict(fields)
+            _op.asyncio_detailed, UUID(str(agent_id)), body=build_body(AgentUpdate, fields)
         )
 
     async def delete_agent(self, agent_id: str | UUID) -> Any:
@@ -169,7 +170,7 @@ class AsyncAethexAI:
         from aethexai._generated.models.agent_tool_create import AgentToolCreate
 
         return await self._call(
-            _op.asyncio_detailed, UUID(str(agent_id)), body=AgentToolCreate.from_dict(fields)
+            _op.asyncio_detailed, UUID(str(agent_id)), body=build_body(AgentToolCreate, fields)
         )
 
     async def update_agent_tool(
@@ -185,7 +186,7 @@ class AsyncAethexAI:
             _op.asyncio_detailed,
             UUID(str(agent_id)),
             UUID(str(tool_id)),
-            body=AgentToolUpdate.from_dict(fields),
+            body=build_body(AgentToolUpdate, fields),
         )
 
     async def delete_agent_tool(self, agent_id: str | UUID, tool_id: str | UUID) -> Any:
@@ -224,7 +225,7 @@ class AsyncAethexAI:
         return await self._call(
             _op.asyncio_detailed,
             UUID(str(agent_id)),
-            body=KnowledgeDocByUploadRequest.from_dict(fields),
+            body=build_body(KnowledgeDocByUploadRequest, fields),
         )
 
     async def delete_knowledge_doc(self, agent_id: str | UUID, doc_id: str | UUID) -> Any:
@@ -261,7 +262,7 @@ class AsyncAethexAI:
         return await self._call(
             _op.asyncio_detailed,
             UUID(str(agent_id)),
-            body=KnowledgeQueryRequest.from_dict(fields),
+            body=build_body(KnowledgeQueryRequest, fields),
         )
 
     # ─── api_keys ──────────────────────────────────────────────────────
@@ -277,7 +278,7 @@ class AsyncAethexAI:
         from aethexai._generated.api.api_keys import create_api_key_api_v1_api_keys_post as _op
         from aethexai._generated.models.api_key_create import APIKeyCreate
 
-        return await self._call(_op.asyncio_detailed, body=APIKeyCreate.from_dict(fields))
+        return await self._call(_op.asyncio_detailed, body=build_body(APIKeyCreate, fields))
 
     async def revoke_api_key(self, key_id: str | UUID) -> Any:
         """Revoke an API key."""
@@ -326,7 +327,7 @@ class AsyncAethexAI:
         from aethexai._generated.api.calls import create_call_record_api_v1_calls_post as _op
         from aethexai._generated.models.call_record_create import CallRecordCreate
 
-        return await self._call(_op.asyncio_detailed, body=CallRecordCreate.from_dict(fields))
+        return await self._call(_op.asyncio_detailed, body=build_body(CallRecordCreate, fields))
 
     async def get_call(self, call_id: str | UUID) -> Any:
         """Retrieve a call by id."""
@@ -347,14 +348,14 @@ class AsyncAethexAI:
         from aethexai._generated.api.calls import trigger_call_api_v1_calls_trigger_post as _op
         from aethexai._generated.models.call_create import CallCreate
 
-        return await self._call(_op.asyncio_detailed, body=CallCreate.from_dict(fields))
+        return await self._call(_op.asyncio_detailed, body=build_body(CallCreate, fields))
 
     async def batch_calls(self, **fields: Any) -> Any:
         """Trigger a batch of outbound calls."""
         from aethexai._generated.api.calls import batch_calls_api_v1_calls_batch_post as _op
         from aethexai._generated.models.batch_call_create import BatchCallCreate
 
-        return await self._call(_op.asyncio_detailed, body=BatchCallCreate.from_dict(fields))
+        return await self._call(_op.asyncio_detailed, body=build_body(BatchCallCreate, fields))
 
     async def get_call_batch(self, batch_id: str | UUID) -> Any:
         """Retrieve a call batch by id."""
@@ -371,7 +372,7 @@ class AsyncAethexAI:
         )
         from aethexai._generated.models.connect_request import ConnectRequest
 
-        return await self._call(_op.asyncio_detailed, body=ConnectRequest.from_dict(fields))
+        return await self._call(_op.asyncio_detailed, body=build_body(ConnectRequest, fields))
 
     async def end_conversation_session(self, session_id: str) -> Any:
         """End a live conversation session."""
@@ -397,7 +398,7 @@ class AsyncAethexAI:
         from aethexai._generated.models.small_web_rtc_patch_request import SmallWebRTCPatchRequest
 
         return await self._call(
-            _op.asyncio_detailed, session_id, body=SmallWebRTCPatchRequest.from_dict(fields)
+            _op.asyncio_detailed, session_id, body=build_body(SmallWebRTCPatchRequest, fields)
         )
 
     async def send_offer(self, session_id: str, **fields: Any) -> Any:
@@ -408,7 +409,7 @@ class AsyncAethexAI:
         from aethexai._generated.models.small_web_rtc_request import SmallWebRTCRequest
 
         return await self._call(
-            _op.asyncio_detailed, session_id, body=SmallWebRTCRequest.from_dict(fields)
+            _op.asyncio_detailed, session_id, body=build_body(SmallWebRTCRequest, fields)
         )
 
     async def send_tool_result(self, session_id: str, **fields: Any) -> Any:
@@ -419,7 +420,7 @@ class AsyncAethexAI:
         from aethexai._generated.models.tool_result_request import ToolResultRequest
 
         return await self._call(
-            _op.asyncio_detailed, session_id, body=ToolResultRequest.from_dict(fields)
+            _op.asyncio_detailed, session_id, body=build_body(ToolResultRequest, fields)
         )
 
     # ─── conversations (historical) ────────────────────────────────────
@@ -524,7 +525,9 @@ class AsyncAethexAI:
         from aethexai._generated.models.audio_revoke_body import AudioRevokeBody
 
         return await self._call(
-            _op.asyncio_detailed, UUID(str(conversation_id)), body=AudioRevokeBody.from_dict(fields)
+            _op.asyncio_detailed,
+            UUID(str(conversation_id)),
+            body=build_body(AudioRevokeBody, fields),
         )
 
     async def submit_feedback(self, conversation_id: str | UUID, **fields: Any) -> Any:
@@ -537,7 +540,7 @@ class AsyncAethexAI:
         return await self._call(
             _op.asyncio_detailed,
             UUID(str(conversation_id)),
-            body=ConversationFeedback.from_dict(fields),
+            body=build_body(ConversationFeedback, fields),
         )
 
     async def search_conversations(self, q: str, *, limit: int | Unset = 20) -> Any:
@@ -582,7 +585,7 @@ class AsyncAethexAI:
         from aethexai._generated.models.phone_number_update import PhoneNumberUpdate
 
         return await self._call(
-            _op.asyncio_detailed, UUID(str(pn_id)), body=PhoneNumberUpdate.from_dict(fields)
+            _op.asyncio_detailed, UUID(str(pn_id)), body=build_body(PhoneNumberUpdate, fields)
         )
 
     async def release_phone_number(self, pn_id: str | UUID) -> Any:
@@ -603,7 +606,7 @@ class AsyncAethexAI:
         return await self._call(
             _op.asyncio_detailed,
             UUID(str(pn_id)),
-            body=InboundRoutingConfig.from_dict(fields),
+            body=build_body(InboundRoutingConfig, fields),
         )
 
     async def register_sip_phone_number(self, **fields: Any) -> Any:
@@ -613,7 +616,7 @@ class AsyncAethexAI:
         )
         from aethexai._generated.models.sip_register_request import SipRegisterRequest
 
-        return await self._call(_op.asyncio_detailed, body=SipRegisterRequest.from_dict(fields))
+        return await self._call(_op.asyncio_detailed, body=build_body(SipRegisterRequest, fields))
 
     async def register_twilio_phone_number(self, **fields: Any) -> Any:
         """Register a Twilio-managed phone number."""
@@ -622,7 +625,9 @@ class AsyncAethexAI:
         )
         from aethexai._generated.models.twilio_register_request import TwilioRegisterRequest
 
-        return await self._call(_op.asyncio_detailed, body=TwilioRegisterRequest.from_dict(fields))
+        return await self._call(
+            _op.asyncio_detailed, body=build_body(TwilioRegisterRequest, fields)
+        )
 
     # ─── twilio accounts ──────────────────────────────────────────────
 
@@ -633,7 +638,7 @@ class AsyncAethexAI:
         )
         from aethexai._generated.models.twilio_account_create import TwilioAccountCreate
 
-        return await self._call(_op.asyncio_detailed, body=TwilioAccountCreate.from_dict(fields))
+        return await self._call(_op.asyncio_detailed, body=build_body(TwilioAccountCreate, fields))
 
     async def list_twilio_accounts(
         self, *, offset: int | Unset = 0, limit: int | Unset = 50
@@ -713,7 +718,7 @@ class AsyncAethexAI:
         )
 
         return await self._call(
-            _op.asyncio_detailed, body=TranscribeByUploadRequest.from_dict(fields)
+            _op.asyncio_detailed, body=build_body(TranscribeByUploadRequest, fields)
         )
 
     async def transcribe_audio_async(self, *, body: Any) -> Any:
@@ -734,7 +739,7 @@ class AsyncAethexAI:
         )
 
         return await self._call(
-            _op.asyncio_detailed, body=TranscribeAsyncByUploadRequest.from_dict(fields)
+            _op.asyncio_detailed, body=build_body(TranscribeAsyncByUploadRequest, fields)
         )
 
     async def get_transcription_job(self, job_id: str | UUID) -> Any:
@@ -759,7 +764,7 @@ class AsyncAethexAI:
         """Synthesize speech from text and return the raw audio bytes."""
         from aethexai._generated.models.tts_request import TTSRequest
 
-        body = TTSRequest.from_dict(fields)
+        body = build_body(TTSRequest, fields)
         httpx_client = self._client.get_async_httpx_client()
         try:
             response = await httpx_client.post(
@@ -780,7 +785,7 @@ class AsyncAethexAI:
         """Synthesize speech and yield audio chunks as they arrive."""
         from aethexai._generated.models.tts_stream_request import TTSStreamRequest
 
-        body = TTSStreamRequest.from_dict(fields)
+        body = build_body(TTSStreamRequest, fields)
         httpx_client = self._client.get_async_httpx_client()
         try:
             async with httpx_client.stream(
@@ -805,7 +810,7 @@ class AsyncAethexAI:
         from aethexai._generated.api.tts import batch_synthesize_api_v1_tts_batch_post as _op
         from aethexai._generated.models.tts_batch_create import TTSBatchCreate
 
-        return await self._call(_op.asyncio_detailed, body=TTSBatchCreate.from_dict(fields))
+        return await self._call(_op.asyncio_detailed, body=build_body(TTSBatchCreate, fields))
 
     async def get_tts_batch(self, batch_id: str | UUID) -> Any:
         """Retrieve a TTS batch by id."""
@@ -822,7 +827,7 @@ class AsyncAethexAI:
         )
         from aethexai._generated.models.presign_upload_request import PresignUploadRequest
 
-        return await self._call(_op.asyncio_detailed, body=PresignUploadRequest.from_dict(fields))
+        return await self._call(_op.asyncio_detailed, body=build_body(PresignUploadRequest, fields))
 
     # ─── usage ─────────────────────────────────────────────────────────
 
@@ -861,7 +866,7 @@ class AsyncAethexAI:
         from aethexai._generated.api.usage import create_trigger_api_v1_usage_triggers_post as _op
         from aethexai._generated.models.usage_trigger_create import UsageTriggerCreate
 
-        return await self._call(_op.asyncio_detailed, body=UsageTriggerCreate.from_dict(fields))
+        return await self._call(_op.asyncio_detailed, body=build_body(UsageTriggerCreate, fields))
 
     async def update_trigger(self, trigger_id: str | UUID, **fields: Any) -> Any:
         """Update a usage trigger."""
@@ -871,7 +876,7 @@ class AsyncAethexAI:
         from aethexai._generated.models.usage_trigger_update import UsageTriggerUpdate
 
         return await self._call(
-            _op.asyncio_detailed, UUID(str(trigger_id)), body=UsageTriggerUpdate.from_dict(fields)
+            _op.asyncio_detailed, UUID(str(trigger_id)), body=build_body(UsageTriggerUpdate, fields)
         )
 
     async def list_trigger_firings(self, trigger_id: str | UUID, *, limit: int | Unset = 50) -> Any:
@@ -936,7 +941,10 @@ class AsyncAethexAI:
         """
         from aethexai._generated.models.voice_preview_request import VoicePreviewRequest
 
-        body = VoicePreviewRequest.from_dict(fields)
+        # build_body (AET-1524) gives a missing-field pre-flight ValidationError;
+        # inline httpx (AET-1522) avoids the generated parser's response.json()
+        # crash on the audio/wav body.
+        body = build_body(VoicePreviewRequest, fields)
         httpx_client = self._client.get_async_httpx_client()
         try:
             response = await httpx_client.post(
