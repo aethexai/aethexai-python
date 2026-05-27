@@ -22,6 +22,7 @@ def _get_kwargs(
     event_type: None | str | Unset = UNSET,
     stage: None | str | Unset = UNSET,
     severity: None | str | Unset = UNSET,
+    tenant_id: None | Unset | UUID = UNSET,
 ) -> dict[str, Any]:
 
     params: dict[str, Any] = {}
@@ -49,11 +50,20 @@ def _get_kwargs(
         json_severity = severity
     params["severity"] = json_severity
 
+    json_tenant_id: None | str | Unset
+    if isinstance(tenant_id, Unset):
+        json_tenant_id = UNSET
+    elif isinstance(tenant_id, UUID):
+        json_tenant_id = str(tenant_id)
+    else:
+        json_tenant_id = tenant_id
+    params["tenant_id"] = json_tenant_id
+
     params = {k: v for k, v in params.items() if v is not UNSET and v is not None}
 
     _kwargs: dict[str, Any] = {
         "method": "get",
-        "url": "/api/v1/conversations/{conversation_id}/diagnostics".format(
+        "url": "/internal/conversations/{conversation_id}/diagnostics".format(
             conversation_id=quote(str(conversation_id), safe=""),
         ),
         "params": params,
@@ -95,11 +105,12 @@ def _build_response(
 def sync_detailed(
     conversation_id: UUID,
     *,
-    client: AuthenticatedClient,
+    client: AuthenticatedClient | Client,
     limit: int | Unset = 500,
     event_type: None | str | Unset = UNSET,
     stage: None | str | Unset = UNSET,
     severity: None | str | Unset = UNSET,
+    tenant_id: None | Unset | UUID = UNSET,
 ) -> Response[ConversationDiagnosticsResponse | HTTPValidationError]:
     """Get Conversation Diagnostics
 
@@ -111,6 +122,8 @@ def sync_detailed(
         event_type (None | str | Unset):
         stage (None | str | Unset):
         severity (None | str | Unset):
+        tenant_id (None | Unset | UUID): Optional tenant scope. Internal callers may omit to query
+            diagnostics across all tenants for cross-tenant debugging.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -126,6 +139,7 @@ def sync_detailed(
         event_type=event_type,
         stage=stage,
         severity=severity,
+        tenant_id=tenant_id,
     )
 
     response = client.get_httpx_client().request(
@@ -138,11 +152,12 @@ def sync_detailed(
 def sync(
     conversation_id: UUID,
     *,
-    client: AuthenticatedClient,
+    client: AuthenticatedClient | Client,
     limit: int | Unset = 500,
     event_type: None | str | Unset = UNSET,
     stage: None | str | Unset = UNSET,
     severity: None | str | Unset = UNSET,
+    tenant_id: None | Unset | UUID = UNSET,
 ) -> ConversationDiagnosticsResponse | HTTPValidationError | None:
     """Get Conversation Diagnostics
 
@@ -154,6 +169,8 @@ def sync(
         event_type (None | str | Unset):
         stage (None | str | Unset):
         severity (None | str | Unset):
+        tenant_id (None | Unset | UUID): Optional tenant scope. Internal callers may omit to query
+            diagnostics across all tenants for cross-tenant debugging.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -170,17 +187,19 @@ def sync(
         event_type=event_type,
         stage=stage,
         severity=severity,
+        tenant_id=tenant_id,
     ).parsed
 
 
 async def asyncio_detailed(
     conversation_id: UUID,
     *,
-    client: AuthenticatedClient,
+    client: AuthenticatedClient | Client,
     limit: int | Unset = 500,
     event_type: None | str | Unset = UNSET,
     stage: None | str | Unset = UNSET,
     severity: None | str | Unset = UNSET,
+    tenant_id: None | Unset | UUID = UNSET,
 ) -> Response[ConversationDiagnosticsResponse | HTTPValidationError]:
     """Get Conversation Diagnostics
 
@@ -192,6 +211,8 @@ async def asyncio_detailed(
         event_type (None | str | Unset):
         stage (None | str | Unset):
         severity (None | str | Unset):
+        tenant_id (None | Unset | UUID): Optional tenant scope. Internal callers may omit to query
+            diagnostics across all tenants for cross-tenant debugging.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -207,6 +228,7 @@ async def asyncio_detailed(
         event_type=event_type,
         stage=stage,
         severity=severity,
+        tenant_id=tenant_id,
     )
 
     response = await client.get_async_httpx_client().request(**kwargs)
@@ -217,11 +239,12 @@ async def asyncio_detailed(
 async def asyncio(
     conversation_id: UUID,
     *,
-    client: AuthenticatedClient,
+    client: AuthenticatedClient | Client,
     limit: int | Unset = 500,
     event_type: None | str | Unset = UNSET,
     stage: None | str | Unset = UNSET,
     severity: None | str | Unset = UNSET,
+    tenant_id: None | Unset | UUID = UNSET,
 ) -> ConversationDiagnosticsResponse | HTTPValidationError | None:
     """Get Conversation Diagnostics
 
@@ -233,6 +256,8 @@ async def asyncio(
         event_type (None | str | Unset):
         stage (None | str | Unset):
         severity (None | str | Unset):
+        tenant_id (None | Unset | UUID): Optional tenant scope. Internal callers may omit to query
+            diagnostics across all tenants for cross-tenant debugging.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -250,5 +275,6 @@ async def asyncio(
             event_type=event_type,
             stage=stage,
             severity=severity,
+            tenant_id=tenant_id,
         )
     ).parsed

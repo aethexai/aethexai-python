@@ -8,42 +8,58 @@ from attrs import field as _attrs_field
 
 from ..types import UNSET, Unset
 
+from ..models.payment_method_summary_type import PaymentMethodSummaryType
 from ..types import UNSET, Unset
 from typing import cast
 
 
-T = TypeVar("T", bound="PaymentMethodCard")
+T = TypeVar("T", bound="PaymentMethodSummary")
 
 
 @_attrs_define
-class PaymentMethodCard:
-    """Trimmed card view for the portal billing card panel.
+class PaymentMethodSummary:
+    """Trimmed PaymentMethod view for the portal billing panel.
 
-    No PAN, no CVV, no full card number — Stripe never returns those
-    to us. Last 4 + brand + expiry are enough to render
-    "Visa ending 4242, expires 12/2027".
+    Covers both card and Stripe Link PMs. No PAN, no CVV, no full card
+    number, Stripe never returns those to us. For cards the brand,
+    last4, and expiry fields populate; for Link PMs those are null and
+    ``link_email`` carries the Link account's email so the portal can
+    render "Link account user@example.com".
 
         Attributes:
             id (str):
+            type_ (PaymentMethodSummaryType): Stripe PaymentMethod ``type``. ``card`` and ``link`` are the two values the
+                portal can attach today; other Stripe types (klarna, cashapp, amazon_pay) are not allowed by the SetupIntent /
+                Subscription configuration because they do not support off-session recurring charges.
             brand (None | str | Unset):
             exp_month (int | None | Unset):
             exp_year (int | None | Unset):
-            is_default (bool | Unset): True for the PM at ``customer.invoice_settings.default_payment_method`` — the card
+            is_default (bool | Unset): True for the PM at ``customer.invoice_settings.default_payment_method``, the PM
                 Stripe will charge for renewals / proration / dunning retries. Portal uses this to render the 'Default' badge
                 accurately rather than guessing by list position. Default: False.
             last4 (None | str | Unset):
+            link_email (None | str | Unset): Email associated with the Stripe Link PaymentMethod. Null for non-Link PMs.
+            wallet_type (None | str | Unset): Wallet identifier for card PMs created via a digital wallet (apple_pay,
+                google_pay, samsung_pay, link). Null for non-wallet cards and non-card PMs. Lets the portal render 'Apple Pay' /
+                'Google Pay' instead of 'Visa ****1234' for tokenized wallet cards (Stripe surfaces these as ``type=card`` with
+                ``card.wallet.type`` set).
     """
 
     id: str
+    type_: PaymentMethodSummaryType
     brand: None | str | Unset = UNSET
     exp_month: int | None | Unset = UNSET
     exp_year: int | None | Unset = UNSET
     is_default: bool | Unset = False
     last4: None | str | Unset = UNSET
+    link_email: None | str | Unset = UNSET
+    wallet_type: None | str | Unset = UNSET
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         id = self.id
+
+        type_ = self.type_.value
 
         brand: None | str | Unset
         if isinstance(self.brand, Unset):
@@ -71,11 +87,24 @@ class PaymentMethodCard:
         else:
             last4 = self.last4
 
+        link_email: None | str | Unset
+        if isinstance(self.link_email, Unset):
+            link_email = UNSET
+        else:
+            link_email = self.link_email
+
+        wallet_type: None | str | Unset
+        if isinstance(self.wallet_type, Unset):
+            wallet_type = UNSET
+        else:
+            wallet_type = self.wallet_type
+
         field_dict: dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update(
             {
                 "id": id,
+                "type": type_,
             }
         )
         if brand is not UNSET:
@@ -88,6 +117,10 @@ class PaymentMethodCard:
             field_dict["is_default"] = is_default
         if last4 is not UNSET:
             field_dict["last4"] = last4
+        if link_email is not UNSET:
+            field_dict["link_email"] = link_email
+        if wallet_type is not UNSET:
+            field_dict["wallet_type"] = wallet_type
 
         return field_dict
 
@@ -95,6 +128,8 @@ class PaymentMethodCard:
     def from_dict(cls: type[T], src_dict: Mapping[str, Any]) -> T:
         d = dict(src_dict)
         id = d.pop("id")
+
+        type_ = PaymentMethodSummaryType(d.pop("type"))
 
         def _parse_brand(data: object) -> None | str | Unset:
             if data is None:
@@ -134,17 +169,38 @@ class PaymentMethodCard:
 
         last4 = _parse_last4(d.pop("last4", UNSET))
 
-        payment_method_card = cls(
+        def _parse_link_email(data: object) -> None | str | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(None | str | Unset, data)
+
+        link_email = _parse_link_email(d.pop("link_email", UNSET))
+
+        def _parse_wallet_type(data: object) -> None | str | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(None | str | Unset, data)
+
+        wallet_type = _parse_wallet_type(d.pop("wallet_type", UNSET))
+
+        payment_method_summary = cls(
             id=id,
+            type_=type_,
             brand=brand,
             exp_month=exp_month,
             exp_year=exp_year,
             is_default=is_default,
             last4=last4,
+            link_email=link_email,
+            wallet_type=wallet_type,
         )
 
-        payment_method_card.additional_properties = d
-        return payment_method_card
+        payment_method_summary.additional_properties = d
+        return payment_method_summary
 
     @property
     def additional_keys(self) -> list[str]:

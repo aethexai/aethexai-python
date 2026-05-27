@@ -92,8 +92,9 @@ from .model_entry import ModelEntry
 from .model_entry_provider import ModelEntryProvider
 from .paginated_response import PaginatedResponse
 from .payg_state import PaygState
-from .payment_method_card import PaymentMethodCard
 from .payment_method_list_response import PaymentMethodListResponse
+from .payment_method_summary import PaymentMethodSummary
+from .payment_method_summary_type import PaymentMethodSummaryType
 from .period_summary import PeriodSummary
 from .phone_number_response import PhoneNumberResponse
 from .phone_number_update import PhoneNumberUpdate
@@ -233,8 +234,9 @@ __all__ = (
     "ModelEntryProvider",
     "PaginatedResponse",
     "PaygState",
-    "PaymentMethodCard",
     "PaymentMethodListResponse",
+    "PaymentMethodSummary",
+    "PaymentMethodSummaryType",
     "PeriodSummary",
     "PhoneNumberResponse",
     "PhoneNumberUpdate",

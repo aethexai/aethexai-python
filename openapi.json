@@ -3709,8 +3709,31 @@
         "title": "PaygState",
         "type": "object"
       },
-      "PaymentMethodCard": {
-        "description": "Trimmed card view for the portal billing card panel.\n\nNo PAN, no CVV, no full card number \u2014 Stripe never returns those\nto us. Last 4 + brand + expiry are enough to render\n\"Visa ending 4242, expires 12/2027\".",
+      "PaymentMethodListResponse": {
+        "description": "``GET /billing/payment-methods`` payload.",
+        "properties": {
+          "has_payment_method": {
+            "description": "Cached ``vo_tenants.has_payment_method`` flag. True iff the tenant has at least one ``card`` or Stripe ``link`` payment method attached (the two PM types ``select_plan`` and the PAYG cron can charge). Used by the portal to gate the upgrade button: no payment method -> redirect to attach flow first.",
+            "title": "Has Payment Method",
+            "type": "boolean"
+          },
+          "payment_methods": {
+            "items": {
+              "$ref": "#/components/schemas/PaymentMethodSummary"
+            },
+            "title": "Payment Methods",
+            "type": "array"
+          }
+        },
+        "required": [
+          "payment_methods",
+          "has_payment_method"
+        ],
+        "title": "PaymentMethodListResponse",
+        "type": "object"
+      },
+      "PaymentMethodSummary": {
+        "description": "Trimmed PaymentMethod view for the portal billing panel.\n\nCovers both card and Stripe Link PMs. No PAN, no CVV, no full card\nnumber, Stripe never returns those to us. For cards the brand,\nlast4, and expiry fields populate; for Link PMs those are null and\n``link_email`` carries the Link account's email so the portal can\nrender \"Link account user@example.com\".",
         "properties": {
           "brand": {
             "anyOf": [
@@ -3751,7 +3774,7 @@
           },
           "is_default": {
             "default": false,
-            "description": "True for the PM at ``customer.invoice_settings.default_payment_method`` \u2014 the card Stripe will charge for renewals / proration / dunning retries. Portal uses this to render the 'Default' badge accurately rather than guessing by list position.",
+            "description": "True for the PM at ``customer.invoice_settings.default_payment_method``, the PM Stripe will charge for renewals / proration / dunning retries. Portal uses this to render the 'Default' badge accurately rather than guessing by list position.",
             "title": "Is Default",
             "type": "boolean"
           },
@@ -3765,35 +3788,46 @@
               }
             ],
             "title": "Last4"
-          }
-        },
-        "required": [
-          "id"
-        ],
-        "title": "PaymentMethodCard",
-        "type": "object"
-      },
-      "PaymentMethodListResponse": {
-        "description": "``GET /billing/payment-methods`` payload.",
-        "properties": {
-          "has_payment_method": {
-            "description": "Cached ``vo_tenants.has_payment_method`` flag. True iff the tenant has at least one card attached. Used by the portal to gate the upgrade button: no card -> redirect to attach flow first.",
-            "title": "Has Payment Method",
-            "type": "boolean"
           },
-          "payment_methods": {
-            "items": {
-              "$ref": "#/components/schemas/PaymentMethodCard"
-            },
-            "title": "Payment Methods",
-            "type": "array"
+          "link_email": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Email associated with the Stripe Link PaymentMethod. Null for non-Link PMs.",
+            "title": "Link Email"
+          },
+          "type": {
+            "description": "Stripe PaymentMethod ``type``. ``card`` and ``link`` are the two values the portal can attach today; other Stripe types (klarna, cashapp, amazon_pay) are not allowed by the SetupIntent / Subscription configuration because they do not support off-session recurring charges.",
+            "enum": [
+              "card",
+              "link"
+            ],
+            "title": "Type",
+            "type": "string"
+          },
+          "wallet_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "Wallet identifier for card PMs created via a digital wallet (apple_pay, google_pay, samsung_pay, link). Null for non-wallet cards and non-card PMs. Lets the portal render 'Apple Pay' / 'Google Pay' instead of 'Visa ****1234' for tokenized wallet cards (Stripe surfaces these as ``type=card`` with ``card.wallet.type`` set).",
+            "title": "Wallet Type"
           }
         },
         "required": [
-          "payment_methods",
-          "has_payment_method"
+          "id",
+          "type"
         ],
-        "title": "PaymentMethodListResponse",
+        "title": "PaymentMethodSummary",
         "type": "object"
       },
       "PeriodSummary": {
@@ -7576,7 +7610,7 @@
     },
     "/api/v1/billing/payment-methods/{payment_method_id}": {
       "delete": {
-        "description": "Detach a card from the tenant's Stripe Customer.\n\nOwnership is verified server-side BEFORE the detach call. Stripe's\ndetach endpoint takes only the PM id (no customer scope), so a\nleaked ``pm_*`` id from logs / dashboard transcripts / accidental\nclient-side console output would otherwise let any\nportal-authenticated tenant nuke another tenant's card. We\nretrieve the PM, compare ``pm.customer`` to the JWT-bound\ntenant's ``stripe_customer_id``, and 404 on mismatch (same\nresponse as a non-existent id, so a probe can't distinguish\n\"wrong tenant\" from \"doesn't exist\"). One extra ~100ms Stripe\nroundtrip on a user-initiated, infrequent path.\n\nThe ``has_payment_method`` cache flag is updated by the\n``payment_method.attached`` / ``.detached`` webhook handlers\n(which use Stripe's ``previous_attributes`` to resolve the owner\nwhen the post-detach event has ``customer=null``). The route does\nNOT touch the cache directly \u2014 Stripe is source of truth and\nwebhooks are how we mirror it.\n\nOn any Stripe-side error the route surfaces the SDK's curated\n``StripeError.user_message`` if present, falling back to a\ngeneric message. Programming bugs (TypeError, AttributeError,\netc.) propagate to the global handler instead of being silently\nserved as 400s.",
+        "description": "Detach a payment method from the tenant's Stripe Customer.\n\nOwnership is verified server-side BEFORE the detach call. Stripe's\ndetach endpoint takes only the PM id (no customer scope), so a\nleaked ``pm_*`` id from logs / dashboard transcripts / accidental\nclient-side console output would otherwise let any\nportal-authenticated tenant nuke another tenant's PM. We\nretrieve the PM, compare ``pm.customer`` to the JWT-bound\ntenant's ``stripe_customer_id``, and 404 on mismatch (same\nresponse as a non-existent id, so a probe can't distinguish\n\"wrong tenant\" from \"doesn't exist\"). One extra ~100ms Stripe\nroundtrip on a user-initiated, infrequent path.\n\nThe ``has_payment_method`` cache flag is updated by the\n``payment_method.attached`` / ``.detached`` webhook handlers\n(which use Stripe's ``previous_attributes`` to resolve the owner\nwhen the post-detach event has ``customer=null``). The route does\nNOT touch the cache directly \u2014 Stripe is source of truth and\nwebhooks are how we mirror it.\n\nOn any Stripe-side error the route surfaces the SDK's curated\n``StripeError.user_message`` if present, falling back to a\ngeneric message. Programming bugs (TypeError, AttributeError,\netc.) propagate to the global handler instead of being silently\nserved as 400s.",
         "operationId": "detach_tenant_payment_method_api_v1_billing_payment_methods__payment_method_id__delete",
         "parameters": [
           {
@@ -7634,7 +7668,7 @@
     },
     "/api/v1/billing/plans/{slug}/select": {
       "post": {
-        "description": "Switch the tenant's subscription to the named plan tier.\n\nFirst-time selection of a paid tier creates a new Stripe\nSubscription against the tenant's saved card. Subsequent\nselections update the existing Subscription's price item with\npro-ration. Selecting the free tier cancels the active\nSubscription (the renewal job continues granting free-tier\ncredits).\n\nRequired state:\n  * Tenant must have a ``has_payment_method=True`` (i.e. attached\n    a card via the SetupIntent flow) before selecting any paid\n    tier. Free tier is always selectable.\n  * Plan row must have ``stripe_price_id`` populated (ops sets\n    this after creating the Stripe Price). If not populated for\n    the requested tier, the route returns 503.",
+        "description": "Switch the tenant's subscription to the named plan tier.\n\nFirst-time selection of a paid tier creates a new Stripe\nSubscription against the tenant's saved payment method. Subsequent\nselections update the existing Subscription's price item with\npro-ration. Selecting the free tier cancels the active\nSubscription (the renewal job continues granting free-tier\ncredits).\n\nRequired state:\n  * Tenant must have ``has_payment_method=True`` (i.e. attached a\n    chargeable card or Link PM via the SetupIntent flow) before\n    selecting any paid tier. Free tier is always selectable.\n  * Plan row must have ``stripe_price_id`` populated (ops sets\n    this after creating the Stripe Price). If not populated for\n    the requested tier, the route returns 503.",
         "operationId": "select_plan_api_v1_billing_plans__slug__select_post",
         "parameters": [
           {
@@ -8804,115 +8838,6 @@
           }
         ],
         "summary": "Revoke Audio Token",
-        "tags": [
-          "conversations"
-        ]
-      }
-    },
-    "/api/v1/conversations/{conversation_id}/diagnostics": {
-      "get": {
-        "description": "Return durable per-stage diagnostic events for a conversation.",
-        "operationId": "get_conversation_diagnostics_api_v1_conversations__conversation_id__diagnostics_get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "conversation_id",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "title": "Conversation Id",
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "limit",
-            "required": false,
-            "schema": {
-              "default": 500,
-              "maximum": 5000,
-              "minimum": 1,
-              "title": "Limit",
-              "type": "integer"
-            }
-          },
-          {
-            "in": "query",
-            "name": "event_type",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Event Type"
-            }
-          },
-          {
-            "in": "query",
-            "name": "stage",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Stage"
-            }
-          },
-          {
-            "in": "query",
-            "name": "severity",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Severity"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ConversationDiagnosticsResponse"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "APIKeyHeader": []
-          }
-        ],
-        "summary": "Get Conversation Diagnostics",
         "tags": [
           "conversations"
         ]
@@ -11818,6 +11743,129 @@
         "summary": "Get Voice",
         "tags": [
           "voices"
+        ]
+      }
+    },
+    "/internal/conversations/{conversation_id}/diagnostics": {
+      "get": {
+        "description": "Return durable per-stage diagnostic events for a conversation.",
+        "operationId": "get_conversation_diagnostics_internal_conversations__conversation_id__diagnostics_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "conversation_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Conversation Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 500,
+              "maximum": 5000,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "event_type",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Event Type"
+            }
+          },
+          {
+            "in": "query",
+            "name": "stage",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Stage"
+            }
+          },
+          {
+            "in": "query",
+            "name": "severity",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Severity"
+            }
+          },
+          {
+            "description": "Optional tenant scope. Internal callers may omit to query diagnostics across all tenants for cross-tenant debugging.",
+            "in": "query",
+            "name": "tenant_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Optional tenant scope. Internal callers may omit to query diagnostics across all tenants for cross-tenant debugging.",
+              "title": "Tenant Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ConversationDiagnosticsResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Conversation Diagnostics",
+        "tags": [
+          "internal"
         ]
       }
     },

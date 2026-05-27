@@ -81,16 +81,16 @@ def sync_detailed(
      Switch the tenant's subscription to the named plan tier.
 
     First-time selection of a paid tier creates a new Stripe
-    Subscription against the tenant's saved card. Subsequent
+    Subscription against the tenant's saved payment method. Subsequent
     selections update the existing Subscription's price item with
     pro-ration. Selecting the free tier cancels the active
     Subscription (the renewal job continues granting free-tier
     credits).
 
     Required state:
-      * Tenant must have a ``has_payment_method=True`` (i.e. attached
-        a card via the SetupIntent flow) before selecting any paid
-        tier. Free tier is always selectable.
+      * Tenant must have ``has_payment_method=True`` (i.e. attached a
+        chargeable card or Link PM via the SetupIntent flow) before
+        selecting any paid tier. Free tier is always selectable.
       * Plan row must have ``stripe_price_id`` populated (ops sets
         this after creating the Stripe Price). If not populated for
         the requested tier, the route returns 503.
@@ -130,16 +130,16 @@ def sync(
      Switch the tenant's subscription to the named plan tier.
 
     First-time selection of a paid tier creates a new Stripe
-    Subscription against the tenant's saved card. Subsequent
+    Subscription against the tenant's saved payment method. Subsequent
     selections update the existing Subscription's price item with
     pro-ration. Selecting the free tier cancels the active
     Subscription (the renewal job continues granting free-tier
     credits).
 
     Required state:
-      * Tenant must have a ``has_payment_method=True`` (i.e. attached
-        a card via the SetupIntent flow) before selecting any paid
-        tier. Free tier is always selectable.
+      * Tenant must have ``has_payment_method=True`` (i.e. attached a
+        chargeable card or Link PM via the SetupIntent flow) before
+        selecting any paid tier. Free tier is always selectable.
       * Plan row must have ``stripe_price_id`` populated (ops sets
         this after creating the Stripe Price). If not populated for
         the requested tier, the route returns 503.
@@ -174,16 +174,16 @@ async def asyncio_detailed(
      Switch the tenant's subscription to the named plan tier.
 
     First-time selection of a paid tier creates a new Stripe
-    Subscription against the tenant's saved card. Subsequent
+    Subscription against the tenant's saved payment method. Subsequent
     selections update the existing Subscription's price item with
     pro-ration. Selecting the free tier cancels the active
     Subscription (the renewal job continues granting free-tier
     credits).
 
     Required state:
-      * Tenant must have a ``has_payment_method=True`` (i.e. attached
-        a card via the SetupIntent flow) before selecting any paid
-        tier. Free tier is always selectable.
+      * Tenant must have ``has_payment_method=True`` (i.e. attached a
+        chargeable card or Link PM via the SetupIntent flow) before
+        selecting any paid tier. Free tier is always selectable.
       * Plan row must have ``stripe_price_id`` populated (ops sets
         this after creating the Stripe Price). If not populated for
         the requested tier, the route returns 503.
@@ -221,16 +221,16 @@ async def asyncio(
      Switch the tenant's subscription to the named plan tier.
 
     First-time selection of a paid tier creates a new Stripe
-    Subscription against the tenant's saved card. Subsequent
+    Subscription against the tenant's saved payment method. Subsequent
     selections update the existing Subscription's price item with
     pro-ration. Selecting the free tier cancels the active
     Subscription (the renewal job continues granting free-tier
     credits).
 
     Required state:
-      * Tenant must have a ``has_payment_method=True`` (i.e. attached
-        a card via the SetupIntent flow) before selecting any paid
-        tier. Free tier is always selectable.
+      * Tenant must have ``has_payment_method=True`` (i.e. attached a
+        chargeable card or Link PM via the SetupIntent flow) before
+        selecting any paid tier. Free tier is always selectable.
       * Plan row must have ``stripe_price_id`` populated (ops sets
         this after creating the Stripe Price). If not populated for
         the requested tier, the route returns 503.
