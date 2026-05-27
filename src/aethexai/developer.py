@@ -206,7 +206,7 @@ class DeveloperClient:
     # ── auth/me ────────────────────────────────────────────────────────
 
     def get_me(self) -> Any:
-        """Get the current developer's profile. See https://docs.aethexai.com/auth."""
+        """Get the current developer's profile. See https://developers.aethexai.com/docs/authentication."""
         from aethexai._generated.api.developer_auth import get_me_api_v1_auth_me_get as _op
 
         return self._call(_op.sync_detailed)
