@@ -101,6 +101,8 @@ def test_envelope_matches_server_shape(sync_client: AethexAI) -> None:
     err = exc_info.value
     assert err.code == "validation_error"
     assert err.response["code"] == "validation_error"
+    assert err.response["error"] == "Validation failed"
+    assert err.response["request_id"] is None
     detail = err.response["detail"]
     assert isinstance(detail, list)
     assert err.response["fields"] == detail

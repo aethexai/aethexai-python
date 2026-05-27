@@ -4,6 +4,10 @@ All notable changes to this project are documented here. Format based on [Keep a
 
 ## [Unreleased]
 
+### Changed
+
+- `cancel_transcription_job` (sync and async) now returns a typed `CancelTranscriptionJobResponse` (`id`, `status`) instead of a raw `dict`, matching the other transcription wrappers. The on-the-wire shape is unchanged, but code that indexed the old dict result (e.g. `result["id"]`) must now use attribute access (`result.id`). (AET-1538)
+
 ### Fixed
 
 - Missing required body fields on POST wrappers (e.g. `create_agent`, `presign_upload`, `trigger_call`) now raise a typed `aethexai.ValidationError` listing every missing field, instead of a stdlib `KeyError` reporting only the first one. The request still short-circuits before the wire call. The error envelope mirrors the server's 422 shape (`code="validation_error"`, `detail=[{type,loc,msg,input}, ...]`, `fields` mirroring `detail`) so callers can write a single handler covering both SDK pre-flight and server-side validation errors. (AET-1524)

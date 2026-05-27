@@ -65,6 +65,12 @@ def build_body(model_cls: type[T], fields: dict[str, Any]) -> T:
             message=msg,
             code="validation_error",
             status_code=422,
-            response={"code": "validation_error", "detail": detail, "fields": detail},
+            response={
+                "error": "Validation failed",
+                "code": "validation_error",
+                "request_id": None,  # pre-flight: no server-side request
+                "detail": detail,
+                "fields": detail,
+            },
         )
     return model_cls.from_dict(fields)  # type: ignore[attr-defined,no-any-return]
