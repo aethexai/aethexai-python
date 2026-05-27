@@ -965,3 +965,20 @@ class AethexAI:
         if 200 <= status < 300:
             return response.content
         raise _map_status_to_exception(status, response.content, response.headers)
+
+    def list_tag_vocabulary(self) -> Any:
+        """Return the closed tag vocabulary for voices.
+
+        The response groups tokens into four UI buckets (``tone``,
+        ``voice_texture``, ``delivery_style``, ``business_persona``), but
+        the underlying storage is a flat list — ``list_voices(tag=...)``
+        accepts any token from any bucket. This endpoint is the canonical
+        place to discover the supported values.
+
+        See https://docs.aethexai.com/voices.
+        """
+        from aethexai._generated.api.voices import (
+            list_tag_vocabulary_api_v1_voices_tag_vocabulary_get as _op,
+        )
+
+        return self._call(_op.sync_detailed)

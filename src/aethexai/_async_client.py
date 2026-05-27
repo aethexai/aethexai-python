@@ -960,3 +960,11 @@ class AsyncAethexAI:
         if 200 <= status < 300:
             return response.content
         raise _map_status_to_exception(status, response.content, response.headers)
+
+    async def list_tag_vocabulary(self) -> Any:
+        """Return the closed tag vocabulary for voices."""
+        from aethexai._generated.api.voices import (
+            list_tag_vocabulary_api_v1_voices_tag_vocabulary_get as _op,
+        )
+
+        return await self._call(_op.asyncio_detailed)
