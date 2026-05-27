@@ -48,6 +48,8 @@ class HTTPValidationError:
 
     @classmethod
     def from_dict(cls: type[T], src_dict: Mapping[str, Any]) -> T:
+        from ..models.validation_error import ValidationError
+
         # AETHEX-PATCH (AET-1523): tolerate the aethex unified error envelope.
         # The OpenAPI spec types 422 as FastAPI's ``HTTPValidationError``
         # (``detail: list[ValidationError]``), but the real API returns
@@ -63,8 +65,6 @@ class HTTPValidationError:
         # typed exception via ``_map_status_to_exception(status, response.content, ...)``,
         # which parses the envelope directly. This patch is re-applied by
         # ``scripts/sync_from_prod.py`` after every regeneration.
-        from ..models.validation_error import ValidationError
-
         d = dict(src_dict)
         _detail = d.pop("detail", UNSET)
         detail: list[ValidationError] | Unset = UNSET
