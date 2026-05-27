@@ -441,29 +441,6 @@ class AsyncAethexAI:
 
         return await self._call(_op.asyncio_detailed, UUID(str(conversation_id)))
 
-    async def get_conversation_diagnostics(
-        self,
-        conversation_id: str | UUID,
-        *,
-        limit: int | Unset = 500,
-        event_type: str | None | Unset = UNSET,
-        stage: str | None | Unset = UNSET,
-        severity: str | None | Unset = UNSET,
-    ) -> Any:
-        """Fetch diagnostics events for a conversation."""
-        from aethexai._generated.api.conversations import (
-            get_conversation_diagnostics_api_v1_conversations_conversation_id_diagnostics_get as _op,
-        )
-
-        return await self._call(
-            _op.asyncio_detailed,
-            UUID(str(conversation_id)),
-            limit=limit,
-            event_type=event_type,
-            stage=stage,
-            severity=severity,
-        )
-
     async def get_transcript(self, conversation_id: str | UUID) -> Any:
         """Fetch a conversation transcript."""
         from aethexai._generated.api.conversations import (
