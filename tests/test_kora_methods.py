@@ -218,16 +218,13 @@ def test_kora_trigger_call(kora: Kora) -> None:
 
 @respx.mock
 def test_kora_synthesize_speech_returns_bytes(kora: Kora) -> None:
-    # The generated TTS op still runs response.json() in _parse_response,
-    # so the mocked content has to be JSON-decodable bytes. Kora's
-    # _call_bytes returns .content directly, so we get those same bytes
-    # back at the call site.
-    audio_blob = b'{"audio_url":"https://cdn.test/x.wav"}'
+    # AET-1522: the TTS 200 response is non-UTF-8 ``audio/wav`` bytes even though
+    # ``openapi.json`` declares ``application/json``. Use a binary payload with
+    # non-UTF-8 leading bytes so a regression (routing back through the generated
+    # parser) resurfaces as a ``UnicodeDecodeError`` instead of silently passing.
     route = respx.post(f"{BASE_URL}/api/v1/tts").mock(
         return_value=httpx.Response(
-            200,
-            content=audio_blob,
-            headers={"content-type": "application/json"},
+            200, content=_WAV_PAYLOAD, headers={"content-type": "audio/wav"}
         )
     )
 
@@ -240,9 +237,8 @@ def test_kora_synthesize_speech_returns_bytes(kora: Kora) -> None:
     body = json.loads(req.content.decode())
     assert body["text"] == "Hello world"
     assert body["voice_id"] == "fatima"
-    # _call_bytes returns the raw response body, not the parsed JSON.
     assert isinstance(out, bytes)
-    assert out == audio_blob
+    assert out == _WAV_PAYLOAD
 
 
 @respx.mock

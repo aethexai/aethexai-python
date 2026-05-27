@@ -90,9 +90,6 @@ from aethexai._generated.api.transcription import (
 from aethexai._generated.api.transcription import (
     transcribe_sync_api_v1_transcribe_post as _transcribe_sync_op,
 )
-from aethexai._generated.api.tts import (
-    synthesize_api_v1_tts_post as _synthesize_op,
-)
 from aethexai._generated.api.voices import (
     get_voice_api_v1_voices_voice_id_get as _get_voice_op,
 )
@@ -214,15 +211,6 @@ class Kora:
         status = int(response.status_code)
         if 200 <= status < 300:
             return response.parsed
-        raise _map_status_to_exception(status, response.content, response.headers)
-
-    def _call_bytes(self, op_func: Any, *args: Any, **kwargs: Any) -> bytes:
-        """Variant of :meth:`_call` that returns the raw response body on 2xx."""
-        response = op_func(*args, client=self._client, **kwargs)
-        status = int(response.status_code)
-        if 200 <= status < 300:
-            content: bytes = response.content
-            return content
         raise _map_status_to_exception(status, response.content, response.headers)
 
     # ── Agents ────────────────────────────────────────────────────────────
@@ -402,6 +390,10 @@ class Kora:
     ) -> bytes:
         """Synthesize ``text`` to audio bytes using ``voice_id``.
 
+        The 200 response is ``audio/wav`` even though ``openapi.json`` declares it
+        as ``application/json``; we bypass the generated parser to avoid a
+        ``UnicodeDecodeError`` (AET-1522).
+
         Returns the raw audio payload on success; raises a typed
         :class:`~aethexai.APIStatusError` subclass on any non-2xx response.
         """
@@ -409,10 +401,22 @@ class Kora:
         if language is not None:
             body_kwargs["language"] = language
         body_kwargs.update(kwargs)
-        return self._call_bytes(
-            _synthesize_op.sync_detailed,
-            body=TTSRequest(**body_kwargs),
-        )
+        body = TTSRequest(**body_kwargs)
+        httpx_client = self._client.get_httpx_client()
+        try:
+            response = httpx_client.post(
+                "/api/v1/tts",
+                json=body.to_dict(),
+                headers={"Content-Type": "application/json"},
+            )
+        except httpx.TimeoutException as exc:
+            raise APITimeoutError() from exc
+        except httpx.HTTPError as exc:
+            raise APIConnectionError(cause=exc) from exc
+        status = int(response.status_code)
+        if 200 <= status < 300:
+            return response.content
+        raise _map_status_to_exception(status, response.content, response.headers)
 
     def stream_speech(
         self,

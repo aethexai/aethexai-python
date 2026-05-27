@@ -110,13 +110,6 @@ def test_kora_call_raises_on_404():
     kora.close()
 
 
-def test_kora_call_bytes_returns_content_on_2xx():
-    kora = Kora("https://example.com", "ae_live_dummy")
-    result = kora._call_bytes(_stub_op(200, b"audio-bytes"))
-    assert result == b"audio-bytes"
-    kora.close()
-
-
 def test_async_call_raises_on_500():
     async def _run():
         client = AsyncAethexAI(api_key="ae_live_dummy", base_url="https://example.com")

@@ -124,24 +124,6 @@ class AethexAI:
             return response.parsed
         raise _map_status_to_exception(status, response.content, response.headers)
 
-    def _call_bytes(self, op_func: Any, *args: Any, **kwargs: Any) -> bytes:
-        """Variant of :meth:`_call` that returns raw response bytes on 2xx.
-
-        Used for endpoints whose response body is binary content (audio,
-        files) rather than JSON.
-        """
-        try:
-            response = op_func(*args, client=self._client, **kwargs)
-        except httpx.TimeoutException as exc:
-            raise APITimeoutError() from exc
-        except httpx.HTTPError as exc:
-            raise APIConnectionError(cause=exc) from exc
-        status = int(response.status_code)
-        if 200 <= status < 300:
-            content: bytes = response.content
-            return content
-        raise _map_status_to_exception(status, response.content, response.headers)
-
     # ─── agents ────────────────────────────────────────────────────────
 
     def list_agents(self, *, offset: int | Unset = 0, limit: int | Unset = 50) -> Any:
