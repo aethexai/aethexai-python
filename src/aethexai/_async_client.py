@@ -931,3 +931,11 @@ class AsyncAethexAI:
         from aethexai._generated.models.voice_preview_request import VoicePreviewRequest
 
         return await self._call(_op.asyncio_detailed, body=build_body(VoicePreviewRequest, fields))
+
+    async def list_tag_vocabulary(self) -> Any:
+        """Return the closed tag vocabulary for voices."""
+        from aethexai._generated.api.voices import (
+            list_tag_vocabulary_api_v1_voices_tag_vocabulary_get as _op,
+        )
+
+        return await self._call(_op.asyncio_detailed)
