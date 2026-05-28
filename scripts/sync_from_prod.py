@@ -464,11 +464,14 @@ def _apply_http_validation_error_patch() -> int:
     return 0
 
 
-# AET-1580: endpoints whose backend now returns HTTP 201 Created on success
-# (aethex PR #955 / AET-1566) but whose OpenAPI spec — and therefore the
-# generated ``_parse_response`` — still only branches on ``200``. Each path is
-# relative to ``src/aethexai/_generated/api/``. Keep this list in sync with the
-# ``status_code=201`` resource-creation routes in the backend.
+# AET-1580: resource-creation endpoints whose backend returns HTTP 201 Created
+# (aethex PR #955 / AET-1566). Once ``openapi.json`` declares ``201`` for these
+# routes, openapi-python-client emits a native ``201`` branch and the patch is
+# a no-op skip. The list and patch remain as a defensive net: if a future spec
+# dump regresses to ``200``-only, or codegen reverts to a 200-only shape, the
+# patch re-applies the ``201`` branch so create wrappers don't silently return
+# ``None``. Each path is relative to ``src/aethexai/_generated/api/``; keep it
+# in sync with the ``status_code=201`` resource-creation routes in the backend.
 _CREATED_201_ENDPOINTS = (
     "agents/create_agent_api_v1_agents_post.py",
     "agents/duplicate_agent_api_v1_agents_agent_id_duplicate_post.py",
@@ -491,8 +494,11 @@ _CREATED_201_SENTINEL = "# AETHEX-PATCH (AET-1580)"
 def _patch_created_201_source(source: str) -> str | None:
     """Add a ``201`` branch mirroring the ``200`` branch in a ``_parse_response``.
 
-    Returns the patched source, ``None`` if the file is already patched, or
-    raises ``ValueError`` if the expected ``200`` branch can't be located.
+    Returns the patched source, ``None`` if no patch is needed (file already
+    patched, or codegen already produced a native ``201`` branch from a
+    spec that declares ``201``), or raises ``ValueError`` if neither a ``200``
+    nor a ``201`` branch can be located -- indicating openapi-python-client's
+    output shape changed in an unexpected way.
 
     openapi-python-client emits the success branch as either an untyped
     pass-through::
@@ -513,6 +519,11 @@ def _patch_created_201_source(source: str) -> str | None:
     through to ``return None``.
     """
     if _CREATED_201_SENTINEL in source:
+        return None
+    if re.search(r"^ {4}if response\.status_code == 201:", source, re.MULTILINE):
+        # Codegen produced a native 201 branch directly (the spec declares 201
+        # for this route). Nothing to patch -- this is the expected steady
+        # state after openapi.json is in sync with the backend.
         return None
 
     match = re.search(
