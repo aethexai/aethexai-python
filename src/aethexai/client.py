@@ -125,24 +125,6 @@ class AethexAI:
             return response.parsed
         raise _map_status_to_exception(status, response.content, response.headers)
 
-    def _call_bytes(self, op_func: Any, *args: Any, **kwargs: Any) -> bytes:
-        """Variant of :meth:`_call` that returns raw response bytes on 2xx.
-
-        Used for endpoints whose response body is binary content (audio,
-        files) rather than JSON.
-        """
-        try:
-            response = op_func(*args, client=self._client, **kwargs)
-        except httpx.TimeoutException as exc:
-            raise APITimeoutError() from exc
-        except httpx.HTTPError as exc:
-            raise APIConnectionError(cause=exc) from exc
-        status = int(response.status_code)
-        if 200 <= status < 300:
-            content: bytes = response.content
-            return content
-        raise _map_status_to_exception(status, response.content, response.headers)
-
     # ─── agents ────────────────────────────────────────────────────────
 
     def list_agents(self, *, offset: int | Unset = 0, limit: int | Unset = 50) -> Any:
@@ -491,13 +473,38 @@ class AethexAI:
         *,
         token: str | None | Unset = UNSET,
         range_: str | None | Unset = UNSET,
-    ) -> Any:
-        """Stream raw conversation audio (WAV). See https://developers.aethexai.com/docs/api-reference/conversations."""
-        from aethexai._generated.api.conversations import (
-            stream_audio_api_v1_conversations_conversation_id_audio_wav_get as _op,
-        )
+    ) -> bytes:
+        """Fetch raw conversation audio (WAV) and return the bytes.
 
-        return self._call(_op.sync_detailed, UUID(str(conversation_id)), token=token, range_=range_)
+        See https://developers.aethexai.com/docs/api-reference/conversations.
+
+        The 200 response is ``audio/wav`` even though ``openapi.json`` declares it
+        as ``application/json``; we bypass the generated parser to avoid a
+        ``UnicodeDecodeError`` (AET-1522). Mirrors :meth:`synthesize_speech`.
+        """
+        from urllib.parse import quote
+
+        params: dict[str, Any] = {}
+        if not isinstance(token, Unset) and token is not None:
+            params["token"] = token
+        headers: dict[str, str] = {}
+        if not isinstance(range_, Unset) and range_ is not None:
+            headers["Range"] = range_
+
+        url = "/api/v1/conversations/{conversation_id}/audio.wav".format(
+            conversation_id=quote(str(UUID(str(conversation_id))), safe=""),
+        )
+        httpx_client = self._client.get_httpx_client()
+        try:
+            response = httpx_client.get(url, params=params, headers=headers)
+        except httpx.TimeoutException as exc:
+            raise APITimeoutError() from exc
+        except httpx.HTTPError as exc:
+            raise APIConnectionError(cause=exc) from exc
+        status = int(response.status_code)
+        if 200 <= status < 300:
+            return response.content
+        raise _map_status_to_exception(status, response.content, response.headers)
 
     def revoke_audio_token(self, conversation_id: str | UUID, **fields: Any) -> Any:
         """Revoke an audio playback token. See https://developers.aethexai.com/docs/api-reference/conversations."""
@@ -905,12 +912,36 @@ class AethexAI:
 
         return self._call(_op.sync_detailed, voice_id)
 
-    def preview_voice(self, **fields: Any) -> Any:
-        """Generate a short preview clip for a voice. See https://developers.aethexai.com/docs/api-reference/voices."""
-        from aethexai._generated.api.voices import preview_voice_api_v1_voices_preview_post as _op
+    def preview_voice(self, **fields: Any) -> bytes:
+        """Generate a short preview clip for a voice and return audio bytes.
+
+        See https://developers.aethexai.com/docs/api-reference/voices.
+
+        The 200 response is ``audio/wav`` even though ``openapi.json`` declares it
+        as ``application/json``; we bypass the generated parser to avoid a
+        ``UnicodeDecodeError`` (AET-1522). Mirrors :meth:`synthesize_speech`.
+        """
         from aethexai._generated.models.voice_preview_request import VoicePreviewRequest
 
-        return self._call(_op.sync_detailed, body=build_body(VoicePreviewRequest, fields))
+        # build_body (AET-1524) gives a missing-field pre-flight ValidationError;
+        # inline httpx (AET-1522) avoids the generated parser's response.json()
+        # crash on the audio/wav body.
+        body = build_body(VoicePreviewRequest, fields)
+        httpx_client = self._client.get_httpx_client()
+        try:
+            response = httpx_client.post(
+                "/api/v1/voices/preview",
+                json=body.to_dict(),
+                headers={"Content-Type": "application/json"},
+            )
+        except httpx.TimeoutException as exc:
+            raise APITimeoutError() from exc
+        except httpx.HTTPError as exc:
+            raise APIConnectionError(cause=exc) from exc
+        status = int(response.status_code)
+        if 200 <= status < 300:
+            return response.content
+        raise _map_status_to_exception(status, response.content, response.headers)
 
     def list_tag_vocabulary(self) -> Any:
         """Return the closed tag vocabulary for voices.
