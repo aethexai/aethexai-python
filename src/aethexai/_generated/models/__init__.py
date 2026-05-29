@@ -55,7 +55,6 @@ from .conversation_feedback import ConversationFeedback
 from .conversation_response import ConversationResponse
 from .conversation_turn_response import ConversationTurnResponse
 from .custom_guardrail import CustomGuardrail
-from .dashboard_overview import DashboardOverview
 from .developer_response import DeveloperResponse
 from .developer_session_summary import DeveloperSessionSummary
 from .developer_sessions_response import DeveloperSessionsResponse
@@ -191,7 +190,6 @@ __all__ = (
     "ConversationResponse",
     "ConversationTurnResponse",
     "CustomGuardrail",
-    "DashboardOverview",
     "DeveloperResponse",
     "DeveloperSessionsResponse",
     "DeveloperSessionSummary",

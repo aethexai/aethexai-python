@@ -471,8 +471,11 @@ def _apply_http_validation_error_patch() -> int:
 # every sync, so future dumps stay clean without manual intervention.
 
 # Operations carrying any of these OpenAPI tags are internal/operational and
-# never belong in a customer SDK.
-_NON_PUBLIC_TAGS = frozenset({"internal", "internal-admin", "health", "metrics"})
+# never belong in a customer SDK. ``dashboard`` is the developer-portal web-UI
+# surface (not API-key callable, no curated client method). ``developer-auth``
+# is intentionally NOT dropped — ``DeveloperClient`` legitimately uses its
+# refresh / me / logout routes, so stripping the whole tag would break it.
+_NON_PUBLIC_TAGS = frozenset({"internal", "internal-admin", "health", "metrics", "dashboard"})
 
 # Path prefixes that are internal regardless of tagging (belt-and-suspenders).
 _NON_PUBLIC_PATH_PREFIXES = ("/internal",)
