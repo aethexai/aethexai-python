@@ -46,13 +46,13 @@ Changelog = "https://github.com/aethexai/aethexai-python/blob/main/CHANGELOG.md"
 #
 # av excludes 14.4.0 because that release is published sdist-only (14.3.0 has no
 # usable files and 14.2.1 was never released), which forces a from-source build
-# that needs FFmpeg dev headers and only compiles against FFmpeg <=7 (AET-1596).
+# that needs FFmpeg dev headers and only compiles against FFmpeg <=7.
 # The constraint resolves to av 14.2.0 — the newest 14.x shipping binary wheels
 # (cp310-cp313, manylinux/macOS/Windows) — so supported Pythons install with no
 # system FFmpeg. (Alpine/musl has no av-14.x musllinux wheel and still builds
 # from source.) Moving av forward is blocked upstream: the aioice<0.10 pin below
 # (load-bearing for _aioice_patches.py) caps aiortc at 1.11.0, which itself caps
-# av<15 — so av>=15 is unreachable until aioice/aiortc are bumped (AET-1600).
+# av<15 — so av>=15 is unreachable until aioice/aiortc are bumped.
 realtime = [
     "aiortc>=1.9.0",
     "aioice>=0.9.0,<0.10",
@@ -70,11 +70,30 @@ dev = [
 [tool.hatch.build.targets.wheel]
 packages = ["src/aethexai"]
 
+# The published source distribution carries only customer-facing files. Internal
+# tooling (``scripts/``), the test suite, CI config, and contributor docs are
+# deliberately excluded so nothing internal ships to PyPI.
+[tool.hatch.build.targets.sdist]
+include = [
+    "src/aethexai",
+    "openapi.json",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md",
+]
+exclude = [
+    "examples",
+    "docs",
+    "scripts",
+    "tests",
+    ".github",
+]
+
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
 markers = [
-    "integration: requires AETHEX_API_KEY env var and hits dev-api.aethexai.com",
+    "integration: requires AETHEX_API_KEY env var and hits the live API",
     "slow: longer-running tests",
 ]
 

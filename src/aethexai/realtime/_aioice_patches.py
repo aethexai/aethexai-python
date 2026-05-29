@@ -1,4 +1,4 @@
-"""Patch aioice TURN for Cloudflare compatibility.
+"""Compatibility patches for aioice's TURN client (RFC 5766 relay behavior).
 
 Fixes:
 - Register missing DATA attribute (0x0013) in STUN
@@ -23,7 +23,7 @@ _TESTED_AIOICE_VERSION = "0.9.0"
 
 
 def apply_patches() -> None:
-    """Apply aioice TURN patches for Cloudflare compatibility.
+    """Apply aioice TURN compatibility patches.
 
     Safe to call multiple times -- patches are applied at most once.
     """
@@ -34,7 +34,6 @@ def apply_patches() -> None:
             "aioice is required for WebRTC support. Install it with: pip install aethexai[realtime]"
         )
 
-    # Version check
     try:
         import importlib.metadata
 
@@ -52,14 +51,12 @@ def apply_patches() -> None:
     if getattr(cls, "_patched", False):
         return
 
-    # ── Register DATA attribute (0x0013) -- missing from aioice ───────
     if 0x0013 not in stun.ATTRIBUTES_BY_TYPE:
         data_attr = (0x0013, "DATA", stun.pack_bytes, stun.unpack_bytes)
         stun.ATTRIBUTES.append(data_attr)
         stun.ATTRIBUTES_BY_TYPE[0x0013] = data_attr
         stun.ATTRIBUTES_BY_NAME["DATA"] = data_attr
 
-    # ── Add CreatePermission (RFC 5766 Section 9) ────────────────────
     async def create_permission(self, addr):  # type: ignore[no-untyped-def]
         req = stun.Message(
             message_method=stun.Method.CREATE_PERMISSION,
@@ -70,7 +67,6 @@ def apply_patches() -> None:
 
     cls.create_permission = create_permission
 
-    # ── Track permissions via patched __init__ ────────────────────────
     orig_init = cls.__init__
 
     def patched_init(self, *args, **kwargs):  # type: ignore[no-untyped-def]
@@ -79,7 +75,6 @@ def apply_patches() -> None:
 
     cls.__init__ = patched_init
 
-    # ── Patch send_data: CreatePermission + Send indication fallback ──
     async def patched_send_data(self, data, addr):  # type: ignore[no-untyped-def]
         if addr in self.peer_connect_waiters:
             loop = asyncio.get_event_loop()
@@ -89,7 +84,6 @@ def apply_patches() -> None:
 
         now = time.time()
 
-        # Ensure TURN permission for inbound relay from peer
         if not hasattr(self, "_permissions"):
             self._permissions = {}
         pip = addr[0]
@@ -137,7 +131,6 @@ def apply_patches() -> None:
                     if not w.done():
                         w.set_result(None)
 
-        # Fallback: Send indication (RFC 5766 Section 10)
         req = stun.Message(message_method=stun.Method.SEND, message_class=stun.Class.INDICATION)
         req.attributes["XOR-PEER-ADDRESS"] = addr
         req.attributes["DATA"] = data
@@ -145,7 +138,6 @@ def apply_patches() -> None:
 
     cls.send_data = patched_send_data
 
-    # ── Handle Data indications (relayed peer data) ──────────────────
     orig_dgram = cls.datagram_received
 
     def patched_datagram_received(self, data, addr):  # type: ignore[no-untyped-def]

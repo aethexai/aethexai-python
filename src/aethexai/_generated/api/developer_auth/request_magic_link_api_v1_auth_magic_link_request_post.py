@@ -36,7 +36,9 @@ def _get_kwargs(
 def _parse_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
 ) -> HTTPValidationError | MagicLinkRequestResponse | None:
-    if response.status_code == 200:
+    if 200 <= response.status_code < 300:
+        if not response.content:
+            return None
         response_200 = MagicLinkRequestResponse.from_dict(response.json())
 
         return response_200
@@ -70,9 +72,8 @@ def sync_detailed(
 ) -> Response[HTTPValidationError | MagicLinkRequestResponse]:
     """Request Magic Link
 
-     Request a one-time sign-in link by email.
-
-    Always returns the same body on well-formed input. If the address has no
+     Request a one-time sign-in link by email. Always returns the same body on well-formed input. If the
+    address has no
     developer row yet, the service stores only a pending email token; the
     account is created after the token is verified. 429 remains generic so
     limiter state does not become an address-discovery surface.
@@ -106,9 +107,8 @@ def sync(
 ) -> HTTPValidationError | MagicLinkRequestResponse | None:
     """Request Magic Link
 
-     Request a one-time sign-in link by email.
-
-    Always returns the same body on well-formed input. If the address has no
+     Request a one-time sign-in link by email. Always returns the same body on well-formed input. If the
+    address has no
     developer row yet, the service stores only a pending email token; the
     account is created after the token is verified. 429 remains generic so
     limiter state does not become an address-discovery surface.
@@ -137,9 +137,8 @@ async def asyncio_detailed(
 ) -> Response[HTTPValidationError | MagicLinkRequestResponse]:
     """Request Magic Link
 
-     Request a one-time sign-in link by email.
-
-    Always returns the same body on well-formed input. If the address has no
+     Request a one-time sign-in link by email. Always returns the same body on well-formed input. If the
+    address has no
     developer row yet, the service stores only a pending email token; the
     account is created after the token is verified. 429 remains generic so
     limiter state does not become an address-discovery surface.
@@ -171,9 +170,8 @@ async def asyncio(
 ) -> HTTPValidationError | MagicLinkRequestResponse | None:
     """Request Magic Link
 
-     Request a one-time sign-in link by email.
-
-    Always returns the same body on well-formed input. If the address has no
+     Request a one-time sign-in link by email. Always returns the same body on well-formed input. If the
+    address has no
     developer row yet, the service stores only a pending email token; the
     account is created after the token is verified. 429 remains generic so
     limiter state does not become an address-discovery surface.

@@ -18,32 +18,11 @@ T = TypeVar("T", bound="PeriodSummary")
 
 @_attrs_define
 class PeriodSummary:
-    """Snapshot of the current billing period: start/end + the
-    grant/used/remaining decomposition the portal billing card needs.
-
-    ``credits_granted`` is the **plan's monthly allocation**, not a
-    sum of ledger grant rows in the current period. A tenant who
-    upgraded mid-period or received a manual ``adjustment`` will see
-    this field reflect the plan tier, not the literal credits that
-    landed in the ledger. The portal renders this as "your plan
-    includes N", not "you received N this period."
-
-    ``credits_used`` is the sum of ``tx_type='usage_deduction'`` ledger
-    entries since ``started_at``. Excluded from this stat:
-
-      * ``plan_credit`` (signup seed)
-      * ``plan_renewal`` (monthly / yearly grant)
-      * ``adjustment`` (ops-driven manual changes; rare)
-      * future PAYG top-ups (will use a distinct ``tx_type``)
-
-    Negative ``adjustment`` entries reduce ``credit_balance`` without
-    incrementing ``credits_used`` — the portal can detect this when
-    ``credits_granted - credits_used > credits_remaining`` and explain
-    the gap as "ops adjustment" if needed.
-
-    ``credits_remaining`` mirrors ``Tenant.credit_balance`` so the portal
-    can highlight a single source-of-truth number; it can exceed
-    ``credits_granted`` after a PAYG top-up.
+    """Snapshot of the current billing period (start/end) with the grant/used/remaining credit breakdown.
+    ``credits_granted`` is your plan's monthly credit allocation (the plan tier's included amount), not necessarily the
+    credits literally added this period — a mid-period upgrade or account adjustment can make the two differ.
+    ``credits_used`` is the credits consumed by usage during this period. ``credits_remaining`` is your current
+    available balance; it can exceed ``credits_granted`` (for example after a top-up).
 
         Attributes:
             credits_granted (str):

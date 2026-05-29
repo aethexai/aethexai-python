@@ -17,9 +17,8 @@ T = TypeVar("T", bound="APIKeyRotateResponse")
 
 @_attrs_define
 class APIKeyRotateResponse:
-    """Rotate response = create-key shape + ``old_key_expires_at``.
-
-    Inherits from ``APIKeyResponse`` so the rotate route preserves the
+    """Rotate response = create-key shape + ``old_key_expires_at``. Inherits from ``APIKeyResponse`` so the rotate route
+    preserves the
     full pre-existing field set (``last_used_at``, ``usage_count``,
     ``expires_at``, ``revoked_at``) on top of adding the grace-period
     expiry. That matters for callers that diff a rotate response against

@@ -30,7 +30,9 @@ def _get_kwargs(
 def _parse_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
 ) -> Any | HTTPValidationError | None:
-    if response.status_code == 200:
+    if 200 <= response.status_code < 300:
+        if not response.content:
+            return None
         response_200 = response.json()
         return response_200
 
@@ -63,16 +65,10 @@ def sync_detailed(
 ) -> Response[Any | HTTPValidationError]:
     """Get Audio
 
-     Return a short-lived signed URL pointing to the audio stream.
-
-    The URL is served by this API (region/bucket are internal) and carries
-    a signed ``token`` query param so the URL is directly playable in a
-    browser ``<audio>`` tag without setting auth headers, mirroring the old
-    presigned-URL behaviour. Token TTL matches ``_AUDIO_TOKEN_TTL_SECONDS``.
-
-    The URL extension and the ``format`` field both reflect the underlying
-    recording's format (``wav`` for the primary path, ``CallRecording.format``
-    for the fallback) so clients can pick a decoder from either signal.
+     Return a short-lived signed URL pointing to the conversation audio. The URL carries a signed
+    ``token`` query param so it is directly playable in a browser ``<audio>`` tag without auth headers;
+    the token expires after a fixed lifetime. The URL extension and the ``format`` field both reflect
+    the recording's audio format (typically ``wav``) so clients can pick a decoder from either signal.
 
     Args:
         conversation_id (UUID):
@@ -103,16 +99,10 @@ def sync(
 ) -> Any | HTTPValidationError | None:
     """Get Audio
 
-     Return a short-lived signed URL pointing to the audio stream.
-
-    The URL is served by this API (region/bucket are internal) and carries
-    a signed ``token`` query param so the URL is directly playable in a
-    browser ``<audio>`` tag without setting auth headers, mirroring the old
-    presigned-URL behaviour. Token TTL matches ``_AUDIO_TOKEN_TTL_SECONDS``.
-
-    The URL extension and the ``format`` field both reflect the underlying
-    recording's format (``wav`` for the primary path, ``CallRecording.format``
-    for the fallback) so clients can pick a decoder from either signal.
+     Return a short-lived signed URL pointing to the conversation audio. The URL carries a signed
+    ``token`` query param so it is directly playable in a browser ``<audio>`` tag without auth headers;
+    the token expires after a fixed lifetime. The URL extension and the ``format`` field both reflect
+    the recording's audio format (typically ``wav``) so clients can pick a decoder from either signal.
 
     Args:
         conversation_id (UUID):
@@ -138,16 +128,10 @@ async def asyncio_detailed(
 ) -> Response[Any | HTTPValidationError]:
     """Get Audio
 
-     Return a short-lived signed URL pointing to the audio stream.
-
-    The URL is served by this API (region/bucket are internal) and carries
-    a signed ``token`` query param so the URL is directly playable in a
-    browser ``<audio>`` tag without setting auth headers, mirroring the old
-    presigned-URL behaviour. Token TTL matches ``_AUDIO_TOKEN_TTL_SECONDS``.
-
-    The URL extension and the ``format`` field both reflect the underlying
-    recording's format (``wav`` for the primary path, ``CallRecording.format``
-    for the fallback) so clients can pick a decoder from either signal.
+     Return a short-lived signed URL pointing to the conversation audio. The URL carries a signed
+    ``token`` query param so it is directly playable in a browser ``<audio>`` tag without auth headers;
+    the token expires after a fixed lifetime. The URL extension and the ``format`` field both reflect
+    the recording's audio format (typically ``wav``) so clients can pick a decoder from either signal.
 
     Args:
         conversation_id (UUID):
@@ -176,16 +160,10 @@ async def asyncio(
 ) -> Any | HTTPValidationError | None:
     """Get Audio
 
-     Return a short-lived signed URL pointing to the audio stream.
-
-    The URL is served by this API (region/bucket are internal) and carries
-    a signed ``token`` query param so the URL is directly playable in a
-    browser ``<audio>`` tag without setting auth headers, mirroring the old
-    presigned-URL behaviour. Token TTL matches ``_AUDIO_TOKEN_TTL_SECONDS``.
-
-    The URL extension and the ``format`` field both reflect the underlying
-    recording's format (``wav`` for the primary path, ``CallRecording.format``
-    for the fallback) so clients can pick a decoder from either signal.
+     Return a short-lived signed URL pointing to the conversation audio. The URL carries a signed
+    ``token`` query param so it is directly playable in a browser ``<audio>`` tag without auth headers;
+    the token expires after a fixed lifetime. The URL extension and the ``format`` field both reflect
+    the recording's audio format (typically ``wav``) so clients can pick a decoder from either signal.
 
     Args:
         conversation_id (UUID):

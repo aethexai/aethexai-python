@@ -22,7 +22,9 @@ def _get_kwargs() -> dict[str, Any]:
 def _parse_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
 ) -> Any | None:
-    if response.status_code == 200:
+    if 200 <= response.status_code < 300:
+        if not response.content:
+            return None
         return None
 
     if client.raise_on_unexpected_status:
@@ -48,12 +50,7 @@ def sync_detailed(
 ) -> Response[Any]:
     """Logout
 
-     Logout and revoke the current server-side JWT session.
-
-    Rate-limited per-session: a stolen access token cannot flood
-    /auth/logout to burn the user's session row repeatedly and mask
-    other malicious activity in audit trails. Per ayooluwa-aethex
-    round-2 MUST #2.
+     Log out and revoke the current server-side session. Rate-limited per session.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -78,12 +75,7 @@ async def asyncio_detailed(
 ) -> Response[Any]:
     """Logout
 
-     Logout and revoke the current server-side JWT session.
-
-    Rate-limited per-session: a stolen access token cannot flood
-    /auth/logout to burn the user's session row repeatedly and mask
-    other malicious activity in audit trails. Per ayooluwa-aethex
-    round-2 MUST #2.
+     Log out and revoke the current server-side session. Rate-limited per session.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.

@@ -112,9 +112,7 @@ def main() -> int:
         # ── 1. One-shot ────────────────────────────────────────────────
         oneshot_path = out_dir / "tts_oneshot.wav"
         print(f"Synthesizing one-shot to {oneshot_path} ...")
-        synthesize_speech(
-            client, text, voice_id, language=language, out_path=oneshot_path
-        )
+        synthesize_speech(client, text, voice_id, language=language, out_path=oneshot_path)
         size = oneshot_path.stat().st_size
         print(f"  wrote {size:,} bytes")
 
@@ -123,9 +121,7 @@ def main() -> int:
         #   ffplay -f s16le -ar 24000 -ac 1 tts_out/tts_stream.pcm
         stream_path = out_dir / "tts_stream.pcm"
         print(f"Streaming to {stream_path} (raw PCM16 @ 24kHz) ...")
-        _, total = stream_speech(
-            client, text, voice_id, language=language, out_path=stream_path
-        )
+        _, total = stream_speech(client, text, voice_id, language=language, out_path=stream_path)
         print(f"  stream complete: {total:,} bytes")
 
     return 0

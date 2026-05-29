@@ -29,7 +29,9 @@ def _get_kwargs(
 def _parse_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
 ) -> Any | HTTPValidationError | None:
-    if response.status_code == 200:
+    if 200 <= response.status_code < 300:
+        if not response.content:
+            return None
         response_200 = response.json()
         return response_200
 
@@ -62,10 +64,9 @@ def sync_detailed(
 ) -> Response[Any | HTTPValidationError]:
     """Get Session Status
 
-     Get status of an active or completed session.
-
-    Returns status, duration, and turn count. Works for both active
-    and completed sessions (data persists in Redis for the TTL period).
+     Get status of an active or completed session. Returns status, duration, and turn count. Works for
+    both active
+    and completed sessions.
 
     Args:
         session_id (str):
@@ -96,10 +97,9 @@ def sync(
 ) -> Any | HTTPValidationError | None:
     """Get Session Status
 
-     Get status of an active or completed session.
-
-    Returns status, duration, and turn count. Works for both active
-    and completed sessions (data persists in Redis for the TTL period).
+     Get status of an active or completed session. Returns status, duration, and turn count. Works for
+    both active
+    and completed sessions.
 
     Args:
         session_id (str):
@@ -125,10 +125,9 @@ async def asyncio_detailed(
 ) -> Response[Any | HTTPValidationError]:
     """Get Session Status
 
-     Get status of an active or completed session.
-
-    Returns status, duration, and turn count. Works for both active
-    and completed sessions (data persists in Redis for the TTL period).
+     Get status of an active or completed session. Returns status, duration, and turn count. Works for
+    both active
+    and completed sessions.
 
     Args:
         session_id (str):
@@ -157,10 +156,9 @@ async def asyncio(
 ) -> Any | HTTPValidationError | None:
     """Get Session Status
 
-     Get status of an active or completed session.
-
-    Returns status, duration, and turn count. Works for both active
-    and completed sessions (data persists in Redis for the TTL period).
+     Get status of an active or completed session. Returns status, duration, and turn count. Works for
+    both active
+    and completed sessions.
 
     Args:
         session_id (str):

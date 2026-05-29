@@ -41,7 +41,9 @@ def _get_kwargs(
 def _parse_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
 ) -> HTTPValidationError | list[UsageTriggerFiringResponse] | None:
-    if response.status_code == 200:
+    if 200 <= response.status_code < 300:
+        if not response.content:
+            return None
         response_200 = []
         _response_200 = response.json()
         for response_200_item_data in _response_200:
@@ -81,9 +83,8 @@ def sync_detailed(
 ) -> Response[HTTPValidationError | list[UsageTriggerFiringResponse]]:
     """List Trigger Firings
 
-     Audit log for a single trigger's firing attempts.
-
-    Newest-first. ``limit`` is enforced 1..200 by Pydantic; values
+     Audit log for a single trigger's firing attempts. Newest-first. ``limit`` is enforced 1..200 by
+    Pydantic; values
     outside that range 422 at the boundary. Returns 404 if the trigger
     isn't owned by the calling tenant so a customer can't probe other
     tenants' trigger ids by guessing.
@@ -120,9 +121,8 @@ def sync(
 ) -> HTTPValidationError | list[UsageTriggerFiringResponse] | None:
     """List Trigger Firings
 
-     Audit log for a single trigger's firing attempts.
-
-    Newest-first. ``limit`` is enforced 1..200 by Pydantic; values
+     Audit log for a single trigger's firing attempts. Newest-first. ``limit`` is enforced 1..200 by
+    Pydantic; values
     outside that range 422 at the boundary. Returns 404 if the trigger
     isn't owned by the calling tenant so a customer can't probe other
     tenants' trigger ids by guessing.
@@ -154,9 +154,8 @@ async def asyncio_detailed(
 ) -> Response[HTTPValidationError | list[UsageTriggerFiringResponse]]:
     """List Trigger Firings
 
-     Audit log for a single trigger's firing attempts.
-
-    Newest-first. ``limit`` is enforced 1..200 by Pydantic; values
+     Audit log for a single trigger's firing attempts. Newest-first. ``limit`` is enforced 1..200 by
+    Pydantic; values
     outside that range 422 at the boundary. Returns 404 if the trigger
     isn't owned by the calling tenant so a customer can't probe other
     tenants' trigger ids by guessing.
@@ -191,9 +190,8 @@ async def asyncio(
 ) -> HTTPValidationError | list[UsageTriggerFiringResponse] | None:
     """List Trigger Firings
 
-     Audit log for a single trigger's firing attempts.
-
-    Newest-first. ``limit`` is enforced 1..200 by Pydantic; values
+     Audit log for a single trigger's firing attempts. Newest-first. ``limit`` is enforced 1..200 by
+    Pydantic; values
     outside that range 422 at the boundary. Returns 404 if the trigger
     isn't owned by the calling tenant so a customer can't probe other
     tenants' trigger ids by guessing.

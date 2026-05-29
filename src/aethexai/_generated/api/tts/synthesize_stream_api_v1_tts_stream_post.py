@@ -35,7 +35,9 @@ def _get_kwargs(
 def _parse_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
 ) -> Any | HTTPValidationError | None:
-    if response.status_code == 200:
+    if 200 <= response.status_code < 300:
+        if not response.content:
+            return None
         response_200 = response.json()
         return response_200
 
@@ -68,10 +70,8 @@ def sync_detailed(
 ) -> Response[Any | HTTPValidationError]:
     """Synthesize Stream
 
-     Streaming synthesis — returns chunked PCM16 audio at 24kHz.
-
-    Lower TTFB than POST /tts. Audio starts arriving as it's generated.
-    Supports voice_id for voice cloning.
+     Streaming synthesis — returns chunked PCM16 audio at 24kHz. Lower TTFB than POST /tts. Audio starts
+    arriving as it's generated. Supports voice_id for voice cloning.
 
     Args:
         body (TTSStreamRequest):
@@ -102,10 +102,8 @@ def sync(
 ) -> Any | HTTPValidationError | None:
     """Synthesize Stream
 
-     Streaming synthesis — returns chunked PCM16 audio at 24kHz.
-
-    Lower TTFB than POST /tts. Audio starts arriving as it's generated.
-    Supports voice_id for voice cloning.
+     Streaming synthesis — returns chunked PCM16 audio at 24kHz. Lower TTFB than POST /tts. Audio starts
+    arriving as it's generated. Supports voice_id for voice cloning.
 
     Args:
         body (TTSStreamRequest):
@@ -131,10 +129,8 @@ async def asyncio_detailed(
 ) -> Response[Any | HTTPValidationError]:
     """Synthesize Stream
 
-     Streaming synthesis — returns chunked PCM16 audio at 24kHz.
-
-    Lower TTFB than POST /tts. Audio starts arriving as it's generated.
-    Supports voice_id for voice cloning.
+     Streaming synthesis — returns chunked PCM16 audio at 24kHz. Lower TTFB than POST /tts. Audio starts
+    arriving as it's generated. Supports voice_id for voice cloning.
 
     Args:
         body (TTSStreamRequest):
@@ -163,10 +159,8 @@ async def asyncio(
 ) -> Any | HTTPValidationError | None:
     """Synthesize Stream
 
-     Streaming synthesis — returns chunked PCM16 audio at 24kHz.
-
-    Lower TTFB than POST /tts. Audio starts arriving as it's generated.
-    Supports voice_id for voice cloning.
+     Streaming synthesis — returns chunked PCM16 audio at 24kHz. Lower TTFB than POST /tts. Audio starts
+    arriving as it's generated. Supports voice_id for voice cloning.
 
     Args:
         body (TTSStreamRequest):

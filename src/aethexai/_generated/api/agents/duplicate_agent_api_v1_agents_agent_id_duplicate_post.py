@@ -31,20 +31,12 @@ def _get_kwargs(
 def _parse_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
 ) -> AgentResponse | HTTPValidationError | None:
-    # AETHEX-PATCH (AET-1597): parse 201 Created and 200 OK into typed AgentResponse
-    # instead of raw dict. AET-1580 already added the 201 branch but left it as
-    # raw response.json(); this patch upgrades both branches to use AgentResponse.from_dict.
-    # openapi.json also updated to reference AgentResponse for the 201 response.
-    # Re-applied by sync_from_prod.py.
-    if response.status_code == 201:
+    if 200 <= response.status_code < 300:
+        if not response.content:
+            return None
         response_201 = AgentResponse.from_dict(response.json())
 
         return response_201
-
-    if response.status_code == 200:
-        response_200 = AgentResponse.from_dict(response.json())
-
-        return response_200
 
     if response.status_code == 422:
         response_422 = HTTPValidationError.from_dict(response.json())

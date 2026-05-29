@@ -157,7 +157,7 @@
         "type": "object"
       },
       "APIKeyRotateResponse": {
-        "description": "Rotate response = create-key shape + ``old_key_expires_at``.\n\nInherits from ``APIKeyResponse`` so the rotate route preserves the\nfull pre-existing field set (``last_used_at``, ``usage_count``,\n``expires_at``, ``revoked_at``) on top of adding the grace-period\nexpiry. That matters for callers that diff a rotate response against\ntheir cached ``APIKey`` model \u2014 dropping fields would silently\nnull-out parts of their state.",
+        "description": "Rotate response = create-key shape + ``old_key_expires_at``. Inherits from ``APIKeyResponse`` so the rotate route preserves the\nfull pre-existing field set (``last_used_at``, ``usage_count``,\n``expires_at``, ``revoked_at``) on top of adding the grace-period\nexpiry. That matters for callers that diff a rotate response against\ntheir cached ``APIKey`` model \u2014 dropping fields would silently\nnull-out parts of their state.",
         "properties": {
           "created_at": {
             "anyOf": [
@@ -1712,10 +1712,10 @@
         "type": "object"
       },
       "BalanceResponse": {
-        "description": "``GET /billing/balance`` payload.\n\nRenders the portal billing card without a second round-trip:\nbalance, current plan, and the period decomposition.\n``estimated_minutes_remaining`` is derived (1 credit \u2248 1 agent\nminute) so the UI doesn't have to know the conversion ratio.",
+        "description": "``GET /billing/balance`` payload: current credit balance, plan, and the billing-period summary. ``estimated_minutes_remaining`` approximates the agent-call minutes your balance covers at the standard 1 credit \u2248 1 minute conversion.",
         "properties": {
           "credit_balance": {
-            "description": "Authoritative balance from ``vo_tenants.credit_balance``. Decimal-string to preserve precision for JavaScript clients.",
+            "description": "Authoritative balance from ``.credit_balance``. Decimal-string to preserve precision for JavaScript clients.",
             "title": "Credit Balance",
             "type": "string"
           },
@@ -1748,7 +1748,7 @@
           },
           "payment_status": {
             "default": "active",
-            "description": "Tenant payment_status: ``active`` (healthy), ``past_due`` (card declined; Stripe is retrying), or ``canceled`` (Stripe gave up retrying or chargeback). Surfaced here so the portal can render a single billing-card without a second round-trip for the status banner.",
+            "description": "Payment status for the account: ``active`` (healthy), ``past_due`` (a payment failed and is being retried), or ``canceled`` (payment retries were exhausted or the charge was disputed).",
             "title": "Payment Status",
             "type": "string"
           },
@@ -1767,7 +1767,7 @@
                 "type": "null"
               }
             ],
-            "description": "Payment cadence on the tenant's active Stripe subscription: ``monthly``, ``yearly``, or ``null`` (free tier or no paid sub). Surfaced so the portal can label the price hero correctly ('$5/mo' vs '$50/yr') and the plan picker can enable monthly\u2194yearly switching without a blind round-trip. Distinct from the GRANT cadence (always monthly today), which lives on ``vo_tenants.billing_interval`` and isn't exposed to the portal.",
+            "description": "Payment cadence on the account's active paid subscription: ``monthly``, ``yearly``, or ``null`` (free tier or no paid subscription).",
             "title": "Subscription Interval"
           }
         },
@@ -2391,172 +2391,6 @@
         "title": "ConnectRequest",
         "type": "object"
       },
-      "ConversationDiagnosticEventResponse": {
-        "properties": {
-          "call_sid": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Call Sid"
-          },
-          "created_at": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Created At"
-          },
-          "elapsed_ms": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Elapsed Ms"
-          },
-          "event_type": {
-            "title": "Event Type",
-            "type": "string"
-          },
-          "id": {
-            "title": "Id",
-            "type": "string"
-          },
-          "latency_ms": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Latency Ms"
-          },
-          "metadata": {
-            "anyOf": [
-              {
-                "additionalProperties": true,
-                "type": "object"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Metadata"
-          },
-          "outcome": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Outcome"
-          },
-          "reason": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Reason"
-          },
-          "session_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Session Id"
-          },
-          "severity": {
-            "title": "Severity",
-            "type": "string"
-          },
-          "stage": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Stage"
-          },
-          "transport": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Transport"
-          },
-          "turn_index": {
-            "anyOf": [
-              {
-                "type": "integer"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Turn Index"
-          }
-        },
-        "required": [
-          "id",
-          "event_type",
-          "severity"
-        ],
-        "title": "ConversationDiagnosticEventResponse",
-        "type": "object"
-      },
-      "ConversationDiagnosticsResponse": {
-        "properties": {
-          "conversation_id": {
-            "title": "Conversation Id",
-            "type": "string"
-          },
-          "events": {
-            "items": {
-              "$ref": "#/components/schemas/ConversationDiagnosticEventResponse"
-            },
-            "title": "Events",
-            "type": "array"
-          }
-        },
-        "required": [
-          "conversation_id",
-          "events"
-        ],
-        "title": "ConversationDiagnosticsResponse",
-        "type": "object"
-      },
       "ConversationFeedback": {
         "properties": {
           "comment": {
@@ -2811,44 +2645,6 @@
         "title": "CustomGuardrail",
         "type": "object"
       },
-      "DashboardOverview": {
-        "properties": {
-          "active_api_keys": {
-            "default": 0,
-            "title": "Active Api Keys",
-            "type": "integer"
-          },
-          "requests_today": {
-            "default": 0,
-            "title": "Requests Today",
-            "type": "integer"
-          },
-          "tenant_id": {
-            "title": "Tenant Id",
-            "type": "string"
-          },
-          "total_api_keys": {
-            "default": 0,
-            "title": "Total Api Keys",
-            "type": "integer"
-          },
-          "total_calls": {
-            "default": 0,
-            "title": "Total Calls",
-            "type": "integer"
-          },
-          "total_requests": {
-            "default": 0,
-            "title": "Total Requests",
-            "type": "integer"
-          }
-        },
-        "required": [
-          "tenant_id"
-        ],
-        "title": "DashboardOverview",
-        "type": "object"
-      },
       "DeveloperResponse": {
         "properties": {
           "company": {
@@ -2927,7 +2723,7 @@
         "type": "object"
       },
       "DeveloperSessionSummary": {
-        "description": "Per-session inventory row returned by ``GET /auth/sessions``.\n\n``id`` is the first 12 hex chars of the row's ``sid_hash``: enough to\ndisambiguate sessions in the portal UI but useless on its own as a\nsession credential. Forensic fields (``created_ip``,\n``last_activity_ip``, ``user_agent``) are best-effort and may be\nnull for sessions adopted from pre-rollout tokens.",
+        "description": "A single active session returned by ``GET /auth/sessions`` for the \"where you're signed in\" view. ``id`` is a short opaque identifier safe to display; it is not a session credential. ``created_ip``, ``last_activity_ip``, and ``user_agent`` are best-effort and may be null.",
         "properties": {
           "absolute_expires_at": {
             "anyOf": [
@@ -3077,7 +2873,7 @@
         "type": "object"
       },
       "DunningState": {
-        "description": "Stripe-side dunning timeline for a ``past_due`` tenant.\n\nPulled live from Stripe (``stripe.Subscription.retrieve`` with the\nlatest_invoice expanded) rather than cached in our DB \u2014 Stripe's\nSmart Retries reschedule on its side and any cached value would go\nstale within hours. ``None`` for tenants that aren't ``past_due``.\n\nThe portal banner uses this trio to render\n\"Card declined Apr 28. We'll retry May 1. Service stops May 19 if\nunresolved.\" instead of the prior \"Update card\" with no timeline.",
+        "description": "Payment-retry (dunning) timeline for a ``past_due`` account: how many payment retries have occurred, when the next retry is scheduled, when the last attempt failed, and the final cutoff after which the subscription is canceled. ``None`` for accounts that aren't ``past_due``. These fields let you show a banner such as \"Card declined Apr 28. We'll retry May 1. Service stops May 19 if unresolved.\"",
         "properties": {
           "attempt_count": {
             "default": 0,
@@ -3095,7 +2891,7 @@
                 "type": "null"
               }
             ],
-            "description": "When the subscription will be auto-canceled if dunning still fails. Mirrors ``subscription.cancel_at`` from Stripe; ``None`` if Stripe hasn't scheduled an auto-cancel yet.",
+            "description": "When the subscription is scheduled to be canceled if payment retries still fail; ``None`` if no auto-cancel is scheduled yet.",
             "title": "Final Cutoff At"
           },
           "last_failed_at": {
@@ -3187,7 +2983,7 @@
         "type": "object"
       },
       "IceCandidate": {
-        "description": "The remote ice candidate object received from the peer connection.\n\nParameters:\n    candidate: The ice candidate patch SDP string (Session Description Protocol).\n    sdp_mid: The SDP mid for the candidate patch.\n    sdp_mline_index: The SDP mline index for the candidate patch.",
+        "description": "The remote ice candidate object received from the peer connection. Parameters:\n candidate: The ice candidate patch SDP string (Session Description Protocol). sdp_mid: The SDP mid for the candidate patch. sdp_mline_index: The SDP mline index for the candidate patch.",
         "properties": {
           "candidate": {
             "title": "Candidate",
@@ -3245,7 +3041,7 @@
         "type": "object"
       },
       "InvoiceEntry": {
-        "description": "A single invoice in the customer's billing history. Sourced\ndirectly from Stripe; no PDF rendering on our side. The portal\ntable renders ``hosted_invoice_url`` as \"View\" and ``invoice_pdf``\nas \"Download PDF\" links that 302 to Stripe-hosted assets.\n\n``status`` is one of ``draft / open / paid / uncollectible / void``.\n``amount_paid`` and ``amount_due`` are USD cents. ``created`` /\n``period_start`` / ``period_end`` are Unix epochs (seconds) so the\nportal can render whatever timezone-local format the user expects\nwithout us forcing a representation here.\n\n``hosted_invoice_url`` and ``invoice_pdf`` can be ``None`` for\ninvoices in the ``draft`` state (no PDF generated yet).",
+        "description": "A single invoice in the customer's billing history. Sourced\ndirectly from Stripe; no PDF rendering on our side. The portal\ntable renders ``hosted_invoice_url`` as \"View\" and ``invoice_pdf``\nas \"Download PDF\" links that 302 to Stripe-hosted assets. ``status`` is one of ``draft / open / paid / uncollectible / void``. ``amount_paid`` and ``amount_due`` are USD cents. ``created`` /\n``period_start`` / ``period_end`` are Unix epochs (seconds) so the\nportal can render whatever timezone-local format the user expects\nwithout us forcing a representation here. ``hosted_invoice_url`` and ``invoice_pdf`` can be ``None`` for\ninvoices in the ``draft`` state (no PDF generated yet).",
         "properties": {
           "amount_due": {
             "anyOf": [
@@ -3380,7 +3176,7 @@
         "type": "object"
       },
       "InvoiceListResponse": {
-        "description": "``GET /billing/invoices`` payload.\n\nCursor pagination via Stripe's ``starting_after`` (the last invoice\nid on the prior page). Clients pass ``next_cursor`` back as\n``?cursor=...`` (canonical); ``?next_cursor=...`` is accepted as an\nalias. When ``next_cursor`` is null the caller has reached the\noldest invoice.\n\nThe response field is named ``next_cursor`` and must not be renamed:\nthe portal and SDK consumers have typed against it. Only the *request*\nsurface accepts both names.",
+        "description": "``GET /billing/invoices`` payload. Cursor pagination: clients pass the ``next_cursor`` from the prior page back as ``?cursor=...`` (canonical); ``?next_cursor=...`` is accepted as an alias. When ``next_cursor`` is null the caller has reached the oldest invoice.",
         "properties": {
           "has_more": {
             "default": false,
@@ -3582,7 +3378,7 @@
         "type": "object"
       },
       "MagicLinkRequestResponse": {
-        "description": "Identical body for all well-formed requests.\n\nEmail sign-in creates an account only after the ownership-proof link\nis verified. The request step returns the same acknowledgement for\nnew and returning developers.",
+        "description": "Identical body for all well-formed requests. Email sign-in creates an account only after the ownership-proof link\nis verified. The request step returns the same acknowledgement for\nnew and returning developers.",
         "properties": {
           "message": {
             "default": "A sign-in link is on its way.",
@@ -3614,7 +3410,7 @@
         "type": "object"
       },
       "ModelEntry": {
-        "description": "One row of the public LLM catalog.\n\n``available`` reflects whether the deployment has the upstream API key\nneeded to route this model. The default catalog filters unavailable\nentries so SDK pickers don't advertise something that will silently fall\nthrough to local vLLM at call time. Pass ``?include_unavailable=true``\nto see every public name the platform knows about, regardless of\ndeployment configuration.",
+        "description": "One row of the public LLM catalog. ``available`` reflects whether the deployment has the upstream API key\nneeded to route this model. Pass ``?include_unavailable=true``\nto see every public name the platform knows about, regardless of\ndeployment configuration.",
         "properties": {
           "available": {
             "title": "Available",
@@ -3670,7 +3466,7 @@
         "type": "object"
       },
       "PaygState": {
-        "description": "Pay-as-you-go (overage) accounting state for the current period.\n\nSurfaced when ``credit_balance < 0`` so the portal can render\n\"X credits over \u00b7 ~$Y will charge at the next $5 threshold\". Tenants\non ``has_payment_method=False`` see the same negative balance but\ncan't be charged \u2014 the portal renders \"Add a card to keep service\nrunning\" instead.",
+        "description": "Pay-as-you-go (overage) accounting state for the current period. Surfaced when ``credit_balance < 0`` so the portal can render\n\"X credits over \u00b7 ~$Y will charge at the next $5 threshold\". Tenants\non ``has_payment_method=False`` see the same negative balance but\ncan't be charged \u2014 the portal renders \"Add a card to keep service\nrunning\" instead.",
         "properties": {
           "last_charge_at": {
             "anyOf": [
@@ -3691,7 +3487,7 @@
             "type": "string"
           },
           "pending_overage_usd": {
-            "description": "Pending overage in USD at the current PAYG rate (``PAYG_OVERAGE_RATE_USD_PER_MINUTE`` = $0.065/credit today).",
+            "description": "Pending overage in USD at the current pay-as-you-go rate ($0.065/credit today).",
             "title": "Pending Overage Usd",
             "type": "string"
           },
@@ -3713,7 +3509,7 @@
         "description": "``GET /billing/payment-methods`` payload.",
         "properties": {
           "has_payment_method": {
-            "description": "Cached ``vo_tenants.has_payment_method`` flag. True iff the tenant has at least one ``card`` or Stripe ``link`` payment method attached (the two PM types ``select_plan`` and the PAYG cron can charge). Used by the portal to gate the upgrade button: no payment method -> redirect to attach flow first.",
+            "description": "Cached ``.has_payment_method`` flag. True iff the tenant has at least one ``card`` or Stripe ``link`` payment method attached (the two PM types ``select_plan`` and the PAYG cron can charge). Used by the portal to gate the upgrade button: no payment method -> redirect to attach flow first.",
             "title": "Has Payment Method",
             "type": "boolean"
           },
@@ -3733,7 +3529,7 @@
         "type": "object"
       },
       "PaymentMethodSummary": {
-        "description": "Trimmed PaymentMethod view for the portal billing panel.\n\nCovers both card and Stripe Link PMs. No PAN, no CVV, no full card\nnumber, Stripe never returns those to us. For cards the brand,\nlast4, and expiry fields populate; for Link PMs those are null and\n``link_email`` carries the Link account's email so the portal can\nrender \"Link account user@example.com\".",
+        "description": "Trimmed PaymentMethod view for the portal billing panel. Covers both card and Stripe Link PMs. No PAN, no CVV, no full card\nnumber, Stripe never returns those to us. For cards the brand,\nlast4, and expiry fields populate; for Link PMs those are null and\n``link_email`` carries the Link account's email so the portal can\nrender \"Link account user@example.com\".",
         "properties": {
           "brand": {
             "anyOf": [
@@ -3831,7 +3627,7 @@
         "type": "object"
       },
       "PeriodSummary": {
-        "description": "Snapshot of the current billing period: start/end + the\ngrant/used/remaining decomposition the portal billing card needs.\n\n``credits_granted`` is the **plan's monthly allocation**, not a\nsum of ledger grant rows in the current period. A tenant who\nupgraded mid-period or received a manual ``adjustment`` will see\nthis field reflect the plan tier, not the literal credits that\nlanded in the ledger. The portal renders this as \"your plan\nincludes N\", not \"you received N this period.\"\n\n``credits_used`` is the sum of ``tx_type='usage_deduction'`` ledger\nentries since ``started_at``. Excluded from this stat:\n\n  * ``plan_credit`` (signup seed)\n  * ``plan_renewal`` (monthly / yearly grant)\n  * ``adjustment`` (ops-driven manual changes; rare)\n  * future PAYG top-ups (will use a distinct ``tx_type``)\n\nNegative ``adjustment`` entries reduce ``credit_balance`` without\nincrementing ``credits_used`` \u2014 the portal can detect this when\n``credits_granted - credits_used > credits_remaining`` and explain\nthe gap as \"ops adjustment\" if needed.\n\n``credits_remaining`` mirrors ``Tenant.credit_balance`` so the portal\ncan highlight a single source-of-truth number; it can exceed\n``credits_granted`` after a PAYG top-up.",
+        "description": "Snapshot of the current billing period (start/end) with the grant/used/remaining credit breakdown. ``credits_granted`` is your plan's monthly credit allocation (the plan tier's included amount), not necessarily the credits literally added this period \u2014 a mid-period upgrade or account adjustment can make the two differ. ``credits_used`` is the credits consumed by usage during this period. ``credits_remaining`` is your current available balance; it can exceed ``credits_granted`` (for example after a top-up).",
         "properties": {
           "credits_granted": {
             "title": "Credits Granted",
@@ -3997,7 +3793,7 @@
         "type": "object"
       },
       "PlanCatalogEntry": {
-        "description": "A single tier in the public plan catalogue.\n\n``yearly_price_usd`` is null on tiers without a yearly variant\n(the free trial). Portal toggles between monthly and yearly\npricing only on tiers where it's non-null.\n\n``is_trial`` flips the renewal-job behavior: trial plans grant\ncredits once at signup and never refill. Currently only the free\nplan is a trial.",
+        "description": "A single tier in the public plan catalogue. ``yearly_price_usd`` is null on tiers without a yearly variant\n(the free trial). Portal toggles between monthly and yearly\npricing only on tiers where it's non-null. ``is_trial`` flips the renewal-job behavior: trial plans grant\ncredits once at signup and never refill. Currently only the free\nplan is a trial.",
         "properties": {
           "features": {
             "items": {
@@ -4089,7 +3885,7 @@
         "type": "object"
       },
       "PlanListResponse": {
-        "description": "``GET /billing/plans`` payload. ``current_plan_slug`` lets the\nplan-picker UI highlight the tenant's tier without a second\n``/billing/balance`` call. The hidden ``internal`` tier is filtered\nout before this response is built; non-internal tenants never see it.",
+        "description": "``GET /billing/plans`` payload. ``current_plan_slug`` lets a plan picker highlight your current tier without a second ``/billing/balance`` call.",
         "properties": {
           "current_plan_slug": {
             "title": "Current Plan Slug",
@@ -4285,7 +4081,7 @@
         "type": "object"
       },
       "SelectPlanRequest": {
-        "description": "Optional body for ``POST /billing/plans/{slug}/select``.\n\nDefaults to monthly billing. Yearly is rejected with 400 if the\nrequested plan has no yearly variant configured (currently the\nfree trial). The interval drives which ``stripe_price_id`` the\nbackend hands to ``create_subscription`` /\n``update_subscription_price`` and which ``Stripe Price`` Stripe\nbills against.",
+        "description": "Optional body for ``POST /billing/plans/{slug}/select``. Defaults to monthly billing. Yearly is rejected with 400 if the\nrequested plan has no yearly variant configured (currently the\nfree trial). The interval drives which ``stripe_price_id`` the\nbackend hands to ``create_subscription`` /\n``update_subscription_price`` and which ``Stripe Price`` Stripe\nbills against.",
         "properties": {
           "interval": {
             "default": "monthly",
@@ -4298,7 +4094,7 @@
         "type": "object"
       },
       "SelectPlanResponse": {
-        "description": "``POST /billing/plans/{slug}/select`` payload.\n\nReturns the new state after the Stripe subscription create / update\n/ scheduled cancellation. ``status`` is one of:\n\n  * Stripe subscription status pass-through: ``active``,\n    ``trialing``, ``incomplete`` (first-charge pending),\n    ``past_due``, etc.\n  * ``free`` -- already-free tenant re-affirmed the free tier; no\n    Stripe call was needed.\n  * ``scheduled_cancellation`` -- voluntary downgrade from a paid\n    tier to free. The Stripe sub stays active through the period\n    the customer paid for; the portal renders \"Cancellation\n    scheduled for <period_end>\" until the period-boundary\n    ``customer.subscription.deleted`` webhook flips them to free.\n\nWhen ``status='incomplete'`` (declining first-charge under\n``payment_behavior='default_incomplete'``) the response includes\n``payment_intent_client_secret`` so the portal can call\n``stripe.confirmCardPayment(client_secret)`` to recover within\nStripe's 23-hour completion window. ``billing_plan`` does NOT\nadvance to the new tier in this case; the customer's plan only\nchanges after Stripe transitions the subscription to ``active``\nand fires ``customer.subscription.updated`` (which the webhook\nhandler picks up to commit the plan).",
+        "description": "``POST /billing/plans/{slug}/select`` payload. Returns the new state after the Stripe subscription create / update\n/ scheduled cancellation. ``status`` is one of:\n\n * Stripe subscription status pass-through: ``active``,\n ``trialing``, ``incomplete`` (first-charge pending),\n ``past_due``, etc. * ``free`` -- already-free tenant re-affirmed the free tier; no\n Stripe call was needed. * ``scheduled_cancellation`` -- voluntary downgrade from a paid\n tier to free. The Stripe sub stays active through the period\n the customer paid for; the portal renders \"Cancellation\n scheduled for <period_end>\" until the period-boundary\n ``customer.subscription.deleted`` webhook flips them to free. When ``status='incomplete'`` (declining first-charge under\n``payment_behavior='default_incomplete'``) the response includes\n``payment_intent_client_secret`` so the portal can call\n``stripe.confirmCardPayment(client_secret)`` to recover within\nStripe's 23-hour completion window. ``billing_plan`` does NOT\nadvance to the new tier in this case; the customer's plan only\nchanges after Stripe transitions the subscription to ``active``\nand fires ``customer.subscription.updated`` (which the webhook\nhandler picks up to commit the plan).",
         "properties": {
           "awaiting_payment": {
             "default": false,
@@ -4422,7 +4218,7 @@
         "type": "object"
       },
       "SmallWebRTCPatchRequest": {
-        "description": "Small WebRTC transport session arguments for the runner.\n\nParameters:\n    pc_id: Identifier for the peer connection.\n    candidates: A list of ICE candidate patches.",
+        "description": "Small WebRTC transport session arguments for the runner. Parameters:\n pc_id: Identifier for the peer connection. candidates: A list of ICE candidate patches.",
         "properties": {
           "candidates": {
             "items": {
@@ -4444,7 +4240,7 @@
         "type": "object"
       },
       "SmallWebRTCRequest": {
-        "description": "Small WebRTC transport session arguments for the runner.\n\nParameters:\n    sdp: The SDP string (Session Description Protocol).\n    type: The type of the SDP, either \"offer\" or \"answer\".\n    pc_id: Optional identifier for the peer connection.\n    restart_pc: Optional whether to restart the peer connection.\n    request_data: Optional custom data sent by the customer.",
+        "description": "Small WebRTC transport session arguments for the runner. Parameters:\n sdp: The SDP string (Session Description Protocol). type: The type of the SDP, either \"offer\" or \"answer\". pc_id: Optional identifier for the peer connection. restart_pc: Optional whether to restart the peer connection. request_data: Optional custom data sent by the customer.",
         "properties": {
           "pc_id": {
             "anyOf": [
@@ -4807,7 +4603,7 @@
         "type": "object"
       },
       "TransactionEntry": {
-        "description": "A single ledger row, surfaced to the portal transactions page.\n\n``details`` is the row's metadata column passed through opaquely; the\nportal can render whatever it finds (call_id, tts_chars, asr_seconds,\nStripe payment_intent_id) without us promising a stable shape.",
+        "description": "A single ledger row, surfaced to the portal transactions page. ``details`` is the row's metadata column passed through opaquely; the\nportal can render whatever it finds (call_id, tts_chars, asr_seconds,\nStripe payment_intent_id) without us promising a stable shape.",
         "properties": {
           "amount": {
             "description": "Signed credit movement: negative for usage / charges, positive for grants / top-ups.",
@@ -4826,7 +4622,7 @@
           },
           "details": {
             "additionalProperties": true,
-            "description": "Free-form metadata (call_id, resource counts, idempotency key, etc). Shape is not guaranteed and may change per tx_type.",
+            "description": "Free-form metadata (call_id, resource counts, idempotency key, etc). Shape is not guaranteed and may vary by transaction type.",
             "title": "Details",
             "type": "object"
           },
@@ -4850,7 +4646,7 @@
         "type": "object"
       },
       "TransactionListResponse": {
-        "description": "``GET /billing/transactions`` payload. Cursor pagination so the\nportal can scroll through arbitrarily large ledgers without offset\npathologies on hot tenants.\n\nClients pass ``next_cursor`` back as ``?cursor=...`` (the canonical\nrequest param). ``?next_cursor=...`` is also accepted for clients\nthat intuitively echo the response field name. When ``next_cursor``\nis null the caller has reached the oldest entry.\n\nThe response field is named ``next_cursor`` (not ``cursor``) and must\nstay that way: the portal and SDK consumers have typed against it.\nOnly the *request* surface accepts both names.",
+        "description": "``GET /billing/transactions`` payload. Cursor pagination so the\nportal can scroll through arbitrarily large ledgers without offset\npathologies on hot tenants. Clients pass ``next_cursor`` back as ``?cursor=...`` (the canonical\nrequest param). ``?next_cursor=...`` is also accepted for clients\nthat intuitively echo the response field name. When ``next_cursor``\nis null the caller has reached the oldest entry. The response field is named ``next_cursor`` (not ``cursor``) and must\nstay that way: the portal and SDK consumers have typed against it. Only the *request* surface accepts both names.",
         "properties": {
           "next_cursor": {
             "anyOf": [
@@ -5147,7 +4943,7 @@
         "type": "object"
       },
       "TwilioAccountCreate": {
-        "description": "Request body for ``POST /api/v1/twilio-accounts``.\n\n``auth_token`` is required at registration time so we can verify the\nSID/token pair with Twilio before persisting.",
+        "description": "Request body for ``POST /api/v1/twilio-accounts``. ``auth_token`` is required at registration time so we can verify the\nSID/token pair with Twilio before persisting.",
         "properties": {
           "account_sid": {
             "maxLength": 34,
@@ -5176,7 +4972,7 @@
         "type": "object"
       },
       "TwilioAccountResponse": {
-        "description": "Response shape. ``auth_token`` is never returned.\n\n``tenant_id`` is ``None`` for platform-shared credentials (any tenant\ncan attach numbers) and a UUID string for tenant-owned (BYO) rows.",
+        "description": "Response shape. ``auth_token`` is never returned. ``tenant_id`` is ``None`` for platform-shared credentials (any tenant\ncan attach numbers) and a UUID string for tenant-owned (BYO) rows.",
         "properties": {
           "account_sid": {
             "title": "Account Sid",
@@ -5273,7 +5069,7 @@
         "type": "object"
       },
       "UsageByResourceEntry": {
-        "description": "One bucket value in ``UsageSummary.by_resource_type``.\n\nKeys mirror what the usage tracker aggregates per ``resource_type``:\nrequest count, token totals, audio seconds, and TTS input\ncharacters. All fields default to zero so an empty bucket is a\nwell-typed object rather than a partial dict.",
+        "description": "One entry in ``UsageSummary.by_resource_type``, aggregating usage for a single ``resource_type``: request count, token totals, audio seconds, and TTS input characters. All fields default to zero, so an entry with no activity is a fully-typed object rather than a partial one.",
         "properties": {
           "audio_seconds": {
             "default": 0.0,
@@ -5514,7 +5310,7 @@
         "type": "object"
       },
       "UsageTriggerFiringResponse": {
-        "description": "One row from ``GET /usage/triggers/{id}/firings``.\n\n``payload`` is the exact JSON we POSTed to the customer's URL so they\ncan replay it against their handler when debugging a missed event.\n``delivery_status`` reflects the final state after retries:\n``delivered`` / ``failed`` / ``pending``.",
+        "description": "One row from ``GET /usage/triggers/{id}/firings``. ``payload`` is the exact JSON we POSTed to the customer's URL so they\ncan replay it against their handler when debugging a missed event. ``delivery_status`` reflects the final state after retries:\n``delivered`` / ``failed`` / ``pending``.",
         "properties": {
           "attempt_count": {
             "default": 0,
@@ -5663,7 +5459,7 @@
       },
       "UsageTriggerUpdate": {
         "additionalProperties": false,
-        "description": "Partial update for ``PATCH /usage/triggers/{id}``.\n\nOnly fields a customer can re-tune in place are exposed: the\n``is_active`` flag (deactivate to recover the per-tenant cap\nwithout losing audit history), the threshold value (re-tune the\ntrip point as their volume scales), and the callback URL (rotate\nthe receiver). The trigger's *shape* \u2014 ``resource_type``,\n``threshold_type``, ``period`` \u2014 is immutable; a different shape\nis logically a different trigger and should be created fresh so\nthe firings audit table cleanly tracks one configuration over\ntime.\n\nEvery field is Optional; PATCH is partial. An empty body is a\nvalid no-op.\n\n``extra='forbid'`` rejects unknown keys with HTTP 422. This catches\ntwo real customer foot-guns at once: PATCHing an immutable shape\nfield (``resource_type`` / ``threshold_type`` / ``period``) used\nto return 200 with the value silently dropped, and a misspelled\neditable field name (e.g. ``threshold_val``) used to return 200\nwith no clue the change was ignored. Both now surface as an\nexplicit validation error at the boundary.",
+        "description": "Partial update for ``PATCH /usage/triggers/{id}``. Only fields a customer can re-tune in place are exposed: the\n``is_active`` flag (deactivate to recover the per-tenant cap\nwithout losing audit history), the threshold value (re-tune the\ntrip point as their volume scales), and the callback URL (rotate\nthe receiver). The trigger's *shape* \u2014 ``resource_type``,\n``threshold_type``, ``period`` \u2014 is immutable; a different shape\nis logically a different trigger and should be created fresh so\nthe firings audit table cleanly tracks one configuration over\ntime. Every field is Optional; PATCH is partial. An empty body is a\nvalid no-op. ``extra='forbid'`` rejects unknown keys with HTTP 422. This catches\ntwo real customer foot-guns at once: PATCHing an immutable shape\nfield (``resource_type`` / ``threshold_type`` / ``period``) used\nto return 200 with the value silently dropped, and a misspelled\neditable field name (e.g. ``threshold_val``) used to return 200\nwith no clue the change was ignored. Both now surface as an\nexplicit validation error at the boundary.",
         "properties": {
           "event_callback_url": {
             "anyOf": [
@@ -5740,203 +5536,6 @@
         "title": "ValidationError",
         "type": "object"
       },
-      "VoiceCatalogEntry": {
-        "description": "Admin-only response shape returned by the internal PATCH endpoint.\n\nMirrors ``VoiceResponse`` minus ``model_size`` (the PATCH handler\nfetches ``Voice`` without joining ``TtsModel``), plus the internal\n``display_name`` and ``internal_notes`` columns so curator tooling\ncan round-trip an update without a follow-up GET. The public\n``GET /voices`` surface still uses ``VoiceResponse`` and never\nexposes ``display_name`` or ``internal_notes`` as discrete fields;\n``display_name`` folds into ``name`` via ``Voice.public_name`` and\n``internal_notes`` is admin-only.\n\nWARNING: ``internal_notes`` must never appear on a public\n``response_model``. It is intentionally excluded from\n``_voice_to_response``; verify any new route that uses this class\nsits behind the ``/internal`` auth boundary.",
-        "properties": {
-          "description": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description"
-          },
-          "display_name": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Display Name"
-          },
-          "gender": {
-            "default": "",
-            "title": "Gender",
-            "type": "string"
-          },
-          "id": {
-            "title": "Id",
-            "type": "string"
-          },
-          "internal_notes": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Internal Notes"
-          },
-          "is_cloned": {
-            "default": false,
-            "title": "Is Cloned",
-            "type": "boolean"
-          },
-          "language": {
-            "default": "",
-            "title": "Language",
-            "type": "string"
-          },
-          "name": {
-            "title": "Name",
-            "type": "string"
-          },
-          "preview_url": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Preview Url"
-          },
-          "status": {
-            "enum": [
-              "active",
-              "retired"
-            ],
-            "title": "Status",
-            "type": "string"
-          },
-          "supports_dialect_style": {
-            "default": false,
-            "title": "Supports Dialect Style",
-            "type": "boolean"
-          },
-          "tags": {
-            "items": {
-              "type": "string"
-            },
-            "title": "Tags",
-            "type": "array"
-          },
-          "voice_type": {
-            "default": "icl",
-            "title": "Voice Type",
-            "type": "string"
-          }
-        },
-        "required": [
-          "id",
-          "name",
-          "status"
-        ],
-        "title": "VoiceCatalogEntry",
-        "type": "object"
-      },
-      "VoiceGender": {
-        "description": "Speaker gender. ``neutral`` covers both unknown and intentionally\nnon-binary voices \u2014 we don't need a separate ``unknown`` value.",
-        "enum": [
-          "male",
-          "female",
-          "neutral"
-        ],
-        "title": "VoiceGender",
-        "type": "string"
-      },
-      "VoiceMetadataUpdate": {
-        "description": "Body for ``PATCH /internal/voices/{voice_key}``.\n\nEditable fields:\n\n* ``display_name``: curator-authored override for the customer-facing\n  voice name. The migrated ``name`` value is the durable fallback;\n  setting this to ``null`` clears the override and the response reverts\n  to the migrated name.\n* ``status``: soft-retire flag. ``\"active\"`` shows the voice on\n  ``GET /voices``; ``\"retired\"`` hides it from listings and 404s\n  ``GET /voices/{voice_id}`` while leaving the row (and the internal\n  voice-registry consumed by the TTS pod) untouched.\n* ``description``: customer-facing one-liner. Brand-leak validated\n  like ``display_name``.\n* ``internal_notes``: admin-only commentary, never copied onto the\n  public ``VoiceResponse``. No brand-leak scrub because the field is\n  meant to hold context that legitimately names internal voices.\n* ``tags``: closed-vocabulary list of tokens drawn from\n  :data:`VOICE_TAG_VOCABULARY`. Send ``[]`` to clear; sending\n  ``null`` is rejected because the underlying column is NOT NULL.\n* ``gender``: curator-authored correction for the speaker's perceived\n  gender. The seed gender is best-effort and is known to be wrong on\n  some pool voices, so the dashboard exposes a male/female/neutral\n  selector that PATCHes the canonical value here. Sending ``null``\n  is rejected because the underlying column is NOT NULL; omit the\n  key to leave the existing value unchanged.\n\nEvery field is optional. Omitting a key leaves the column untouched\nvia ``model_dump(exclude_unset=True)``; sending ``null`` on a\nnullable field clears it.\n\nUnknown keys are intentionally tolerated (``extra='ignore'``, the\nPydantic default) so a rolling deploy stays safe: during the window\nbetween an API rollout that adds a new metadata field and the\nmatching dashboard rollout, a dashboard PATCH that still sends an\nolder shape (or, in the reverse direction, a dashboard that already\nsends a newer field name) must not 422 the curator out of a save.\nThe trade-off is that a typo in a hand-rolled curator script\nsilently no-ops the misspelled key; the dashboard form is the only\nreal client and is exercised end-to-end before each deploy.",
-        "properties": {
-          "description": {
-            "anyOf": [
-              {
-                "maxLength": 1000,
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Description"
-          },
-          "display_name": {
-            "anyOf": [
-              {
-                "maxLength": 255,
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Display Name"
-          },
-          "gender": {
-            "anyOf": [
-              {
-                "$ref": "#/components/schemas/VoiceGender"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "internal_notes": {
-            "anyOf": [
-              {
-                "maxLength": 4000,
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Internal Notes"
-          },
-          "status": {
-            "anyOf": [
-              {
-                "enum": [
-                  "active",
-                  "retired"
-                ],
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Status"
-          },
-          "tags": {
-            "anyOf": [
-              {
-                "items": {
-                  "type": "string"
-                },
-                "maxItems": 51,
-                "type": "array"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Tags"
-          }
-        },
-        "title": "VoiceMetadataUpdate",
-        "type": "object"
-      },
       "VoicePreviewRequest": {
         "properties": {
           "text": {
@@ -5988,17 +5587,6 @@
             "default": "",
             "title": "Language",
             "type": "string"
-          },
-          "model_size": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Model Size"
           },
           "name": {
             "title": "Name",
@@ -6473,7 +6061,7 @@
     },
     "/api/v1/agents/{agent_id}/knowledge-base/by-upload": {
       "post": {
-        "description": "Ingest a knowledge-base document via a presigned upload (no WAF body inspection).",
+        "description": "Ingest a knowledge-base document via a presigned upload.",
         "operationId": "upload_knowledge_doc_by_upload_api_v1_agents__agent_id__knowledge_base_by_upload_post",
         "parameters": [
           {
@@ -6530,7 +6118,7 @@
     },
     "/api/v1/agents/{agent_id}/knowledge-base/query": {
       "post": {
-        "description": "Test RAG retrieval against an agent's knowledge base.\n\nBody: {\"query\": \"your question here\", \"top_k\": 3}\nReturns ranked chunks with scores from pgvector hybrid search.",
+        "description": "Test RAG retrieval against an agent's knowledge base. Body: {\"query\": \"your question here\", \"top_k\": 3}\nReturns ranked chunks with scores from pgvector hybrid search.",
         "operationId": "query_knowledge_base_api_v1_agents__agent_id__knowledge_base_query_post",
         "parameters": [
           {
@@ -6589,7 +6177,7 @@
     },
     "/api/v1/agents/{agent_id}/knowledge-base/texts": {
       "get": {
-        "description": "Get extracted text from all processed knowledge base documents.\n\nReturns the format expected by PipelineConfig.knowledge_documents for RAG.",
+        "description": "Get extracted text from all processed knowledge base documents. Returns the agent's knowledge_documents for RAG retrieval.",
         "operationId": "get_knowledge_texts_api_v1_agents__agent_id__knowledge_base_texts_get",
         "parameters": [
           {
@@ -7191,7 +6779,7 @@
     },
     "/api/v1/auth/logout": {
       "post": {
-        "description": "Logout and revoke the current server-side JWT session.\n\nRate-limited per-session: a stolen access token cannot flood\n/auth/logout to burn the user's session row repeatedly and mask\nother malicious activity in audit trails. Per ayooluwa-aethex\nround-2 MUST #2.",
+        "description": "Log out and revoke the current server-side session. Rate-limited per session.",
         "operationId": "logout_api_v1_auth_logout_post",
         "responses": {
           "200": {
@@ -7211,7 +6799,7 @@
     },
     "/api/v1/auth/logout-all": {
       "post": {
-        "description": "Revoke every active session for the developer.\n\nRate-limited per-developer so a stolen access token cannot be used\nto repeatedly burn the legitimate user's recovery path. The cookies\non this response are cleared because the caller's own session is\namong those revoked.",
+        "description": "Revoke every active session for the developer. Rate-limited per-developer so a stolen access token cannot be used\nto repeatedly burn the legitimate user's recovery path. The cookies\non this response are cleared because the caller's own session is\namong those revoked.",
         "operationId": "logout_all_api_v1_auth_logout_all_post",
         "responses": {
           "200": {
@@ -7233,7 +6821,7 @@
     },
     "/api/v1/auth/magic-link/request": {
       "post": {
-        "description": "Request a one-time sign-in link by email.\n\nAlways returns the same body on well-formed input. If the address has no\ndeveloper row yet, the service stores only a pending email token; the\naccount is created after the token is verified. 429 remains generic so\nlimiter state does not become an address-discovery surface.",
+        "description": "Request a one-time sign-in link by email. Always returns the same body on well-formed input. If the address has no\ndeveloper row yet, the service stores only a pending email token; the\naccount is created after the token is verified. 429 remains generic so\nlimiter state does not become an address-discovery surface.",
         "operationId": "request_magic_link_api_v1_auth_magic_link_request_post",
         "requestBody": {
           "content": {
@@ -7275,7 +6863,7 @@
     },
     "/api/v1/auth/magic-link/verify": {
       "post": {
-        "description": "Consume a magic-link token; return JWT pair + optional first API key.\n\nResponse schema matches ``GoogleAuthResponse`` on purpose \u2014 the\nportal's ``saveAuth`` + first-sign-in API-key reveal flows key off\nthis shape and we want zero client-side branching between the two\nsign-in methods.\n\nRate-limited per-IP so a leaked-log dump of partial tokens can't be\nbrute-scanned at full speed. The token space is already 256 bits so\nthis is defence-in-depth, not the primary control.",
+        "description": "Consume a magic-link token; return JWT pair + optional first API key. Response schema matches ``GoogleAuthResponse`` on purpose \u2014 the\nportal's ``saveAuth`` + first-sign-in API-key reveal flows key off\nthis shape and we want zero client-side branching between the two\nsign-in methods. Rate-limited per-IP so a leaked-log dump of partial tokens can't be\nbrute-scanned at full speed. The token space is already 256 bits so\nthis is defence-in-depth, not the primary control.",
         "operationId": "verify_magic_link_api_v1_auth_magic_link_verify_post",
         "requestBody": {
           "content": {
@@ -7335,7 +6923,7 @@
         ]
       },
       "get": {
-        "description": "Get current developer profile.\n\nRequires JWT bearer token (not API key). Use Google or email magic-link sign-in\nto obtain a token.",
+        "description": "Get current developer profile. Requires JWT bearer token (not API key). Use Google or email magic-link sign-in\nto obtain a token.",
         "operationId": "get_me_api_v1_auth_me_get",
         "responses": {
           "200": {
@@ -7397,7 +6985,7 @@
     },
     "/api/v1/auth/refresh": {
       "post": {
-        "description": "Rotate the developer's access/refresh pair.\n\nAccepts the refresh token from the ``aethex_refresh_token`` HttpOnly\ncookie (preferred) or the request body (legacy / non-browser\ncallers). Per-IP and per-token Redis sliding windows protect\nagainst spray and stuck-loop replay respectively; the per-token\nbucket is keyed off an opaque hash of the raw token bytes so a\nforged JWT can't burn a real session's budget.\n\nThe cookie lane is additionally CSRF-checked (double-submit\n``X-CSRF-Token`` matches ``aethex_csrf_token``). This route does\nnot depend on ``require_developer_jwt`` \u2014 by design, since the\nrefresh token can be valid when the access token has expired \u2014\nso the CSRF guard is wired here explicitly. Without it, a\nsame-site sub-domain that gained XHR foothold could ride the\nvictim's refresh cookie to advance ``refresh_generation`` /\nburn budget / log them out via rotation-anomaly detection.\nBody-token callers (no cookie present) skip the check.",
+        "description": "Rotate the developer access/refresh token pair. Accepts the refresh token from the ``aethex_refresh_token`` HttpOnly cookie (preferred) or from the request body for non-browser callers. Requests using the cookie are CSRF-protected via the ``X-CSRF-Token`` double-submit header; body-token callers do not require the CSRF header.",
         "operationId": "refresh_api_v1_auth_refresh_post",
         "requestBody": {
           "content": {
@@ -7446,7 +7034,7 @@
     },
     "/api/v1/auth/sessions": {
       "get": {
-        "description": "List active server-side sessions for the authenticated developer.\n\nSurfaces the per-row state the portal uses to render a \"where you\nare signed in\" inventory. ``is_current=true`` flags the row backing\nthe caller's own JWT so the UI can label it and gray out the kill\nbutton for it (logout is the right action for the current session).",
+        "description": "List active server-side sessions for the authenticated developer. Surfaces the per-row state the portal uses to render a \"where you\nare signed in\" inventory. ``is_current=true`` flags the row backing\nthe caller's own JWT so the UI can label it and gray out the kill\nbutton for it (logout is the right action for the current session).",
         "operationId": "list_sessions_api_v1_auth_sessions_get",
         "responses": {
           "200": {
@@ -7490,7 +7078,7 @@
     },
     "/api/v1/billing/invoices": {
       "get": {
-        "description": "List the tenant's Stripe invoices, newest-first.\n\nCursor pagination via Stripe's ``starting_after``: pass\n``next_cursor`` from the previous response back as ``?cursor=``\n(canonical) or ``?next_cursor=`` (alias). Each row carries\nStripe-hosted ``hosted_invoice_url`` (full\ninvoice page) and ``invoice_pdf`` (direct PDF download). We do\nnot render PDFs ourselves: Stripe handles invoice generation,\nbranding, and tax line items.\n\nReturns an empty list when:\n  * No Stripe Customer has been created for this tenant yet\n    (free trial that never picked a paid plan).\n  * The tenant has a Customer but no invoices yet (rare; happens\n    only between Customer create and the first invoice cycle).\n\n503 when ``AETHEX_STRIPE_SECRET_KEY`` is unset; the portal\nsurfaces this as \"billing isn't configured for this environment\".",
+        "description": "List the account's invoices, newest-first, with cursor pagination: pass ``next_cursor`` from the previous response back as ``?cursor=`` (or its ``?next_cursor=`` alias). Each row carries a ``hosted_invoice_url`` (the full invoice page) and an ``invoice_pdf`` (direct PDF download). Returns an empty list when no invoices exist yet \u2014 for example an account that has never started a paid plan, or one that has just started and has not yet been billed. Returns 503 when billing is not configured.",
         "operationId": "list_tenant_invoices_api_v1_billing_invoices_get",
         "parameters": [
           {
@@ -7572,7 +7160,7 @@
     },
     "/api/v1/billing/payment-method/setup-intent": {
       "post": {
-        "description": "Return a SetupIntent the portal Payment Element can confirm\nagainst to attach a card to the tenant's Stripe Customer.\n\n``usage='off_session'`` is set on the SetupIntent so the saved\ncard can be charged later for PAYG overage without re-prompting\nfor 3DS. Customer is created lazily on first call.",
+        "description": "Return a SetupIntent the portal Payment Element can confirm\nagainst to attach a card to the tenant's Stripe Customer. ``usage='off_session'`` is set on the SetupIntent so the saved\ncard can be charged later for PAYG overage without re-prompting\nfor 3DS. Customer is created lazily on first call.",
         "operationId": "create_payment_method_setup_intent_api_v1_billing_payment_method_setup_intent_post",
         "responses": {
           "201": {
@@ -7616,7 +7204,7 @@
     },
     "/api/v1/billing/payment-methods/{payment_method_id}": {
       "delete": {
-        "description": "Detach a payment method from the tenant's Stripe Customer.\n\nOwnership is verified server-side BEFORE the detach call. Stripe's\ndetach endpoint takes only the PM id (no customer scope), so a\nleaked ``pm_*`` id from logs / dashboard transcripts / accidental\nclient-side console output would otherwise let any\nportal-authenticated tenant nuke another tenant's PM. We\nretrieve the PM, compare ``pm.customer`` to the JWT-bound\ntenant's ``stripe_customer_id``, and 404 on mismatch (same\nresponse as a non-existent id, so a probe can't distinguish\n\"wrong tenant\" from \"doesn't exist\"). One extra ~100ms Stripe\nroundtrip on a user-initiated, infrequent path.\n\nThe ``has_payment_method`` cache flag is updated by the\n``payment_method.attached`` / ``.detached`` webhook handlers\n(which use Stripe's ``previous_attributes`` to resolve the owner\nwhen the post-detach event has ``customer=null``). The route does\nNOT touch the cache directly \u2014 Stripe is source of truth and\nwebhooks are how we mirror it.\n\nOn any Stripe-side error the route surfaces the SDK's curated\n``StripeError.user_message`` if present, falling back to a\ngeneric message. Programming bugs (TypeError, AttributeError,\netc.) propagate to the global handler instead of being silently\nserved as 400s.",
+        "description": "Detach a payment method from the tenant's Stripe Customer. Ownership is verified server-side BEFORE the detach call. Stripe's\ndetach endpoint takes only the PM id (no customer scope), so a\nleaked ``pm_*`` id from logs / dashboard transcripts / accidental\nclient-side console output would otherwise let any\nportal-authenticated tenant nuke another tenant's PM. We\nretrieve the PM, compare ``pm.customer`` to the JWT-bound\ntenant's ``stripe_customer_id``, and 404 on mismatch (same\nresponse as a non-existent id, so a probe can't distinguish\n\"wrong tenant\" from \"doesn't exist\"). One extra ~100ms Stripe\nroundtrip on a user-initiated, infrequent path. The ``has_payment_method`` cache flag is updated by the\n``payment_method.attached`` / ``.detached`` webhook handlers\n(which use Stripe's ``previous_attributes`` to resolve the owner\nwhen the post-detach event has ``customer=null``). The route does\nNOT touch the cache directly \u2014 Stripe is source of truth and\nwebhooks are how we mirror it. On any Stripe-side error the route surfaces the SDK's curated\n``StripeError.user_message`` if present, falling back to a\ngeneric message. Programming bugs (TypeError, AttributeError,\netc.) propagate to the global handler instead of being silently\nserved as 400s.",
         "operationId": "detach_tenant_payment_method_api_v1_billing_payment_methods__payment_method_id__delete",
         "parameters": [
           {
@@ -7674,7 +7262,7 @@
     },
     "/api/v1/billing/plans/{slug}/select": {
       "post": {
-        "description": "Switch the tenant's subscription to the named plan tier.\n\nFirst-time selection of a paid tier creates a new Stripe\nSubscription against the tenant's saved payment method. Subsequent\nselections update the existing Subscription's price item with\npro-ration. Selecting the free tier cancels the active\nSubscription (the renewal job continues granting free-tier\ncredits).\n\nRequired state:\n  * Tenant must have ``has_payment_method=True`` (i.e. attached a\n    chargeable card or Link PM via the SetupIntent flow) before\n    selecting any paid tier. Free tier is always selectable.\n  * Plan row must have ``stripe_price_id`` populated (ops sets\n    this after creating the Stripe Price). If not populated for\n    the requested tier, the route returns 503.",
+        "description": "Switch the tenant's subscription to the named plan tier. First-time selection of a paid tier creates a new Stripe\nSubscription against the tenant's saved payment method. Subsequent\nselections update the existing Subscription's price item with\npro-ration. Selecting the free tier cancels the active\nSubscription (the renewal job continues granting free-tier\ncredits). Required state:\n * Tenant must have ``has_payment_method=True`` (i.e. attached a\n chargeable card or Link PM via the SetupIntent flow) before\n selecting any paid tier. Free tier is always selectable. * Plan row must have ``stripe_price_id`` populated (ops sets\n this after creating the Stripe Price). If not populated for\n the requested tier, the route returns 503.",
         "operationId": "select_plan_api_v1_billing_plans__slug__select_post",
         "parameters": [
           {
@@ -7966,7 +7554,7 @@
     },
     "/api/v1/calls/batch": {
       "post": {
-        "description": "Dispatch a batch of outbound calls (provider-agnostic).\n\nOptional scheduling: ``start_at`` defers the dispatch until the given\ntimestamp; ``end_at`` causes the worker to abandon any unstarted\nrecipients past that deadline. Both are timezone-aware ISO 8601.\nReturns a ``batch_id`` for polling via ``GET /calls/batch/{id}``.",
+        "description": "Dispatch a batch of outbound calls (provider-agnostic). Optional scheduling: ``start_at`` defers the dispatch until the given\ntimestamp; ``end_at`` causes the worker to abandon any unstarted\nrecipients past that deadline. Both are timezone-aware ISO 8601. Returns a ``batch_id`` for polling via ``GET /calls/batch/{id}``.",
         "operationId": "batch_calls_api_v1_calls_batch_post",
         "requestBody": {
           "content": {
@@ -8062,7 +7650,7 @@
     },
     "/api/v1/calls/trigger": {
       "post": {
-        "description": "Create a call record and schedule the outbound dial (async / 202).\n\nReturns **202 Accepted** with the Call record (``status=\"queued\"``)\nas soon as the row is persisted. The actual provider dial \u2014 which\nincludes an up-to-300 s wait for TTS to become ready \u2014 runs as a\nbackground task so the HTTP response is never held open past the\ntypical SDK timeout (30\u201360 s). Clients poll ``GET /calls/{id}`` for\nterminal status. On TTS-readiness failure the row is marked\n``failed`` and ``metadata.error_message`` carries the user-facing\nexplanation.",
+        "description": "Create a call record and schedule the outbound dial (asynchronous). Returns **202 Accepted** with the Call record (``status=\"queued\"``) as soon as it is persisted; the dial proceeds in the background. Poll ``GET /calls/{id}`` for terminal status. On failure the record is marked ``failed`` and ``metadata.error_message`` carries the explanation.",
         "operationId": "trigger_call_api_v1_calls_trigger_post",
         "requestBody": {
           "content": {
@@ -8155,7 +7743,7 @@
     },
     "/api/v1/calls/{call_id}/status": {
       "get": {
-        "description": "Return telephony status for a call.\n\nToday's writers emit one of the eight values enumerated by\n``CallStatusLiteral`` (queued / ringing / in-progress / completed /\nfailed / no-answer / busy / canceled). ``connected`` is intentionally\nabsent: no code path writes it today, and including it would imply an\nobservable state customers cannot reach. See AET-1473.\n\n``CallStatusResponse.status`` is typed as ``str`` rather than\n``CallStatusLiteral`` to remain forward-compatible with historical\n``vo_calls`` rows whose status (e.g. ``'initiated'``, still referenced\nin ``post_call.py``'s CASE expression) sits outside that closed set.\nThe route's *filter* boundary (``GET /calls?status=...``) is the strict\none \u2014 it rejects junk inputs at 422 \u2014 and the response is the lenient\none so legacy data round-trips cleanly.",
+        "description": "Return the telephony status for a call. The status is one of: queued, ringing, in-progress, completed, failed, no-answer, busy, or canceled. The status field is typed as a plain string rather than a closed set so it stays forward-compatible: older calls may carry legacy status values outside the current list. The collection filter (``GET /calls?status=...``) is strict and rejects unknown values with a 422, while this status response is lenient so older calls round-trip cleanly.",
         "operationId": "get_call_status_api_v1_calls__call_id__status_get",
         "parameters": [
           {
@@ -8204,7 +7792,7 @@
     },
     "/api/v1/conversation/connect": {
       "post": {
-        "description": "Create an authenticated WebRTC session.\n\nLoads agent config server-side and bakes it into Redis. The client\nreceives only a session_id and ICE config \u2014 never agent config.\n\nAccepts either an ``X-API-Key`` (production callers) or a developer\n``Authorization: Bearer`` JWT (the portal Test-in-browser surface, so\nthe dashboard never has to mint a real ``ae_live_*`` key just to talk\nto its own agent). The latter is gated by the JWT's own tenant scope \u2014\na developer can only reserve a session against agents they own \u2014 and\nflagged downstream with ``initiated_via=\"dashboard-test\"`` for\naccounting.",
+        "description": "Create an authenticated WebRTC session. The client\nreceives only a session_id and ICE config \u2014 never agent config. Accepts either an ``X-API-Key`` (production callers) or a developer\n``Authorization: Bearer`` JWT (the portal Test-in-browser surface, so\nthe dashboard never has to mint a real ``ae_live_*`` key just to talk\nto its own agent). The latter is gated by the JWT's own tenant scope \u2014\na developer can only reserve a session against agents they own \u2014 and\nflagged downstream with ``initiated_via=\"dashboard-test\"`` for\naccounting.",
         "operationId": "connect_api_v1_conversation_connect_post",
         "requestBody": {
           "content": {
@@ -8249,7 +7837,7 @@
     },
     "/api/v1/conversation/{session_id}/end": {
       "post": {
-        "description": "Gracefully end an active WebRTC session via REST.\n\nLooks up the running PipelineTask by session_id and queues a\nCancelTaskFrame to trigger a clean shutdown. If the pipeline lives\non a different pod, the request is proxied transparently (AET-857).\nAccepts either ``X-API-Key`` or a developer JWT \u2014 see ``connect`` for\nthe rationale.",
+        "description": "Gracefully end an active WebRTC session via REST, triggering a clean shutdown of the session. Accepts either ``X-API-Key`` or a developer JWT \u2014 see ``connect`` for the rationale.",
         "operationId": "end_session_api_v1_conversation__session_id__end_post",
         "parameters": [
           {
@@ -8295,7 +7883,7 @@
     },
     "/api/v1/conversation/{session_id}/ice": {
       "patch": {
-        "description": "Handle ICE candidate trickle.\n\nAuthenticated, quota-exempt signaling. ICE trickle is time-sensitive and\ncan be high volume, so the rate-limiter middleware does not charge it\nagainst tenant API RPM, but callers must still present a valid\n``calls:write`` API key.\n\nPod-aware: if the peer connection lives on a different pod, the request\nis proxied transparently via the AET-857 pod routing layer.",
+        "description": "Submit an ICE candidate for the session. ICE trickle is time-sensitive and can be high volume, so it is exempt from your API rate limit, but a valid ``calls:write`` API key is still required.",
         "operationId": "ice_candidate_api_v1_conversation__session_id__ice_patch",
         "parameters": [
           {
@@ -8351,7 +7939,7 @@
     },
     "/api/v1/conversation/{session_id}/offer": {
       "post": {
-        "description": "Submit SDP offer for an authenticated session.\n\nVerifies session ownership, then starts the pipeline with the config\nthat was locked in at /connect time. Client config overrides are\nignored. Accepts either ``X-API-Key`` or a developer JWT \u2014 see\n``connect`` for the rationale.",
+        "description": "Submit SDP offer for an authenticated session. Verifies session ownership, then starts the pipeline with the config\nthat was locked in at /connect time. Client config overrides are\nignored. Accepts either ``X-API-Key`` or a developer JWT \u2014 see\n``connect`` for the rationale.",
         "operationId": "offer_api_v1_conversation__session_id__offer_post",
         "parameters": [
           {
@@ -8407,7 +7995,7 @@
     },
     "/api/v1/conversation/{session_id}/status": {
       "get": {
-        "description": "Get status of an active or completed session.\n\nReturns status, duration, and turn count. Works for both active\nand completed sessions (data persists in Redis for the TTL period).",
+        "description": "Get status of an active or completed session. Returns status, duration, and turn count. Works for both active\nand completed sessions.",
         "operationId": "get_session_status_api_v1_conversation__session_id__status_get",
         "parameters": [
           {
@@ -8453,7 +8041,7 @@
     },
     "/api/v1/conversation/{session_id}/tool-result": {
       "post": {
-        "description": "Submit a tool call result back to an active session.\n\nWhen the LLM calls a client-side tool, the client processes it and\nsends the result back via this endpoint. The result is injected into\nthe LLM context as a tool response and triggers a continuation.\nIf the pipeline lives on a different pod, proxies transparently (AET-857).",
+        "description": "Submit a tool call result back to an active session. When the LLM calls a client-side tool, the client processes it and sends the result back via this endpoint. The result is injected into the LLM context as a tool response and triggers a continuation.",
         "operationId": "tool_result_api_v1_conversation__session_id__tool_result_post",
         "parameters": [
           {
@@ -8678,7 +8266,7 @@
     },
     "/api/v1/conversations/{conversation_id}/audio": {
       "get": {
-        "description": "Return a short-lived signed URL pointing to the audio stream.\n\nThe URL is served by this API (region/bucket are internal) and carries\na signed ``token`` query param so the URL is directly playable in a\nbrowser ``<audio>`` tag without setting auth headers, mirroring the old\npresigned-URL behaviour. Token TTL matches ``_AUDIO_TOKEN_TTL_SECONDS``.\n\nThe URL extension and the ``format`` field both reflect the underlying\nrecording's format (``wav`` for the primary path, ``CallRecording.format``\nfor the fallback) so clients can pick a decoder from either signal.",
+        "description": "Return a short-lived signed URL pointing to the conversation audio. The URL carries a signed ``token`` query param so it is directly playable in a browser ``<audio>`` tag without auth headers; the token expires after a fixed lifetime. The URL extension and the ``format`` field both reflect the recording's audio format (typically ``wav``) so clients can pick a decoder from either signal.",
         "operationId": "get_audio_api_v1_conversations__conversation_id__audio_get",
         "parameters": [
           {
@@ -8725,7 +8313,7 @@
     },
     "/api/v1/conversations/{conversation_id}/audio.wav": {
       "get": {
-        "description": "Stream the conversation audio. Bucket and region are never exposed.\n\nThe recording uploader writes WAV; the ``CallRecording.format`` field\ndefaults to ``wav`` and nothing in the codebase writes anything else.\nThe Content-Type is still taken from the underlying recording (via\n``_FORMAT_CONTENT_TYPES``) so a future non-WAV writer would be served\ncorrectly without re-introducing a per-format route.\n\nAuth: either a signed ``?token=`` issued by ``GET /audio`` (lets browsers\nembed the URL in an ``<audio>`` tag without headers), or a normal\n``X-API-Key`` / ``Authorization: Bearer`` API key with the\n``conversations:read`` scope.",
+        "description": "Stream the conversation audio as WAV. Supports HTTP ``Range`` requests for seeking and partial playback. Auth: either a signed ``?token=`` issued by ``GET /audio`` (so a browser can embed the URL directly in an ``<audio>`` tag without headers), or an ``X-API-Key`` / ``Authorization: Bearer`` API key with the ``conversations:read`` scope.",
         "operationId": "stream_audio_api_v1_conversations__conversation_id__audio_wav_get",
         "parameters": [
           {
@@ -8799,7 +8387,7 @@
     },
     "/api/v1/conversations/{conversation_id}/audio/revoke": {
       "post": {
-        "description": "Revoke a previously-minted audio token before its natural expiry.\n\nUse case: a customer accidentally shares a public audio link and\nwants to invalidate it without waiting up to an hour for the TTL.\nThe token's ``jti`` is added to the revocation cache (Redis +\nin-memory fallback) with a TTL matching the token's remaining\nlifetime, so memory pressure is bounded by the natural expiry\nschedule.\n\nReturns 204 on success; idempotent (re-revoking a revoked token is\na no-op). 404 if the token isn't valid for THIS conversation under\nTHIS tenant \u2014 same response we'd give for unauthorized cross-tenant\naccess, so callers can't probe for valid tokens.",
+        "description": "Revoke a previously-minted audio token before its natural expiry. Use case: a customer accidentally shares a public audio link and\nwants to invalidate it without waiting up to an hour for the TTL. The token's ``jti`` is added to the revocation cache with a TTL matching the token's remaining\nlifetime, so memory pressure is bounded by the natural expiry\nschedule. Returns 204 on success; idempotent (re-revoking a revoked token is\na no-op). 404 if the token isn't valid for THIS conversation under\nTHIS tenant \u2014 same response we'd give for unauthorized cross-tenant\naccess, so callers can't probe for valid tokens.",
         "operationId": "revoke_audio_token_api_v1_conversations__conversation_id__audio_revoke_post",
         "parameters": [
           {
@@ -8929,7 +8517,7 @@
                   "items": {
                     "$ref": "#/components/schemas/ConversationTurnResponse"
                   },
-                  "title": "Response Get Transcript Api V1 Conversations  Conversation Id  Transcript Get",
+                  "title": "Response Get Transcript Api V1 Conversations Conversation Id Transcript Get",
                   "type": "array"
                 }
               }
@@ -8958,699 +8546,9 @@
         ]
       }
     },
-    "/api/v1/dashboard/agents": {
-      "get": {
-        "description": "List agents for the developer's tenant.",
-        "operationId": "list_my_agents_api_v1_dashboard_agents_get",
-        "parameters": [
-          {
-            "in": "query",
-            "name": "offset",
-            "required": false,
-            "schema": {
-              "default": 0,
-              "minimum": 0,
-              "title": "Offset",
-              "type": "integer"
-            }
-          },
-          {
-            "in": "query",
-            "name": "limit",
-            "required": false,
-            "schema": {
-              "default": 50,
-              "maximum": 200,
-              "minimum": 1,
-              "title": "Limit",
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PaginatedResponse"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "List My Agents",
-        "tags": [
-          "dashboard"
-        ]
-      }
-    },
-    "/api/v1/dashboard/agents/{agent_id}": {
-      "get": {
-        "description": "Fetch a small header view of a single agent for the developer's tenant.\n\nDistinct from ``GET /api/v1/agents/{id}`` (API-key-authed, full record):\nthis JWT-authed variant returns only the fields the dashboard renders\non the agent detail / Test surfaces. Pairs ``voice_id`` with the\ncurator-authored display name from ``vo_voices`` so the page can show\n\"Adamma\" instead of an internal slug. Returns 404 if the agent doesn't\nexist or doesn't belong to the developer's tenant \u2014 same shape as the\nAPI-key endpoint so the portal can reuse its missing-agent rendering.",
-        "operationId": "get_my_agent_api_v1_dashboard_agents__agent_id__get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "agent_id",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "title": "Agent Id",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Get My Agent",
-        "tags": [
-          "dashboard"
-        ]
-      }
-    },
-    "/api/v1/dashboard/api-keys": {
-      "get": {
-        "description": "List API keys for the developer's tenant.",
-        "operationId": "list_my_api_keys_api_v1_dashboard_api_keys_get",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/APIKeyResponse"
-                  },
-                  "title": "Response List My Api Keys Api V1 Dashboard Api Keys Get",
-                  "type": "array"
-                }
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "summary": "List My Api Keys",
-        "tags": [
-          "dashboard"
-        ]
-      },
-      "post": {
-        "description": "Create a new API key for the developer's tenant.",
-        "operationId": "create_my_api_key_api_v1_dashboard_api_keys_post",
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/APIKeyCreate"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "201": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/APIKeyResponse"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Create My Api Key",
-        "tags": [
-          "dashboard"
-        ]
-      }
-    },
-    "/api/v1/dashboard/api-keys/{key_id}": {
-      "delete": {
-        "description": "Revoke an API key.",
-        "operationId": "revoke_my_api_key_api_v1_dashboard_api_keys__key_id__delete",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "key_id",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "title": "Key Id",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Revoke My Api Key",
-        "tags": [
-          "dashboard"
-        ]
-      }
-    },
-    "/api/v1/dashboard/api-keys/{key_id}/rotate": {
-      "post": {
-        "description": "Rotate an API key.",
-        "operationId": "rotate_my_api_key_api_v1_dashboard_api_keys__key_id__rotate_post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "key_id",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "title": "Key Id",
-              "type": "string"
-            }
-          },
-          {
-            "description": "When false (default), the old key keeps working for a 24-hour grace period so callers can roll out the new secret without downtime; the grace expiry is returned as ``old_key_expires_at``. Set to true to hard-revoke the old key in the same call (suspected compromise); ``old_key_expires_at`` will be null in that case.",
-            "in": "query",
-            "name": "revoke_immediately",
-            "required": false,
-            "schema": {
-              "default": false,
-              "description": "When false (default), the old key keeps working for a 24-hour grace period so callers can roll out the new secret without downtime; the grace expiry is returned as ``old_key_expires_at``. Set to true to hard-revoke the old key in the same call (suspected compromise); ``old_key_expires_at`` will be null in that case.",
-              "title": "Revoke Immediately",
-              "type": "boolean"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/APIKeyRotateResponse"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Rotate My Api Key",
-        "tags": [
-          "dashboard"
-        ]
-      }
-    },
-    "/api/v1/dashboard/calls": {
-      "get": {
-        "description": "List recent calls for the developer's tenant.",
-        "operationId": "list_my_calls_api_v1_dashboard_calls_get",
-        "parameters": [
-          {
-            "in": "query",
-            "name": "offset",
-            "required": false,
-            "schema": {
-              "default": 0,
-              "minimum": 0,
-              "title": "Offset",
-              "type": "integer"
-            }
-          },
-          {
-            "in": "query",
-            "name": "limit",
-            "required": false,
-            "schema": {
-              "default": 50,
-              "maximum": 200,
-              "minimum": 1,
-              "title": "Limit",
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PaginatedResponse"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "List My Calls",
-        "tags": [
-          "dashboard"
-        ]
-      }
-    },
-    "/api/v1/dashboard/overview": {
-      "get": {
-        "description": "Get dashboard overview stats for the developer's tenant.\n\n``days`` (1-365) windows the ``total_calls`` count returned in the\nresponse. Other fields stay all-time / today-only so the route\nremains backward-compatible with callers that don't pass a window.",
-        "operationId": "get_overview_api_v1_dashboard_overview_get",
-        "parameters": [
-          {
-            "in": "query",
-            "name": "days",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "maximum": 365,
-                  "minimum": 1,
-                  "type": "integer"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Days"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/DashboardOverview"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Get Overview",
-        "tags": [
-          "dashboard"
-        ]
-      }
-    },
-    "/api/v1/dashboard/phone-numbers": {
-      "get": {
-        "description": "List phone numbers registered by the developer's tenant.",
-        "operationId": "list_my_phone_numbers_api_v1_dashboard_phone_numbers_get",
-        "parameters": [
-          {
-            "in": "query",
-            "name": "offset",
-            "required": false,
-            "schema": {
-              "default": 0,
-              "minimum": 0,
-              "title": "Offset",
-              "type": "integer"
-            }
-          },
-          {
-            "in": "query",
-            "name": "limit",
-            "required": false,
-            "schema": {
-              "default": 50,
-              "maximum": 200,
-              "minimum": 1,
-              "title": "Limit",
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/PaginatedResponse"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "List My Phone Numbers",
-        "tags": [
-          "dashboard"
-        ]
-      }
-    },
-    "/api/v1/dashboard/usage/by-service": {
-      "get": {
-        "description": "Get usage breakdown by service type.\n\nAugments the request-side rollup (``vo_usage_log``) with a\nper-resource credits-used figure from ``vo_credit_ledger``.  The\ntwo tables use slightly different resource-type keys for voice\ncalls: usage logs record ``resource_type='call'`` while the ledger\nrecords ``resource_type='voice_call'``.  The ``USAGE_LOG_TO_LEDGER``\nmap below normalises usage-log keys to ledger keys before the\ncredit lookup so voice-call spend is not zeroed out.\n\nAggregation is done on the canonical (ledger) key in Python rather\nthan on the raw ``UsageLog.resource_type`` from SQL. Reason: SQL\ngroups by the raw value, so if both ``call`` and a stray\n``voice_call`` UsageLog row exist for the same tenant, the SQL\nyields two separate group rows that both alias to ``voice_call``.\nEmitting each as its own row would produce two ``service:\nvoice_call`` entries, each claiming the FULL ledger credits spend\nfor that key -- a double-count that could ship if any historical\ninsert or future writer ever lands ``voice_call`` directly into\n``vo_usage_log`` (the column is ``String(30)`` with no enum\nconstraint). Re-aggregating in Python collapses both into one\nbucket where ``credits_used`` is set exactly once at bucket\ncreation.\n\nResponse is the union of usage-log resource types and ledger\nresource types: voice-call deductions can land via\n``charge_voice_call`` / the post-call hook without a paired\nUsageLog row, and those would otherwise be hidden from the\nby-service view despite real credit spend.\n\nWhen ``days`` is provided, both the UsageLog request counts and the\nledger credit deductions are filtered to entries created within the\ntrailing window. ``days=None`` (default) preserves the original\nall-time behaviour so existing callers continue to work unchanged.",
-        "operationId": "get_usage_by_service_api_v1_dashboard_usage_by_service_get",
-        "parameters": [
-          {
-            "in": "query",
-            "name": "days",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "maximum": 365,
-                  "minimum": 1,
-                  "type": "integer"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Days"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Get Usage By Service",
-        "tags": [
-          "dashboard"
-        ]
-      }
-    },
-    "/api/v1/dashboard/usage/daily": {
-      "get": {
-        "description": "Get daily usage breakdown.\n\nIncludes a per-day ``credits_used`` aggregate from\n``vo_credit_ledger`` so the dashboard chart can render credits\nspend over time alongside requests / tokens / audio. The credit\nrollup runs as a second query and is left-joined by date in\nPython; joining in SQL would force the API to choose a single\n\"primary\" table for the date set; the disjoint shape lets us keep\nrequest-empty days that still had ledger activity (e.g. a manual\nadjustment) and vice-versa.",
-        "operationId": "get_usage_daily_api_v1_dashboard_usage_daily_get",
-        "parameters": [
-          {
-            "in": "query",
-            "name": "days",
-            "required": false,
-            "schema": {
-              "default": 30,
-              "maximum": 365,
-              "minimum": 1,
-              "title": "Days",
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Get Usage Daily",
-        "tags": [
-          "dashboard"
-        ]
-      }
-    },
-    "/api/v1/dashboard/usage/summary": {
-      "get": {
-        "description": "Get usage summary for the developer's tenant.\n\nWhen ``days`` is provided all aggregates (credits, tokens, audio,\ncharacters, call count) are filtered to the trailing N-day window so\nthe KPI tiles on the usage page share the same window as the donut\nand daily chart. ``days=None`` (default) preserves the original\nall-time behaviour for backwards compatibility.\n\n``call_count`` comes from ``vo_calls`` \u2014 the canonical record of\ncall attempts \u2014 rather than from ``vo_usage_log`` which counts HTTP\nrequests to ``/api/v1/calls/*`` (list, status-poll, etc.) and would\nover-count actual conversations.\n\nLedger amounts are signed (negative on deduction); we negate so the\ncustomer-facing number reads as a positive \"credits used\" total.\nThe legacy token / audio-seconds fields stay on the response for\nback-compat with anything else that consumes them.",
-        "operationId": "get_usage_summary_api_v1_dashboard_usage_summary_get",
-        "parameters": [
-          {
-            "in": "query",
-            "name": "days",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "maximum": 365,
-                  "minimum": 1,
-                  "type": "integer"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Days"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Get Usage Summary",
-        "tags": [
-          "dashboard"
-        ]
-      }
-    },
-    "/api/v1/health": {
-      "get": {
-        "operationId": "health_api_v1_health_get",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "summary": "Health",
-        "tags": [
-          "health"
-        ]
-      }
-    },
-    "/api/v1/health/drain": {
-      "post": {
-        "description": "Called by preStop hook to stop accepting new connections before SIGTERM.",
-        "operationId": "drain_api_v1_health_drain_post",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "summary": "Drain",
-        "tags": [
-          "health"
-        ]
-      }
-    },
-    "/api/v1/health/live": {
-      "get": {
-        "operationId": "liveness_api_v1_health_live_get",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "summary": "Liveness",
-        "tags": [
-          "health"
-        ]
-      }
-    },
-    "/api/v1/health/ready": {
-      "get": {
-        "description": "Readiness probe.\n\nReturns 503 when any of these gates are closed:\n- ``app.state.shutting_down`` is True (preStop drain)\n- ``app.state.langfuse_prompts_warmed`` is False (initial prompt prefetch\n  still in flight)\n- DB SELECT 1 fails\n- Redis is configured but unreachable\n\nProvider health is intentionally not a readiness gate. External ML\nservices (ASR/TTS/LLM) may take minutes to come up, and the TTS pods fetch\ntheir DB-backed voice registry through this app Service during startup. If\napp readiness waits on TTS readiness, a rollout can deadlock with no ready\napp Service endpoints for TTS to call.",
-        "operationId": "readiness_api_v1_health_ready_get",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "summary": "Readiness",
-        "tags": [
-          "health"
-        ]
-      }
-    },
-    "/api/v1/health/startup": {
-      "get": {
-        "description": "Startup probe: checks if the DB engine has been initialized.",
-        "operationId": "startup_api_v1_health_startup_get",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "summary": "Startup",
-        "tags": [
-          "health"
-        ]
-      }
-    },
-    "/api/v1/metrics": {
-      "get": {
-        "operationId": "metrics_api_v1_metrics_get",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "summary": "Metrics",
-        "tags": [
-          "metrics"
-        ]
-      }
-    },
     "/api/v1/models": {
       "get": {
-        "description": "Return the public LLM model catalog.\n\nThe empty-string default alias is hidden; it is a backwards-compat\nsentinel for \"use the platform default\" and ``aethex-default`` is the\npublic name for the same routing decision.\n\nWhen ``AETHEX_ALLOWED_LLM_MODELS`` is set, the catalog is further\nfiltered to that allowlist so SDK/portal pickers never advertise a model\nthat ``check_llm_model`` would reject with a 422 on agent create/update.\nThe availability filter still applies first: a model in the allowlist\nwhose provider key is missing still shows with ``available: false`` when\n``?include_unavailable=true`` is set.",
+        "description": "Return the available LLM model catalog for this deployment. Each entry includes an ``available`` flag. By default only currently-usable models are returned; pass ``?include_unavailable=true`` to also list models that are not currently usable (returned with ``available: false``). Models not in the catalog are rejected with a 422 on agent create/update.",
         "operationId": "list_models_api_v1_models_get",
         "parameters": [
           {
@@ -9810,7 +8708,7 @@
     },
     "/api/v1/phone-numbers/twilio/register": {
       "post": {
-        "description": "Register a Twilio phone number under a tenant-owned Twilio account.\n\nThe caller must supply a ``twilio_account_id`` that resolves to an\nactive row in ``vo_twilio_accounts`` owned by this tenant -- the\nlegacy cluster-wide ``TWILIO_ACCOUNT_SID`` env-var fallback is gone\n(migration 061 wiped any remaining legacy rows). The service uses\nthat tenant's credentials to bind the number's Voice URL on\nTwilio's side and persists ``phone_number.twilio_account_id`` so\nupdate/release can find the same credentials later.\n\nStatus codes:\n  * 404 -- agent_id (when supplied) does not exist for this tenant.\n  * 422 -- twilio_account_id is invalid / cross-tenant / released,\n    or the phone number isn't in the supplied Twilio account.\n  * 503 -- encryption key not configured (cannot decrypt the\n    Twilio auth_token), or Twilio API unreachable / timed out.",
+        "description": "Register a Twilio phone number under a Twilio account you own. Supply a ``twilio_account_id`` for an active Twilio account registered under this tenant; the platform uses that account's stored credentials to bind the number's Voice URL on Twilio and records the association so later update/release calls reuse the same account. Status codes:\n * 404 -- agent_id (when supplied) does not exist for this tenant. * 422 -- twilio_account_id is invalid / cross-tenant / released, or the phone number isn't in the supplied Twilio account. * 503 -- the Twilio account credentials are unavailable, or the Twilio API is unreachable / timed out.",
         "operationId": "register_twilio_api_v1_phone_numbers_twilio_register_post",
         "requestBody": {
           "content": {
@@ -10254,26 +9152,6 @@
         ]
       }
     },
-    "/api/v1/status": {
-      "get": {
-        "description": "API surface area \u2014 lists all developer-facing endpoints with status.",
-        "operationId": "api_status_api_v1_status_get",
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          }
-        },
-        "summary": "Api Status",
-        "tags": [
-          "health"
-        ]
-      }
-    },
     "/api/v1/transcribe": {
       "post": {
         "operationId": "transcribe_sync_api_v1_transcribe_post",
@@ -10415,7 +9293,7 @@
     },
     "/api/v1/transcribe/by-upload": {
       "post": {
-        "description": "Transcribe a file previously staged via /uploads/presign.\n\nBodies don't transit the ALB/WAF \u2014 only a small JSON reference does.",
+        "description": "Transcribe a file previously staged via /uploads/presign.",
         "operationId": "transcribe_sync_by_upload_api_v1_transcribe_by_upload_post",
         "requestBody": {
           "content": {
@@ -10601,7 +9479,7 @@
     },
     "/api/v1/tts/batch": {
       "post": {
-        "description": "Batch synthesis \u2014 submit multiple texts, get a batch_id for polling.\n\nAudio files are stored in S3. Poll GET /tts/batch/{batch_id} for\npresigned download URLs when complete.\n\nUsage metering is deferred to the worker (run_tts_batch) so only\nsuccessfully synthesized items are billed.",
+        "description": "Batch synthesis \u2014 submit multiple texts, get a batch_id for polling. Poll GET /tts/batch/{batch_id} for download URLs when complete. Only successfully synthesized items are billed.",
         "operationId": "batch_synthesize_api_v1_tts_batch_post",
         "requestBody": {
           "content": {
@@ -10697,7 +9575,7 @@
     },
     "/api/v1/tts/stream": {
       "post": {
-        "description": "Streaming synthesis \u2014 returns chunked PCM16 audio at 24kHz.\n\nLower TTFB than POST /tts. Audio starts arriving as it's generated.\nSupports voice_id for voice cloning.",
+        "description": "Streaming synthesis \u2014 returns chunked PCM16 audio at 24kHz. Lower TTFB than POST /tts. Audio starts arriving as it's generated. Supports voice_id for voice cloning.",
         "operationId": "synthesize_stream_api_v1_tts_stream_post",
         "requestBody": {
           "content": {
@@ -10801,7 +9679,7 @@
         ]
       },
       "post": {
-        "description": "Register a Twilio Account SID for this tenant.\n\nValidates the supplied ``account_sid`` + ``auth_token`` pair by\nfetching the account from Twilio. Persists the SID and the (encrypted)\nauth token; the token is needed at runtime for inbound-webhook\nsignature verification and outbound API calls and is decrypted via\nthe ``EncryptedString`` column type.\n\nStatus codes:\n  * 422 -- Twilio rejected the request (400/401/403/404): bad\n    credentials, or a SID that doesn't exist or that the supplied\n    token can't access; or the fetched SID does not match the\n    supplied SID.\n  * 409 -- the Account SID is already claimed by another active row,\n    or the tenant has reached the active-account cap.\n  * 429 -- per-tenant registration rate limit exceeded.\n  * 503 -- server-side service issue: encryption key not configured,\n    Twilio API unreachable / 5xx / 429, Twilio did not respond\n    within the configured timeout, or the rate limiter (Redis) is\n    offline -- this endpoint is destructive enough that we fail\n    closed when admission control can't run, rather than silently\n    unthrottling Twilio API and worker-slot pressure.",
+        "description": "Register a Twilio Account SID for this tenant. Validates the supplied ``account_sid`` + ``auth_token`` pair by fetching the account from Twilio before persisting. The auth token is stored encrypted and used at runtime for inbound-webhook signature verification and outbound Twilio API calls. Status codes:\n * 422 -- Twilio rejected the request: bad credentials, a SID that doesn't exist or that the supplied token can't access, or a fetched SID that does not match the supplied SID. * 409 -- the Account SID is already claimed by another active account, or the tenant has reached the active-account cap. * 429 -- per-tenant registration rate limit exceeded. * 503 -- service temporarily unavailable; please retry.",
         "operationId": "register_twilio_account_api_v1_twilio_accounts_post",
         "requestBody": {
           "content": {
@@ -10848,7 +9726,7 @@
     },
     "/api/v1/twilio-accounts/{account_id}": {
       "delete": {
-        "description": "Mark the row released so the active Account SID slot frees up.\n\nIdempotent: returns 204 whether the row was active, already released,\nor never existed under this tenant. The DB ``get()`` already enforces\ntenant scope (``WHERE tenant_id = :tenant``) so the swallowed\n``NotFoundError`` cannot leak cross-tenant rows -- a request from\ntenant A targeting tenant B's row gets the same 204 as if the row\ndidn't exist, which is the desired idempotent shape.\n\nStatus codes:\n  * 204 -- row released, already released, or not found under tenant.\n  * 503 -- server-side encryption key missing/malformed while\n    scrubbing the stored credential.",
+        "description": "Mark the row released so the active Account SID slot frees up. Idempotent: returns 204 whether the row was active, already released,\nor never existed under this tenant. The DB ``get`` already enforces\ntenant scope (``WHERE tenant_id =:tenant``) so the swallowed\n``NotFoundError`` cannot leak cross-tenant rows -- a request from\ntenant A targeting tenant B's row gets the same 204 as if the row\ndidn't exist, which is the desired idempotent shape. Status codes:\n * 204 -- row released, already released, or not found under tenant. * 503 -- server-side encryption key missing/malformed while\n scrubbing the stored credential.",
         "operationId": "release_twilio_account_api_v1_twilio_accounts__account_id__delete",
         "parameters": [
           {
@@ -10936,7 +9814,7 @@
     },
     "/api/v1/uploads/presign": {
       "post": {
-        "description": "Binary bodies bypass the API ALB/WAF. After the PUT succeeds, pass `upload_id` to the consuming endpoint (e.g. `POST /transcribe/by-upload`).",
+        "description": "After the PUT succeeds, pass `upload_id` to the consuming endpoint (e.g. `POST /transcribe/by-upload`).",
         "operationId": "presign_upload_api_v1_uploads_presign_post",
         "requestBody": {
           "content": {
@@ -11040,7 +9918,7 @@
     },
     "/api/v1/usage/daily": {
       "get": {
-        "description": "Per-day usage rollup for the trailing N calendar days.\n\n``days`` is a **date window**, not a row limit: the response always\ncontains exactly ``days`` entries, one per calendar day in UTC,\nnewest-first. Days with no activity are returned as zero-filled\nrows so the response is chart-ready without client-side gap\nhandling.\n\nThe 1..365 bound is enforced by Pydantic; values outside that\nrange 422 at the boundary.",
+        "description": "Per-day usage rollup for the trailing N calendar days. ``days`` is a **date window**, not a row limit: the response always\ncontains exactly ``days`` entries, one per calendar day in UTC,\nnewest-first. Days with no activity are returned as zero-filled\nrows so the response is chart-ready without client-side gap\nhandling. The 1..365 bound is enforced by Pydantic; values outside that\nrange 422 at the boundary.",
         "operationId": "get_daily_usage_api_v1_usage_daily_get",
         "parameters": [
           {
@@ -11261,7 +10139,7 @@
         ]
       },
       "post": {
-        "description": "Configure a usage threshold + callback URL.\n\nThe evaluator (ARQ cron, every 5 minutes) checks active triggers\nand posts a signed webhook when the threshold is crossed for the\nperiod. One firing per period; the trigger auto-rearms when the\nperiod rolls over.\n\nReturns 409 when the tenant already has the per-tenant cap of\nactive triggers; PATCH ``is_active=false`` on an existing trigger\nto recover a slot before adding a new one.\n\nReturns 400 when the tenant has no ``webhook_secret`` configured.\nTriggers without a signing secret would deliver an unsigned\nwebhook (or, more precisely, would be skipped by the evaluator\nand audited as ``failed`` with no ability to deliver), so we\nrefuse the create at the boundary instead of accepting a\nconfiguration that will never fire. The customer's recovery is\na single ``POST /usage/webhook-secret/rotate``.",
+        "description": "Configure a usage threshold + callback URL. Active triggers are evaluated periodically; a signed webhook is posted when the threshold is crossed for the period. One firing per period; the trigger auto-rearms when the period rolls over. Returns 409 when the tenant already has the per-tenant cap of active triggers; PATCH ``is_active=false`` on an existing trigger to recover a slot before adding a new one. Returns 400 when the tenant has no ``webhook_secret`` configured \u2014 without a signing secret the webhook could not be delivered, so the create is refused at the boundary rather than accepting a configuration that will never fire. The recovery is a single ``POST /usage/webhook-secret/rotate``.",
         "operationId": "create_trigger_api_v1_usage_triggers_post",
         "requestBody": {
           "content": {
@@ -11308,7 +10186,7 @@
     },
     "/api/v1/usage/triggers/{trigger_id}": {
       "patch": {
-        "description": "Update a trigger's mutable fields.\n\nThree fields are editable: ``is_active`` (deactivate to free a\nslot under the per-tenant cap without losing audit history),\n``threshold_value`` (re-tune the trip point as the customer's\nvolume scales), and ``event_callback_url`` (rotate the receiver).\nTrigger shape \u2014 ``resource_type``, ``threshold_type``, ``period``\n\u2014 is immutable; create a new trigger if you need a different\nshape so the firings audit table cleanly tracks one configuration\nover time.\n\nReturns 404 when the trigger doesn't exist or belongs to another\ntenant. Returns 400 when ``event_callback_url`` is structurally\ninvalid or resolves to a non-public address; 503 when DNS\nresolution itself is unavailable. Empty body is a valid no-op.\n\nActivating (``is_active`` flipped from false \u2192 true) re-checks\nthe per-tenant active cap so a customer at the cap can't\nbackdoor in by toggling deactivated rows. It also re-validates\nthat the trigger's stored ``resource_type`` is still in the\ncurrently-allowed set; rows whose ``resource_type`` is no longer\ntrigger-eligible cannot be re-activated (returns 422 with the\nrecovery instruction to delete and recreate the trigger). This\ncovers both truly legacy values from removed endpoints and live\n``vo_usage_log`` keys that the trigger schema has never accepted\n(e.g. ``agent``, ``recording`` \u2014 see ``ALLOWED_RESOURCE_TYPES``).",
+        "description": "Update a trigger's mutable fields. Three fields are editable: ``is_active`` (deactivate to free a slot under the per-tenant cap), ``threshold_value`` (re-tune the trip point as your volume scales), and ``event_callback_url`` (change the receiver). The trigger shape \u2014 ``resource_type``, ``threshold_type``, ``period`` \u2014 is immutable; create a new trigger if you need a different shape. Returns 404 when the trigger doesn't exist or belongs to another tenant. Returns 400 when ``event_callback_url`` is structurally invalid or resolves to a non-public address; 503 when DNS resolution is unavailable. An empty body is a valid no-op. Activating (flipping ``is_active`` from false to true) re-checks the per-tenant active cap. Re-activating a trigger whose ``resource_type`` is no longer a supported value returns 422 \u2014 create a new trigger with a currently-supported ``resource_type`` instead.",
         "operationId": "update_trigger_api_v1_usage_triggers__trigger_id__patch",
         "parameters": [
           {
@@ -11367,7 +10245,7 @@
     },
     "/api/v1/usage/triggers/{trigger_id}/firings": {
       "get": {
-        "description": "Audit log for a single trigger's firing attempts.\n\nNewest-first. ``limit`` is enforced 1..200 by Pydantic; values\noutside that range 422 at the boundary. Returns 404 if the trigger\nisn't owned by the calling tenant so a customer can't probe other\ntenants' trigger ids by guessing.",
+        "description": "Audit log for a single trigger's firing attempts. Newest-first. ``limit`` is enforced 1..200 by Pydantic; values\noutside that range 422 at the boundary. Returns 404 if the trigger\nisn't owned by the calling tenant so a customer can't probe other\ntenants' trigger ids by guessing.",
         "operationId": "list_trigger_firings_api_v1_usage_triggers__trigger_id__firings_get",
         "parameters": [
           {
@@ -11401,7 +10279,7 @@
                   "items": {
                     "$ref": "#/components/schemas/UsageTriggerFiringResponse"
                   },
-                  "title": "Response List Trigger Firings Api V1 Usage Triggers  Trigger Id  Firings Get",
+                  "title": "Response List Trigger Firings Api V1 Usage Triggers Trigger Id Firings Get",
                   "type": "array"
                 }
               }
@@ -11432,7 +10310,7 @@
     },
     "/api/v1/usage/triggers/{trigger_id}/firings/{firing_id}/redeliver": {
       "post": {
-        "description": "Re-attempt webhook delivery for a single firing.\n\nReplays the EXACT bytes we POSTed the first time so the receiver\nsees identical signature + payload. Updates the same audit row\nin place (incrementing ``attempt_count``, refreshing\n``delivery_status`` / ``http_status`` / ``last_error``); we do\nNOT insert a new firing row because each row represents one\n\"threshold crossed for this period\" event and a redeliver is the\nsame logical event, just retried.\n\n404 when trigger or firing isn't owned by the calling tenant\n(no cross-tenant probing).\n400 when the tenant has rotated their webhook_secret and the old\nsignature would no longer verify on the receiver \u2014 refuse the\nredeliver because the receiver would silently reject it as\ntampered. Customer recovery: configure a new trigger or wait for\nthe next natural fire (which will use the new secret).",
+        "description": "Re-attempt webhook delivery for a single firing. Replays the exact bytes originally sent so your receiver sees an identical signature and payload, updating the same firing in place (its ``attempt_count``, ``delivery_status``, ``http_status``, and ``last_error``) rather than recording a new firing. Returns 404 when the trigger or firing isn't owned by the calling tenant. Returns 400 when the tenant has rotated their webhook_secret and the original signature would no longer verify, since the receiver would reject the replay as tampered; in that case configure a new trigger or wait for the next natural fire, which will use the new secret.",
         "operationId": "redeliver_firing_api_v1_usage_triggers__trigger_id__firings__firing_id__redeliver_post",
         "parameters": [
           {
@@ -11491,7 +10369,7 @@
     },
     "/api/v1/usage/webhook-secret/rotate": {
       "post": {
-        "description": "Generate (or replace) the tenant-level webhook signing secret.\n\nTenant-owned webhook bodies are signed with this secret via\nHMAC-SHA256 (``X-Aethex-Signature`` header). This includes usage\ntriggers, async transcription callbacks, and TTS batch callbacks.\nThe secret is returned exactly once \u2014 store it securely. Rotating\nreplaces it immediately; in-flight deliveries signed with the old\nsecret will fail HMAC verification on the receiver side until you\nupdate your handler.\n\nA tenant that has never called this endpoint has no signing secret;\nthe trigger evaluator records those firings as ``failed`` with\n``last_error='tenant has no webhook_secret configured'``.\n\nConcurrency: the tenant row is locked with ``SELECT ... FOR UPDATE``\nfor the duration of this transaction so two simultaneous rotate\ncalls serialise. Without the lock both callers could read the same\npre-state, generate different new secrets, and only the last\ncommit's secret would persist \u2014 the earlier caller would walk\naway with a secret that is already invalid and every webhook\ndelivery to them would HMAC-mismatch.",
+        "description": "Generate (or replace) the tenant-level webhook signing secret. Webhook bodies \u2014 usage triggers, async transcription callbacks, and TTS batch callbacks \u2014 are signed with this secret via HMAC-SHA256 (``X-Aethex-Signature`` header). The secret is returned exactly once \u2014 store it securely. Rotation takes effect immediately; in-flight deliveries signed with the old secret will fail HMAC verification on your receiver until you update your handler. Until you first call this endpoint the tenant has no signing secret, so usage-trigger firings are recorded as ``failed`` until one is configured. Concurrent rotate calls are serialized, so exactly one new secret takes effect.",
         "operationId": "rotate_webhook_secret_api_v1_usage_webhook_secret_rotate_post",
         "responses": {
           "200": {
@@ -11673,7 +10551,7 @@
     },
     "/api/v1/voices/tag-vocabulary": {
       "get": {
-        "description": "Return the closed-vocabulary tag set the curator UI renders.\n\nGated behind ``voices:read`` so the route matches the rest of\n``/voices/*``; tag categories are static configuration but the\nendpoint sits on the public API surface and every other voices\nlisting already requires the same scope.\n\nThe four-bucket grouping (``tone`` / ``voice_texture`` /\n``delivery_style`` / ``business_persona``) is purely a UI affordance;\nthe storage column is a flat list and ``GET /voices?tag=...``\naccepts any token from any bucket.\n\nThe schema-layer validator (``VoiceMetadataUpdate.tags``) rejects\ntokens outside this set with a 422 that points back at this\nendpoint, so dashboards / SDK consumers have one canonical place to\ndiscover the supported tokens.",
+        "description": "Return the supported set of voice tags. Requires the ``voices:read`` scope, like the rest of ``/voices``. Tags are grouped into categories (``tone`` / ``voice_texture`` / ``delivery_style`` / ``business_persona``) for presentation, but the grouping is purely cosmetic: ``GET /voices?tag=...`` accepts any tag from any category. Tags outside this set are rejected with a 422, so this endpoint is the canonical place to discover the supported values.",
         "operationId": "list_tag_vocabulary_api_v1_voices_tag_vocabulary_get",
         "responses": {
           "200": {
@@ -11749,232 +10627,6 @@
         "summary": "Get Voice",
         "tags": [
           "voices"
-        ]
-      }
-    },
-    "/internal/conversations/{conversation_id}/diagnostics": {
-      "get": {
-        "description": "Return durable per-stage diagnostic events for a conversation.",
-        "operationId": "get_conversation_diagnostics_internal_conversations__conversation_id__diagnostics_get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "conversation_id",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "title": "Conversation Id",
-              "type": "string"
-            }
-          },
-          {
-            "in": "query",
-            "name": "limit",
-            "required": false,
-            "schema": {
-              "default": 500,
-              "maximum": 5000,
-              "minimum": 1,
-              "title": "Limit",
-              "type": "integer"
-            }
-          },
-          {
-            "in": "query",
-            "name": "event_type",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Event Type"
-            }
-          },
-          {
-            "in": "query",
-            "name": "stage",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Stage"
-            }
-          },
-          {
-            "in": "query",
-            "name": "severity",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Severity"
-            }
-          },
-          {
-            "description": "Optional tenant scope. Internal callers may omit to query diagnostics across all tenants for cross-tenant debugging.",
-            "in": "query",
-            "name": "tenant_id",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "format": "uuid",
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "Optional tenant scope. Internal callers may omit to query diagnostics across all tenants for cross-tenant debugging.",
-              "title": "Tenant Id"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ConversationDiagnosticsResponse"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Get Conversation Diagnostics",
-        "tags": [
-          "internal"
-        ]
-      }
-    },
-    "/internal/tts/voice-registry": {
-      "get": {
-        "description": "Return the ICL voice catalog for loading into a TTS pod.\n\nRows returned:\n  - ``tenant_id IS NULL`` (global catalog only, no tenant-cloned voices).\n    Tenant-cloned voices are served via a separate per-tenant flow.\n  - ``ref_audio_key IS NOT NULL`` (voice is actually serviceable \u2014\n    orphan rows with no ref audio pointer are excluded).\n  - If ``endpoint`` is provided, only voices routed to a ``TtsModel``\n    with a matching endpoint are returned.\n\nFine-tuned voices have ``ref_audio_key=NULL`` and are therefore\nexcluded \u2014 correct, since FT pods serve their baked-in identity\nregardless of speaker input and don't need ICL references loaded.\n\nResponse shape::\n\n    {\n      \"voices\": [\n        {\"voice_key\": \"adaeze\", \"ref_audio_key\": \"adaeze_ref.wav\",\n         \"ref_text\": null, \"gender\": \"female\", \"language\": \"nigerian_english\"},\n        {\"voice_key\": \"ci-aminata\", \"ref_audio_key\": \"awa_ref.wav\",\n         \"ref_text\": null, \"gender\": \"female\", \"language\": \"ivorian_french\"},\n        ...\n      ]\n    }",
-        "operationId": "tts_voice_registry_internal_tts_voice_registry_get",
-        "parameters": [
-          {
-            "description": "If provided, only return voices whose TtsModel.endpoint matches this URL. Used by TTS pods to ask 'what voices should I serve?' If omitted, returns every global ICL voice that has ref audio.",
-            "in": "query",
-            "name": "endpoint",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "description": "If provided, only return voices whose TtsModel.endpoint matches this URL. Used by TTS pods to ask 'what voices should I serve?' If omitted, returns every global ICL voice that has ref audio.",
-              "title": "Endpoint"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Tts Voice Registry",
-        "tags": [
-          "internal"
-        ]
-      }
-    },
-    "/internal/voices/{voice_key}": {
-      "patch": {
-        "description": "Update curator-editable fields on a global voice.\n\nEditable fields (all optional; omit a key to leave it unchanged):\n\n* ``display_name`` \u2014 curator-authored override for the customer-\n  facing voice name. ``null`` clears the override and the public\n  ``name`` reverts to the migrated value.\n* ``status`` \u2014 soft-retire flag. ``\"active\"`` shows the voice on\n  ``GET /voices``; ``\"retired\"`` hides it from listings and 404s\n  ``GET /voices/{voice_id}`` while leaving the row (and the\n  internal voice-registry consumed by the TTS pod) untouched.\n* ``description`` \u2014 customer-facing one-liner; ``null`` clears.\n  Brand-leak validated like ``display_name``.\n* ``internal_notes`` \u2014 admin-only commentary, never copied onto the\n  public ``VoiceResponse``. ``null`` clears.\n* ``tags`` \u2014 closed-vocabulary list of tokens drawn from\n  :data:`aethex.models.voice.VOICE_TAG_VOCABULARY`. ``[]`` clears;\n  sending ``null`` is rejected because the column is NOT NULL.\n* ``gender`` \u2014 curator-authored correction for the speaker's\n  perceived gender (``male`` / ``female`` / ``neutral``). The seed\n  value is best-effort and known to be wrong on some pool voices.\n  Sending ``null`` is rejected because the column is NOT NULL;\n  an out-of-set value 422s with the field path.\n\nAll flow through ``body.model_dump(exclude_unset=True)`` so a single\nPATCH can update any combination of fields.\n\nScoped to ``tenant_id IS NULL`` (tenant-cloned voices are not\neditable through this endpoint). The ``Voice.public_name`` property\nis the single source of truth for the ``display_name or name``\nfallback chain so this endpoint and ``_voice_to_response`` cannot\ndrift.\n\nAuth comes from the router-level ``X-Internal-Auth`` dependency.\nUnknown keys are silently dropped (``extra='ignore'``) so a rolling\ndeploy that adds a new metadata field on the API side, or one that\nadds it on the dashboard side first, does not 422 the curator out\nof a save during the window where the two halves disagree on shape.\nThe body schema still enforces oversize strings, any ``display_name``\n/ ``description`` value that looks like an internal voice_key or\ncarries a known brand-leak token, any ``status`` outside\n``('active', 'retired')``, and any ``tags`` entry outside the\nclosed vocabulary.",
-        "operationId": "update_voice_metadata_internal_voices__voice_key__patch",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "voice_key",
-            "required": true,
-            "schema": {
-              "title": "Voice Key",
-              "type": "string"
-            }
-          }
-        ],
-        "requestBody": {
-          "content": {
-            "application/json": {
-              "schema": {
-                "$ref": "#/components/schemas/VoiceMetadataUpdate"
-              }
-            }
-          },
-          "required": true
-        },
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/VoiceCatalogEntry"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Update Voice Metadata",
-        "tags": [
-          "internal"
         ]
       }
     }

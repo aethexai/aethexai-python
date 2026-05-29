@@ -63,17 +63,17 @@ agent = client.create_agent(
         "and escalate to a human when required."
     ),
     first_message="Bonjour, comment puis-je vous aider?",
-    voice_id=voice.id,
+    voice_id=voice["id"],
     language="french",
     dialect_style="local",
 )
 
 call = client.trigger_call(
-    agent_id=agent.id,
+    agent_id=agent["id"],
     to_number="+221700000000",
 )
 
-print(call.id, call.status)
+print(call["id"], call["status"])
 ```
 
 ## Clients
@@ -95,7 +95,7 @@ from aethexai import AsyncAethexAI
 async def main() -> None:
     async with AsyncAethexAI(api_key="ae_live_...") as client:
         voices = await client.list_voices(language="english")
-        print([voice.id for voice in voices])
+        print([voice["id"] for voice in voices])
 
 asyncio.run(main())
 ```
@@ -145,7 +145,7 @@ with open("call.wav", "rb") as f:
         mime_type="audio/wav",
     )
 
-print(result.text)
+print(result["text"])
 ```
 
 Submit longer recordings as asynchronous transcription jobs:
@@ -170,7 +170,7 @@ while True:
         break
     time.sleep(2)
 
-print(job.text)
+print(job["text"])
 ```
 
 ### Realtime conversations

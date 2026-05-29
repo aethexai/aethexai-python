@@ -22,9 +22,8 @@ T = TypeVar("T", bound="TransactionEntry")
 
 @_attrs_define
 class TransactionEntry:
-    """A single ledger row, surfaced to the portal transactions page.
-
-    ``details`` is the row's metadata column passed through opaquely; the
+    """A single ledger row, surfaced to the portal transactions page. ``details`` is the row's metadata column passed
+    through opaquely; the
     portal can render whatever it finds (call_id, tts_chars, asr_seconds,
     Stripe payment_intent_id) without us promising a stable shape.
 
@@ -35,7 +34,7 @@ class TransactionEntry:
             id (str):
             tx_type (str):
             details (TransactionEntryDetails | Unset): Free-form metadata (call_id, resource counts, idempotency key, etc).
-                Shape is not guaranteed and may change per tx_type.
+                Shape is not guaranteed and may vary by transaction type.
     """
 
     amount: str

@@ -36,7 +36,9 @@ def _get_kwargs(
 def _parse_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
 ) -> GoogleAuthResponse | HTTPValidationError | None:
-    if response.status_code == 200:
+    if 200 <= response.status_code < 300:
+        if not response.content:
+            return None
         response_200 = GoogleAuthResponse.from_dict(response.json())
 
         return response_200
@@ -70,14 +72,11 @@ def sync_detailed(
 ) -> Response[GoogleAuthResponse | HTTPValidationError]:
     """Verify Magic Link
 
-     Consume a magic-link token; return JWT pair + optional first API key.
-
-    Response schema matches ``GoogleAuthResponse`` on purpose — the
+     Consume a magic-link token; return JWT pair + optional first API key. Response schema matches
+    ``GoogleAuthResponse`` on purpose — the
     portal's ``saveAuth`` + first-sign-in API-key reveal flows key off
     this shape and we want zero client-side branching between the two
-    sign-in methods.
-
-    Rate-limited per-IP so a leaked-log dump of partial tokens can't be
+    sign-in methods. Rate-limited per-IP so a leaked-log dump of partial tokens can't be
     brute-scanned at full speed. The token space is already 256 bits so
     this is defence-in-depth, not the primary control.
 
@@ -110,14 +109,11 @@ def sync(
 ) -> GoogleAuthResponse | HTTPValidationError | None:
     """Verify Magic Link
 
-     Consume a magic-link token; return JWT pair + optional first API key.
-
-    Response schema matches ``GoogleAuthResponse`` on purpose — the
+     Consume a magic-link token; return JWT pair + optional first API key. Response schema matches
+    ``GoogleAuthResponse`` on purpose — the
     portal's ``saveAuth`` + first-sign-in API-key reveal flows key off
     this shape and we want zero client-side branching between the two
-    sign-in methods.
-
-    Rate-limited per-IP so a leaked-log dump of partial tokens can't be
+    sign-in methods. Rate-limited per-IP so a leaked-log dump of partial tokens can't be
     brute-scanned at full speed. The token space is already 256 bits so
     this is defence-in-depth, not the primary control.
 
@@ -145,14 +141,11 @@ async def asyncio_detailed(
 ) -> Response[GoogleAuthResponse | HTTPValidationError]:
     """Verify Magic Link
 
-     Consume a magic-link token; return JWT pair + optional first API key.
-
-    Response schema matches ``GoogleAuthResponse`` on purpose — the
+     Consume a magic-link token; return JWT pair + optional first API key. Response schema matches
+    ``GoogleAuthResponse`` on purpose — the
     portal's ``saveAuth`` + first-sign-in API-key reveal flows key off
     this shape and we want zero client-side branching between the two
-    sign-in methods.
-
-    Rate-limited per-IP so a leaked-log dump of partial tokens can't be
+    sign-in methods. Rate-limited per-IP so a leaked-log dump of partial tokens can't be
     brute-scanned at full speed. The token space is already 256 bits so
     this is defence-in-depth, not the primary control.
 
@@ -183,14 +176,11 @@ async def asyncio(
 ) -> GoogleAuthResponse | HTTPValidationError | None:
     """Verify Magic Link
 
-     Consume a magic-link token; return JWT pair + optional first API key.
-
-    Response schema matches ``GoogleAuthResponse`` on purpose — the
+     Consume a magic-link token; return JWT pair + optional first API key. Response schema matches
+    ``GoogleAuthResponse`` on purpose — the
     portal's ``saveAuth`` + first-sign-in API-key reveal flows key off
     this shape and we want zero client-side branching between the two
-    sign-in methods.
-
-    Rate-limited per-IP so a leaked-log dump of partial tokens can't be
+    sign-in methods. Rate-limited per-IP so a leaked-log dump of partial tokens can't be
     brute-scanned at full speed. The token space is already 256 bits so
     this is defence-in-depth, not the primary control.
 

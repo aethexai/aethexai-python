@@ -1,133 +1,114 @@
-"""Unit tests for the AET-1580 post-codegen patch in ``scripts/sync_from_prod.py``.
+"""Unit tests for the spec sanitizer in ``scripts/sync_from_prod.py``.
 
-The patch is the regen-durability layer: on every ``sync_from_prod.py --apply``
-the generated client is recreated from the live spec, and the patch re-runs
-to keep create wrappers from regressing to ``return None`` on HTTP 201.
-
-These tests exercise ``_patch_created_201_source`` directly against the four
-shapes openapi-python-client may emit, so a future codegen change surfaces
-here rather than during a prod-spec sync.
+The sanitizer is the leak-prevention layer: on every ``sync_from_prod.py
+--apply`` the backend's full OpenAPI dump is stripped of internal/operational
+surface and scrubbed of internal commentary *before* codegen, so the shipped
+SDK stays purely customer-facing while remaining functional for every public
+endpoint. These tests pin that behaviour so a future change surfaces here.
 """
 
 from __future__ import annotations
 
+import json
 import sys
 from pathlib import Path
-
-import pytest
 
 SCRIPTS_DIR = Path(__file__).resolve().parent.parent / "scripts"
 sys.path.insert(0, str(SCRIPTS_DIR))
 
-from sync_from_prod import _CREATED_201_SENTINEL, _patch_created_201_source  # noqa: E402
-
-_STOCK_200_UNTYPED = """\
-from http import HTTPStatus
-from typing import Any, Optional
-
-import httpx
+from sync_from_prod import _sanitize_spec  # noqa: E402
 
 
-def _parse_response(*, client, response: httpx.Response) -> Optional[Any]:
-    if response.status_code == 200:
-        response_200 = response.json()
-        return response_200
-    if client.raise_on_unexpected_status:
-        raise errors.UnexpectedStatus(response.status_code, response.content)
-    return None
-"""
+def _spec() -> dict:
+    return {
+        "openapi": "3.1.0",
+        "tags": [{"name": "agents"}, {"name": "internal"}, {"name": "health"}],
+        "paths": {
+            "/api/v1/agents": {
+                "post": {
+                    "tags": ["agents"],
+                    "summary": "Create Agent",
+                    "description": "Create an agent (AET-1566). Rows live in vo_agents. "
+                    "The session is cached in Redis for fast lookup.",
+                    "responses": {
+                        "201": {
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/AgentResponse"}
+                                }
+                            }
+                        }
+                    },
+                }
+            },
+            "/api/v1/health": {
+                "get": {"tags": ["health"], "description": "Checks app.state.", "responses": {}}
+            },
+            "/api/v1/metrics": {"get": {"tags": ["metrics"], "responses": {}}},
+            "/internal/voices": {
+                "get": {
+                    "tags": ["internal-admin"],
+                    "description": "Auth via X-Internal-Auth dependency.",
+                    "responses": {
+                        "200": {
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/VoiceCatalogEntry"}
+                                }
+                            }
+                        }
+                    },
+                }
+            },
+            "/internal/tts/voice-registry": {"get": {"tags": ["internal"], "responses": {}}},
+        },
+        "components": {
+            "schemas": {
+                "AgentResponse": {
+                    "type": "object",
+                    "properties": {
+                        "id": {"type": "string"},
+                        "voice": {"$ref": "#/components/schemas/VoiceRef"},
+                    },
+                },
+                "VoiceRef": {"type": "object"},
+                "VoiceCatalogEntry": {
+                    "type": "object",
+                    "properties": {"internal_notes": {"type": "string"}},
+                },
+                "Orphan": {"type": "object"},
+            }
+        },
+    }
 
 
-_STOCK_200_TYPED = """\
-from http import HTTPStatus
-from typing import Optional
-
-import httpx
-
-from ...models.some_model import SomeModel
+def test_drops_internal_and_operational_paths() -> None:
+    spec = _sanitize_spec(_spec())
+    assert set(spec["paths"]) == {"/api/v1/agents"}
 
 
-def _parse_response(*, client, response: httpx.Response) -> Optional[SomeModel]:
-    if response.status_code == 200:
-        response_200 = SomeModel.from_dict(response.json())
-
-        return response_200
-    if client.raise_on_unexpected_status:
-        raise errors.UnexpectedStatus(response.status_code, response.content)
-    return None
-"""
+def test_prunes_orphaned_and_internal_schemas() -> None:
+    schemas = _sanitize_spec(_spec())["components"]["schemas"]
+    assert "AgentResponse" in schemas  # referenced by a public route
+    assert "VoiceRef" in schemas  # transitively reachable from AgentResponse
+    assert "VoiceCatalogEntry" not in schemas  # only referenced by a dropped /internal route
+    assert "Orphan" not in schemas  # referenced by nothing
 
 
-_NATIVE_201 = """\
-from http import HTTPStatus
-from typing import Any, Optional
-
-import httpx
-
-
-def _parse_response(*, client, response: httpx.Response) -> Optional[Any]:
-    if response.status_code == 201:
-        response_201 = response.json()
-        return response_201
-    if client.raise_on_unexpected_status:
-        raise errors.UnexpectedStatus(response.status_code, response.content)
-    return None
-"""
+def test_scrubs_internal_commentary() -> None:
+    desc = _sanitize_spec(_spec())["paths"]["/api/v1/agents"]["post"]["description"]
+    assert "AET-" not in desc
+    assert "vo_" not in desc
+    assert "Redis" not in desc  # whole infra sentence dropped
+    assert "Create an agent" in desc  # customer-facing content preserved
 
 
-_NO_SUCCESS_BRANCH = """\
-from http import HTTPStatus
-from typing import Any, Optional
-
-import httpx
+def test_drops_internal_tag_declarations() -> None:
+    names = {t["name"] for t in _sanitize_spec(_spec()).get("tags", [])}
+    assert names == {"agents"}
 
 
-def _parse_response(*, client, response: httpx.Response) -> Optional[Any]:
-    if client.raise_on_unexpected_status:
-        raise errors.UnexpectedStatus(response.status_code, response.content)
-    return None
-"""
-
-
-def test_patches_untyped_200_branch() -> None:
-    """200-only untyped pass-through gets a mirrored 201 branch."""
-    patched = _patch_created_201_source(_STOCK_200_UNTYPED)
-    assert patched is not None
-    assert "if response.status_code == 201:" in patched
-    assert "response_201 = response.json()" in patched
-    assert "return response_201" in patched
-    # 200 branch is preserved alongside the new 201 branch.
-    assert "if response.status_code == 200:" in patched
-    assert _CREATED_201_SENTINEL in patched
-
-
-def test_patches_typed_200_branch() -> None:
-    """200-only typed model parse gets a mirrored 201 branch."""
-    patched = _patch_created_201_source(_STOCK_200_TYPED)
-    assert patched is not None
-    assert "if response.status_code == 201:" in patched
-    assert "response_201 = SomeModel.from_dict(response.json())" in patched
-    assert "return response_201" in patched
-    assert "if response.status_code == 200:" in patched
-
-
-def test_skips_already_patched_file() -> None:
-    """Idempotency: re-running the patch on its own output is a no-op."""
-    patched = _patch_created_201_source(_STOCK_200_UNTYPED)
-    assert patched is not None
-    assert _patch_created_201_source(patched) is None
-
-
-def test_skips_native_201_branch_from_codegen() -> None:
-    """Regen-durability: once the spec declares 201, codegen emits a native
-    201 branch directly. The patch must skip rather than raise (this is the
-    expected steady state after openapi.json is in sync with the backend)."""
-    assert _patch_created_201_source(_NATIVE_201) is None
-
-
-def test_raises_when_no_success_branch_found() -> None:
-    """If codegen's output shape changes so that neither a 200 nor a 201
-    branch can be found, the patch must fail loudly so the regression
-    surfaces during sync rather than silently leaving wrappers broken."""
-    with pytest.raises(ValueError, match="could not locate the stock 200 branch"):
-        _patch_created_201_source(_NO_SUCCESS_BRANCH)
+def test_is_idempotent() -> None:
+    once = _sanitize_spec(_spec())
+    twice = _sanitize_spec(json.loads(json.dumps(once)))
+    assert once == twice

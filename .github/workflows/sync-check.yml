@@ -24,7 +24,10 @@ on:
 # canonical path differs.
 env:
   BACKEND_REPO: aethexai-core/aethex
-  BACKEND_REF: main
+  # The published SDK tracks the PROD backend contract (the default base URL is
+  # api.aethexai.com), so drift is measured against ``prod`` — not ``main``,
+  # which can run ahead of prod between releases.
+  BACKEND_REF: prod
   # TODO: replace with the real secret name once it's provisioned in repo
   # settings. The token needs `repo:read` on the backend repo (PAT, GitHub
   # App installation token, or fine-grained token scoped to that single repo).

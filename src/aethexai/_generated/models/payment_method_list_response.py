@@ -22,9 +22,9 @@ class PaymentMethodListResponse:
     """``GET /billing/payment-methods`` payload.
 
     Attributes:
-        has_payment_method (bool): Cached ``vo_tenants.has_payment_method`` flag. True iff the tenant has at least one
-            ``card`` or Stripe ``link`` payment method attached (the two PM types ``select_plan`` and the PAYG cron can
-            charge). Used by the portal to gate the upgrade button: no payment method -> redirect to attach flow first.
+        has_payment_method (bool): Cached ``.has_payment_method`` flag. True iff the tenant has at least one ``card`` or
+            Stripe ``link`` payment method attached (the two PM types ``select_plan`` and the PAYG cron can charge). Used by
+            the portal to gate the upgrade button: no payment method -> redirect to attach flow first.
         payment_methods (list[PaymentMethodSummary]):
     """
 

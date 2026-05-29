@@ -25,7 +25,9 @@ def _get_kwargs() -> dict[str, Any]:
 def _parse_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
 ) -> SetupIntentResponse | None:
-    if response.status_code == 201:
+    if 200 <= response.status_code < 300:
+        if not response.content:
+            return None
         response_201 = SetupIntentResponse.from_dict(response.json())
 
         return response_201
@@ -54,9 +56,8 @@ def sync_detailed(
     """Create Payment Method Setup Intent
 
      Return a SetupIntent the portal Payment Element can confirm
-    against to attach a card to the tenant's Stripe Customer.
-
-    ``usage='off_session'`` is set on the SetupIntent so the saved
+    against to attach a card to the tenant's Stripe Customer. ``usage='off_session'`` is set on the
+    SetupIntent so the saved
     card can be charged later for PAYG overage without re-prompting
     for 3DS. Customer is created lazily on first call.
 
@@ -84,9 +85,8 @@ def sync(
     """Create Payment Method Setup Intent
 
      Return a SetupIntent the portal Payment Element can confirm
-    against to attach a card to the tenant's Stripe Customer.
-
-    ``usage='off_session'`` is set on the SetupIntent so the saved
+    against to attach a card to the tenant's Stripe Customer. ``usage='off_session'`` is set on the
+    SetupIntent so the saved
     card can be charged later for PAYG overage without re-prompting
     for 3DS. Customer is created lazily on first call.
 
@@ -110,9 +110,8 @@ async def asyncio_detailed(
     """Create Payment Method Setup Intent
 
      Return a SetupIntent the portal Payment Element can confirm
-    against to attach a card to the tenant's Stripe Customer.
-
-    ``usage='off_session'`` is set on the SetupIntent so the saved
+    against to attach a card to the tenant's Stripe Customer. ``usage='off_session'`` is set on the
+    SetupIntent so the saved
     card can be charged later for PAYG overage without re-prompting
     for 3DS. Customer is created lazily on first call.
 
@@ -138,9 +137,8 @@ async def asyncio(
     """Create Payment Method Setup Intent
 
      Return a SetupIntent the portal Payment Element can confirm
-    against to attach a card to the tenant's Stripe Customer.
-
-    ``usage='off_session'`` is set on the SetupIntent so the saved
+    against to attach a card to the tenant's Stripe Customer. ``usage='off_session'`` is set on the
+    SetupIntent so the saved
     card can be charged later for PAYG overage without re-prompting
     for 3DS. Customer is created lazily on first call.
 

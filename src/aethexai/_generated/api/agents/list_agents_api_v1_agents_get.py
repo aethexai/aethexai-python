@@ -8,8 +8,8 @@ from ...client import AuthenticatedClient, Client
 from ...types import Response, UNSET
 from ... import errors
 
-from ...models.agent_response import AgentResponse
 from ...models.http_validation_error import HTTPValidationError
+from ...models.agent_response import AgentResponse
 from ...models.paginated_response import PaginatedResponse
 from ...types import UNSET, Unset
 from typing import cast
@@ -41,10 +41,10 @@ def _get_kwargs(
 def _parse_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
 ) -> HTTPValidationError | PaginatedResponse | None:
-    if response.status_code == 200:
+    if 200 <= response.status_code < 300:
+        if not response.content:
+            return None
         response_200 = PaginatedResponse.from_dict(response.json())
-        # Parse .data items into typed AgentResponse models so that
-        # indexing (e.g. agents[0].id) and iteration return typed objects.
         if response_200.data is not UNSET and response_200.data is not None:
             response_200.data = [
                 AgentResponse.from_dict(item) if isinstance(item, dict) else item

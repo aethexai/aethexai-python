@@ -14,12 +14,9 @@ class Unset:
 
 UNSET: Unset = Unset()
 
-# The types that `httpx.Client(files=)` can accept, copied from that library.
 FileContent = IO[bytes] | bytes | str
 FileTypes = (
-    # (filename, file (or bytes), content_type)
     tuple[str | None, FileContent, str | None]
-    # (filename, file (or bytes), content_type, headers)
     | tuple[str | None, FileContent, str | None, Mapping[str, str]]
 )
 RequestFiles = list[tuple[str, FileTypes]]

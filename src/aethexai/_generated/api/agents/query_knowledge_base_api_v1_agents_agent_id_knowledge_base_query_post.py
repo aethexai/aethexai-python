@@ -40,7 +40,9 @@ def _get_kwargs(
 def _parse_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
 ) -> HTTPValidationError | KnowledgeQueryResponse | None:
-    if response.status_code == 200:
+    if 200 <= response.status_code < 300:
+        if not response.content:
+            return None
         response_200 = KnowledgeQueryResponse.from_dict(response.json())
 
         return response_200
@@ -75,9 +77,8 @@ def sync_detailed(
 ) -> Response[HTTPValidationError | KnowledgeQueryResponse]:
     r"""Query Knowledge Base
 
-     Test RAG retrieval against an agent's knowledge base.
-
-    Body: {\"query\": \"your question here\", \"top_k\": 3}
+     Test RAG retrieval against an agent's knowledge base. Body: {\"query\": \"your question here\",
+    \"top_k\": 3}
     Returns ranked chunks with scores from pgvector hybrid search.
 
     Args:
@@ -112,9 +113,8 @@ def sync(
 ) -> HTTPValidationError | KnowledgeQueryResponse | None:
     r"""Query Knowledge Base
 
-     Test RAG retrieval against an agent's knowledge base.
-
-    Body: {\"query\": \"your question here\", \"top_k\": 3}
+     Test RAG retrieval against an agent's knowledge base. Body: {\"query\": \"your question here\",
+    \"top_k\": 3}
     Returns ranked chunks with scores from pgvector hybrid search.
 
     Args:
@@ -144,9 +144,8 @@ async def asyncio_detailed(
 ) -> Response[HTTPValidationError | KnowledgeQueryResponse]:
     r"""Query Knowledge Base
 
-     Test RAG retrieval against an agent's knowledge base.
-
-    Body: {\"query\": \"your question here\", \"top_k\": 3}
+     Test RAG retrieval against an agent's knowledge base. Body: {\"query\": \"your question here\",
+    \"top_k\": 3}
     Returns ranked chunks with scores from pgvector hybrid search.
 
     Args:
@@ -179,9 +178,8 @@ async def asyncio(
 ) -> HTTPValidationError | KnowledgeQueryResponse | None:
     r"""Query Knowledge Base
 
-     Test RAG retrieval against an agent's knowledge base.
-
-    Body: {\"query\": \"your question here\", \"top_k\": 3}
+     Test RAG retrieval against an agent's knowledge base. Body: {\"query\": \"your question here\",
+    \"top_k\": 3}
     Returns ranked chunks with scores from pgvector hybrid search.
 
     Args:

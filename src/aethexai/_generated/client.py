@@ -3,12 +3,6 @@ from typing import Any
 
 from attrs import define, field, evolve
 
-# Sentinel: confirms the secret-fields-repr-suppression patch has been applied
-# to this codegen file. ``scripts/sync_from_prod.py`` re-applies the patch
-# after every ``openapi-python-client generate`` and uses this sentinel to
-# detect already-patched files. DO NOT remove without auditing every call
-# site that depends on ``token`` and the auth-header value not appearing in
-# ``repr(client)`` / structured-log output. See ``docs/audits/pre-launch-2026-05-17.md`` finding A.5.
 _SECRET_FIELDS_PATCHED = True
 import httpx
 

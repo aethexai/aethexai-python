@@ -31,7 +31,9 @@ def _get_kwargs(
 def _parse_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
 ) -> CallStatusResponse | HTTPValidationError | None:
-    if response.status_code == 200:
+    if 200 <= response.status_code < 300:
+        if not response.content:
+            return None
         response_200 = CallStatusResponse.from_dict(response.json())
 
         return response_200
@@ -65,21 +67,11 @@ def sync_detailed(
 ) -> Response[CallStatusResponse | HTTPValidationError]:
     """Get Call Status
 
-     Return telephony status for a call.
-
-    Today's writers emit one of the eight values enumerated by
-    ``CallStatusLiteral`` (queued / ringing / in-progress / completed /
-    failed / no-answer / busy / canceled). ``connected`` is intentionally
-    absent: no code path writes it today, and including it would imply an
-    observable state customers cannot reach. See AET-1473.
-
-    ``CallStatusResponse.status`` is typed as ``str`` rather than
-    ``CallStatusLiteral`` to remain forward-compatible with historical
-    ``vo_calls`` rows whose status (e.g. ``'initiated'``, still referenced
-    in ``post_call.py``'s CASE expression) sits outside that closed set.
-    The route's *filter* boundary (``GET /calls?status=...``) is the strict
-    one — it rejects junk inputs at 422 — and the response is the lenient
-    one so legacy data round-trips cleanly.
+     Return the telephony status for a call. The status is one of: queued, ringing, in-progress,
+    completed, failed, no-answer, busy, or canceled. The status field is typed as a plain string rather
+    than a closed set so it stays forward-compatible: older calls may carry legacy status values outside
+    the current list. The collection filter (``GET /calls?status=...``) is strict and rejects unknown
+    values with a 422, while this status response is lenient so older calls round-trip cleanly.
 
     Args:
         call_id (UUID):
@@ -110,21 +102,11 @@ def sync(
 ) -> CallStatusResponse | HTTPValidationError | None:
     """Get Call Status
 
-     Return telephony status for a call.
-
-    Today's writers emit one of the eight values enumerated by
-    ``CallStatusLiteral`` (queued / ringing / in-progress / completed /
-    failed / no-answer / busy / canceled). ``connected`` is intentionally
-    absent: no code path writes it today, and including it would imply an
-    observable state customers cannot reach. See AET-1473.
-
-    ``CallStatusResponse.status`` is typed as ``str`` rather than
-    ``CallStatusLiteral`` to remain forward-compatible with historical
-    ``vo_calls`` rows whose status (e.g. ``'initiated'``, still referenced
-    in ``post_call.py``'s CASE expression) sits outside that closed set.
-    The route's *filter* boundary (``GET /calls?status=...``) is the strict
-    one — it rejects junk inputs at 422 — and the response is the lenient
-    one so legacy data round-trips cleanly.
+     Return the telephony status for a call. The status is one of: queued, ringing, in-progress,
+    completed, failed, no-answer, busy, or canceled. The status field is typed as a plain string rather
+    than a closed set so it stays forward-compatible: older calls may carry legacy status values outside
+    the current list. The collection filter (``GET /calls?status=...``) is strict and rejects unknown
+    values with a 422, while this status response is lenient so older calls round-trip cleanly.
 
     Args:
         call_id (UUID):
@@ -150,21 +132,11 @@ async def asyncio_detailed(
 ) -> Response[CallStatusResponse | HTTPValidationError]:
     """Get Call Status
 
-     Return telephony status for a call.
-
-    Today's writers emit one of the eight values enumerated by
-    ``CallStatusLiteral`` (queued / ringing / in-progress / completed /
-    failed / no-answer / busy / canceled). ``connected`` is intentionally
-    absent: no code path writes it today, and including it would imply an
-    observable state customers cannot reach. See AET-1473.
-
-    ``CallStatusResponse.status`` is typed as ``str`` rather than
-    ``CallStatusLiteral`` to remain forward-compatible with historical
-    ``vo_calls`` rows whose status (e.g. ``'initiated'``, still referenced
-    in ``post_call.py``'s CASE expression) sits outside that closed set.
-    The route's *filter* boundary (``GET /calls?status=...``) is the strict
-    one — it rejects junk inputs at 422 — and the response is the lenient
-    one so legacy data round-trips cleanly.
+     Return the telephony status for a call. The status is one of: queued, ringing, in-progress,
+    completed, failed, no-answer, busy, or canceled. The status field is typed as a plain string rather
+    than a closed set so it stays forward-compatible: older calls may carry legacy status values outside
+    the current list. The collection filter (``GET /calls?status=...``) is strict and rejects unknown
+    values with a 422, while this status response is lenient so older calls round-trip cleanly.
 
     Args:
         call_id (UUID):
@@ -193,21 +165,11 @@ async def asyncio(
 ) -> CallStatusResponse | HTTPValidationError | None:
     """Get Call Status
 
-     Return telephony status for a call.
-
-    Today's writers emit one of the eight values enumerated by
-    ``CallStatusLiteral`` (queued / ringing / in-progress / completed /
-    failed / no-answer / busy / canceled). ``connected`` is intentionally
-    absent: no code path writes it today, and including it would imply an
-    observable state customers cannot reach. See AET-1473.
-
-    ``CallStatusResponse.status`` is typed as ``str`` rather than
-    ``CallStatusLiteral`` to remain forward-compatible with historical
-    ``vo_calls`` rows whose status (e.g. ``'initiated'``, still referenced
-    in ``post_call.py``'s CASE expression) sits outside that closed set.
-    The route's *filter* boundary (``GET /calls?status=...``) is the strict
-    one — it rejects junk inputs at 422 — and the response is the lenient
-    one so legacy data round-trips cleanly.
+     Return the telephony status for a call. The status is one of: queued, ringing, in-progress,
+    completed, failed, no-answer, busy, or canceled. The status field is typed as a plain string rather
+    than a closed set so it stays forward-compatible: older calls may carry legacy status values outside
+    the current list. The collection filter (``GET /calls?status=...``) is strict and rejects unknown
+    values with a 422, while this status response is lenient so older calls round-trip cleanly.
 
     Args:
         call_id (UUID):
