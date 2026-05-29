@@ -287,6 +287,9 @@ def regenerate_client() -> int:
     typed_agent_rc = _apply_typed_agent_response_patch()
     if typed_agent_rc != 0:
         return typed_agent_rc
+    storage_path_rc = _apply_recording_storage_path_optional_patch()
+    if storage_path_rc != 0:
+        return storage_path_rc
     return result.returncode
 
 
@@ -1063,6 +1066,130 @@ def _apply_typed_agent_response_patch() -> int:
         target.write_text(new_source)
         patched += 1
     print(f"post-codegen patch: applied typed-agent-response (AET-1597) to {patched} endpoint(s)")
+    return 0
+
+
+def _apply_recording_storage_path_optional_patch() -> int:
+    """Re-apply the AET-1599 patch to ``_generated/models/recording_response.py``.
+
+    Backend aethex#1007 removes the internal ``storage_path`` field from
+    ``GET /recordings`` and ``GET /recordings/:id`` responses.  The stock
+    codegen declares ``storage_path: str`` (required, no default) and does
+    ``d.pop("storage_path")`` in ``from_dict`` — a ``KeyError`` when the field
+    is absent.
+
+    This patch makes the field optional (``str | Unset = UNSET``) and changes
+    the ``from_dict`` pop to supply ``UNSET`` as the default, so the SDK
+    tolerates both the current (field present) and the future (field absent)
+    backend responses.  The class definition is also adjusted: ``storage_path``
+    is moved after the required positional fields so attrs still constructs with
+    non-defaulted fields first.
+
+    The patch is idempotent: it bails out when the ``AETHEX-PATCH (AET-1599)``
+    sentinel is already present.  If the ``storage_path`` lines are not found at
+    all (because a future regen already dropped the field from the spec), the
+    patch skips cleanly rather than raising.
+    """
+    target = GENERATED_DIR / "models" / "recording_response.py"
+    if not target.exists():
+        print(
+            f"warn: recording-storage-path patch skipped; {target} not found",
+            file=sys.stderr,
+        )
+        return 0
+
+    source = target.read_text()
+
+    if "AETHEX-PATCH (AET-1599)" in source:
+        print("post-codegen patch: recording-storage-path already applied (sentinel present)")
+        return 0
+
+    # If the field is completely absent from the generated source (future state:
+    # the spec no longer declares it), there is nothing to patch.
+    if "storage_path" not in source:
+        print(
+            "post-codegen patch: recording-storage-path skipped "
+            "(storage_path not present in generated source — field already removed from spec)"
+        )
+        return 0
+
+    patched = source
+
+    # 1. Sentinel comment — injected right before the class attribute block so
+    #    any reviewer can trace the origin of the optional declaration.
+    sentinel_comment = (
+        "    # AETHEX-PATCH (AET-1599): storage_path is optional — the backend\n"
+        "    # (aethex#1007) will stop sending this internal object-store key.\n"
+        "    # Re-applied by scripts/sync_from_prod.py after every regeneration.\n"
+    )
+
+    # 2. Make the field declaration optional with UNSET default.
+    #    The codegen emits it as a required positional field; we move it to the
+    #    optional section (after ``created_at``) so attrs ordering is satisfied.
+    #    Match the exact codegen-shape line.
+    required_decl_needle = "    storage_path: str\n"
+    if required_decl_needle in patched:
+        # Remove the required declaration from wherever it sits.
+        patched = patched.replace(required_decl_needle, "", 1)
+        # Insert as an optional field after the ``created_at`` optional field.
+        created_at_line = "    created_at: None | str | Unset = UNSET\n"
+        if created_at_line in patched:
+            patched = patched.replace(
+                created_at_line,
+                created_at_line + sentinel_comment + "    storage_path: str | Unset = UNSET\n",
+                1,
+            )
+        else:
+            # Fallback: append before the first optional field line we can find.
+            # This should not happen with the current codegen shape.
+            print(
+                "warn: recording-storage-path patch could not locate the "
+                "``created_at`` anchor line; storage_path optional declaration "
+                "may be misplaced. Verify _generated/models/recording_response.py.",
+                file=sys.stderr,
+            )
+
+    # 3. Fix ``from_dict`` to supply UNSET as the default (avoid KeyError).
+    pop_required_needle = '        storage_path = d.pop("storage_path")\n'
+    pop_optional_replacement = '        storage_path = d.pop("storage_path", UNSET)\n'
+    if pop_required_needle in patched:
+        patched = patched.replace(pop_required_needle, pop_optional_replacement, 1)
+
+    # 4. Fix ``to_dict``: if codegen emits storage_path unconditionally in the
+    #    ``field_dict.update({...})`` block, move it to a conditional emit.
+    #    The exact shape codegen produces for a required str field:
+    unconditional_needle = '                "storage_path": storage_path,\n'
+    if unconditional_needle in patched:
+        # Remove from the mandatory update block.
+        patched = patched.replace(unconditional_needle, "", 1)
+        # Add a conditional emit after the mandatory update block.
+        # Anchor on the closing brace + newline of the field_dict.update call.
+        anchor = "        )\n"
+        conditional_block = (
+            "        if self.storage_path is not UNSET:\n"
+            '            field_dict["storage_path"] = self.storage_path\n'
+        )
+        # Insert after the first occurrence (the field_dict.update closing paren).
+        idx = patched.find(anchor)
+        if idx != -1:
+            insert_pos = idx + len(anchor)
+            patched = patched[:insert_pos] + conditional_block + patched[insert_pos:]
+
+    if patched == source:
+        print(
+            "warn: recording-storage-path patch made no changes — the generated "
+            "source may already be in the expected shape, or openapi-python-client "
+            "changed its output. Verify _generated/models/recording_response.py.",
+            file=sys.stderr,
+        )
+        return 0
+
+    target.write_text(patched)
+    try:
+        rel = target.relative_to(REPO_ROOT)
+    except ValueError:
+        rel = target
+    print(f"post-codegen patch: applied recording-storage-path optional to {rel}")
     return 0
 
 

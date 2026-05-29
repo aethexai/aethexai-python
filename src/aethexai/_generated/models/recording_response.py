@@ -7,8 +7,6 @@ from attrs import define as _attrs_define
 from attrs import field as _attrs_field
 
 from ..types import UNSET, Unset
-
-from ..types import UNSET, Unset
 from typing import cast
 
 
@@ -21,7 +19,9 @@ class RecordingResponse:
     Attributes:
         call_id (str):
         id (str):
-        storage_path (str):
+        storage_path (str | Unset): Internal object-store key; present today but
+            will be absent once the backend removes the field (aethex#1007).
+            Treat as opaque — do not rely on its value.
         created_at (None | str | Unset):
         duration_seconds (float | None | Unset):
         format_ (str | Unset):  Default: 'wav'.
@@ -31,8 +31,8 @@ class RecordingResponse:
 
     call_id: str
     id: str
-    storage_path: str
     created_at: None | str | Unset = UNSET
+    storage_path: str | Unset = UNSET
     duration_seconds: float | None | Unset = UNSET
     format_: str | Unset = "wav"
     size_bytes: int | None | Unset = UNSET
@@ -43,8 +43,6 @@ class RecordingResponse:
         call_id = self.call_id
 
         id = self.id
-
-        storage_path = self.storage_path
 
         created_at: None | str | Unset
         if isinstance(self.created_at, Unset):
@@ -74,9 +72,10 @@ class RecordingResponse:
             {
                 "call_id": call_id,
                 "id": id,
-                "storage_path": storage_path,
             }
         )
+        if self.storage_path is not UNSET:
+            field_dict["storage_path"] = self.storage_path
         if created_at is not UNSET:
             field_dict["created_at"] = created_at
         if duration_seconds is not UNSET:
@@ -97,7 +96,7 @@ class RecordingResponse:
 
         id = d.pop("id")
 
-        storage_path = d.pop("storage_path")
+        storage_path = d.pop("storage_path", UNSET)
 
         def _parse_created_at(data: object) -> None | str | Unset:
             if data is None:

@@ -4261,8 +4261,7 @@
         },
         "required": [
           "id",
-          "call_id",
-          "storage_path"
+          "call_id"
         ],
         "title": "RecordingResponse",
         "type": "object"
