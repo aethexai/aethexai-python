@@ -37,7 +37,7 @@ requires-dist = [
     { name = "aioice", marker = "extra == 'realtime'", specifier = ">=0.9.0,<0.10" },
     { name = "aiortc", marker = "extra == 'realtime'", specifier = ">=1.9.0" },
     { name = "attrs", specifier = ">=21.3.0" },
-    { name = "av", marker = "extra == 'realtime'", specifier = ">=14.0.0,<14.2.1" },
+    { name = "av", marker = "extra == 'realtime'", specifier = ">=14.0.0,!=14.4.0,<15" },
     { name = "httpx", specifier = ">=0.24.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.10" },
     { name = "pydantic", specifier = ">=2.0" },

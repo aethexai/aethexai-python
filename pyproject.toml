@@ -44,17 +44,19 @@ Changelog = "https://github.com/aethexai/aethexai-python/blob/main/CHANGELOG.md"
 [project.optional-dependencies]
 # The realtime extra installs aiortc + aioice + av (PyAV).
 #
-# av is capped to <14.2.1 because PyAV 14.2.1/14.3.0/14.4.0 are published
-# sdist-only (no wheels), which forces a from-source build that needs FFmpeg
-# dev headers and only compiles against FFmpeg <=7 (AET-1596). 14.2.0 is the
-# newest 14.x that ships binary wheels (cp310-cp313), so supported Pythons
-# install with no system FFmpeg at all. av cannot move to the FFmpeg-8 line
-# (>=16) without aiortc>=1.14 -> aioice>=0.10.1, which conflicts with the
-# aioice 0.9.x pin required by realtime/_aioice_patches.py (tracked separately).
+# av excludes 14.4.0 because that release is published sdist-only (14.3.0 has no
+# usable files and 14.2.1 was never released), which forces a from-source build
+# that needs FFmpeg dev headers and only compiles against FFmpeg <=7 (AET-1596).
+# The constraint resolves to av 14.2.0 — the newest 14.x shipping binary wheels
+# (cp310-cp313, manylinux/macOS/Windows) — so supported Pythons install with no
+# system FFmpeg. (Alpine/musl has no av-14.x musllinux wheel and still builds
+# from source.) Moving av forward is blocked upstream: the aioice<0.10 pin below
+# (load-bearing for _aioice_patches.py) caps aiortc at 1.11.0, which itself caps
+# av<15 — so av>=15 is unreachable until aioice/aiortc are bumped (AET-1600).
 realtime = [
     "aiortc>=1.9.0",
     "aioice>=0.9.0,<0.10",
-    "av>=14.0.0,<14.2.1",
+    "av>=14.0.0,!=14.4.0,<15",
 ]
 dev = [
     "pytest>=8.0",
