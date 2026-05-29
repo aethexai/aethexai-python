@@ -920,9 +920,23 @@ class AsyncAethexAI:
 
         return await self._call(_op.asyncio_detailed, voice_id)
 
-    async def preview_voice(self, **fields: Any) -> Any:
-        """Generate a short preview clip for a voice."""
-        from aethexai._generated.api.voices import preview_voice_api_v1_voices_preview_post as _op
+    async def preview_voice(self, **fields: Any) -> bytes:
+        """Generate a short preview clip for a voice, returning raw audio bytes."""
         from aethexai._generated.models.voice_preview_request import VoicePreviewRequest
 
-        return await self._call(_op.asyncio_detailed, body=VoicePreviewRequest.from_dict(fields))
+        body = VoicePreviewRequest.from_dict(fields)
+        httpx_client = self._client.get_async_httpx_client()
+        try:
+            response = await httpx_client.post(
+                "/api/v1/voices/preview",
+                json=body.to_dict(),
+                headers={"Content-Type": "application/json"},
+            )
+        except httpx.TimeoutException as exc:
+            raise APITimeoutError() from exc
+        except httpx.HTTPError as exc:
+            raise APIConnectionError(cause=exc) from exc
+        status = int(response.status_code)
+        if 200 <= status < 300:
+            return response.content
+        raise _map_status_to_exception(status, response.content, response.headers)
