@@ -492,6 +492,9 @@ _CREATED_201_ENDPOINTS = (
 )
 
 _CREATED_201_SENTINEL = "# AETHEX-PATCH (AET-1580)"
+# AET-1597 upgraded the agent endpoints to typed AgentResponse.from_dict() parsing.
+# Recognise both sentinel forms so idempotency checks don't re-patch already-fixed files.
+_CREATED_201_SENTINELS = (_CREATED_201_SENTINEL, "# AETHEX-PATCH (AET-1597)")
 
 
 def _patch_created_201_source(source: str) -> str | None:
@@ -520,8 +523,15 @@ def _patch_created_201_source(source: str) -> str | None:
     Both forms are duplicated verbatim with ``200`` -> ``201`` so a 201 Created
     response is parsed into the same model (or raw body) instead of falling
     through to ``return None``.
+
+    Note: For agent endpoints (create_agent, duplicate_agent) the 200 branch now
+    calls ``AgentResponse.from_dict(response.json())`` following AET-1597. When
+    the spec is in sync (openapi.json references AgentResponse for 201/200),
+    openapi-python-client will generate typed branches natively and this patch
+    is a no-op (the native 201 check below skips it). The patch acts as a
+    defensive net for any spec regression. Re-applied by sync_from_prod.py.
     """
-    if _CREATED_201_SENTINEL in source:
+    if any(sentinel in source for sentinel in _CREATED_201_SENTINELS):
         return None
     if re.search(r"^ {4}if response\.status_code == 201:", source, re.MULTILINE):
         # Codegen produced a native 201 branch directly (the spec declares 201

@@ -125,3 +125,8 @@ ignore_errors = true
 [[tool.mypy.overrides]]
 module = "aethexai.realtime.*"
 ignore_errors = true
+
+[dependency-groups]
+dev = [
+    "respx>=0.23.1",
+]
