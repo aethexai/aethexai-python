@@ -264,6 +264,25 @@ client = AethexAI(
 | `max_retries` | `2` | HTTP transport retries for retryable failures. |
 | `httpx_client` | `None` | Optional custom `httpx.Client` or `httpx.AsyncClient`. |
 
+### Environment variables
+
+The SDK reads configuration from environment variables — export them in your
+shell (or pass the values directly to the client):
+
+```bash
+export AETHEX_API_KEY=ae_live_...   # or ae_test_...
+```
+
+| Variable | Used by | Notes |
+|---|---|---|
+| `AETHEX_API_KEY` | `AethexAI`, `Kora` | Required unless you pass `api_key=`. |
+| `AETHEX_BASE_URL` | example scripts | Optional base-URL override. |
+| `AETHEX_DEVELOPER_ACCESS_TOKEN` | `DeveloperClient` | JWT for account/billing. |
+| `AETHEX_DEVELOPER_REFRESH_TOKEN` | `DeveloperClient` | Optional; enables token refresh. |
+
+See [`examples/README.md`](examples/README.md) for the variables used by the
+example scripts.
+
 ## Errors
 
 Non-2xx responses raise typed exceptions. Transport failures are mapped to SDK
