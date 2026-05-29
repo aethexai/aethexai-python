@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import os
 from collections.abc import AsyncIterator
-from typing import Any
+from typing import Any, cast
 from uuid import UUID
 
 import httpx
@@ -28,6 +28,10 @@ from aethexai._exceptions import (
     _map_status_to_exception,
 )
 from aethexai._generated.client import AuthenticatedClient
+from aethexai._generated.models.agent_response import AgentResponse
+from aethexai._generated.models.call_response import CallResponse
+from aethexai._generated.models.conversation_response import ConversationResponse
+from aethexai._generated.models.paginated_response import PaginatedResponse
 from aethexai._generated.types import UNSET, Unset
 
 _DEFAULT_BASE_URL = "https://api.aethexai.com"
@@ -114,11 +118,20 @@ class AsyncAethexAI:
 
     # ─── agents ────────────────────────────────────────────────────────
 
-    async def list_agents(self, *, offset: int | Unset = 0, limit: int | Unset = 50) -> Any:
-        """List agents."""
+    async def list_agents(
+        self, *, offset: int | Unset = 0, limit: int | Unset = 50
+    ) -> PaginatedResponse[AgentResponse]:
+        """List agents.
+
+        Returns a single-page ``PaginatedResponse``; ``.data`` items are
+        ``AgentResponse`` instances. Use ``.has_more`` to detect additional pages.
+        """
         from aethexai._generated.api.agents import list_agents_api_v1_agents_get as _op
 
-        return await self._call(_op.asyncio_detailed, offset=offset, limit=limit)
+        return cast(
+            PaginatedResponse[AgentResponse],
+            await self._call(_op.asyncio_detailed, offset=offset, limit=limit),
+        )
 
     async def create_agent(self, **fields: Any) -> Any:
         """Create a new agent."""
@@ -310,16 +323,23 @@ class AsyncAethexAI:
         direction: Any | None | Unset = UNSET,
         offset: int | Unset = 0,
         limit: int | Unset = 50,
-    ) -> Any:
-        """List calls."""
+    ) -> PaginatedResponse[CallResponse]:
+        """List calls.
+
+        Returns a single-page ``PaginatedResponse``; ``.data`` items are
+        ``CallResponse`` instances. Use ``.has_more`` to detect additional pages.
+        """
         from aethexai._generated.api.calls import list_calls_api_v1_calls_get as _op
 
-        return await self._call(
-            _op.asyncio_detailed,
-            status=status,
-            direction=direction,
-            offset=offset,
-            limit=limit,
+        return cast(
+            PaginatedResponse[CallResponse],
+            await self._call(
+                _op.asyncio_detailed,
+                status=status,
+                direction=direction,
+                offset=offset,
+                limit=limit,
+            ),
         )
 
     async def create_call_record(self, **fields: Any) -> Any:
@@ -425,13 +445,22 @@ class AsyncAethexAI:
 
     # ─── conversations (historical) ────────────────────────────────────
 
-    async def list_conversations(self, *, offset: int | Unset = 0, limit: int | Unset = 50) -> Any:
-        """List conversations."""
+    async def list_conversations(
+        self, *, offset: int | Unset = 0, limit: int | Unset = 50
+    ) -> PaginatedResponse[ConversationResponse]:
+        """List conversations.
+
+        Returns a single-page ``PaginatedResponse``; ``.data`` items are
+        ``ConversationResponse`` instances. Use ``.has_more`` to detect additional pages.
+        """
         from aethexai._generated.api.conversations import (
             list_conversations_api_v1_conversations_get as _op,
         )
 
-        return await self._call(_op.asyncio_detailed, offset=offset, limit=limit)
+        return cast(
+            PaginatedResponse[ConversationResponse],
+            await self._call(_op.asyncio_detailed, offset=offset, limit=limit),
+        )
 
     async def get_conversation(self, conversation_id: str | UUID) -> Any:
         """Retrieve a conversation by id."""

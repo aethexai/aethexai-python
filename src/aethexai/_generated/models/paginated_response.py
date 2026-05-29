@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import Any, TypeVar, BinaryIO, TextIO, TYPE_CHECKING, Generator
+from typing import Any, Generic, TypeVar, BinaryIO, TextIO, TYPE_CHECKING
 
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
@@ -12,27 +12,45 @@ from ..types import UNSET, Unset
 from typing import cast
 
 
-T = TypeVar("T", bound="PaginatedResponse")
+T = TypeVar("T", bound="PaginatedResponse")  # type: ignore[type-arg]
+
+# AETHEX-PATCH (AET-1598): generic type variable for typed .data items.
+_ItemT = TypeVar("_ItemT")
 
 
 @_attrs_define
-class PaginatedResponse:
-    """
+class PaginatedResponse(Generic[_ItemT]):
+    """Single-page result from a list endpoint.
+
+    **Important:** ``.data`` holds ONE page of results (default limit=50).
+    It does NOT represent the full dataset. To page through all results,
+    advance ``offset`` by ``limit`` while ``.has_more`` is ``True``::
+
+        offset = 0
+        limit = 50
+        while True:
+            page = client.list_agents(offset=offset, limit=limit)
+            for agent in page.data:
+                process(agent)
+            if not page.has_more:
+                break
+            offset += limit
+
     Attributes:
-        data (list[Any] | Unset):
+        data (list[_ItemT] | Unset): Items on this page only.
         limit (int | Unset):  Default: 50.
         offset (int | Unset):  Default: 0.
         total (int | Unset):  Default: 0.
     """
 
-    data: list[Any] | Unset = UNSET
+    data: list[_ItemT] | Unset = UNSET
     limit: int | Unset = 50
     offset: int | Unset = 0
     total: int | Unset = 0
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
-        data: list[Any] | Unset = UNSET
+        data: list[_ItemT] | Unset = UNSET
         if not isinstance(self.data, Unset):
             data = self.data
 
@@ -81,7 +99,37 @@ class PaginatedResponse:
     def additional_keys(self) -> list[str]:
         return list(self.additional_properties.keys())
 
-    def __getitem__(self, key: str) -> Any:
+    # AETHEX-PATCH (AET-1598): make PaginatedResponse indexable over
+    # .data so that agents[0]/calls[0]/conversations[0] work without raising
+    # KeyError. String-key access on additional_properties is preserved for
+    # backward compatibility. __iter__ and __len__ are intentionally NOT added
+    # — they silently operated on a single page. Use .data to iterate items on
+    # the current page, and loop while .has_more to consume all pages.
+    # Re-applied by scripts/sync_from_prod.py after every regeneration.
+
+    @property
+    def has_more(self) -> bool:
+        """``True`` when there are more pages beyond this one.
+
+        Returns ``False`` when ``offset``, ``total``, or ``data`` are
+        ``Unset``/``None`` (treat unknown pagination state as complete).
+        """
+        if isinstance(self.offset, Unset) or self.offset is None:
+            return False
+        if isinstance(self.total, Unset) or self.total is None:
+            return False
+        if isinstance(self.data, Unset) or self.data is None:
+            return False
+        return self.offset + len(self.data) < self.total
+
+    def __getitem__(self, key: int | str) -> Any:
+        # Integer indexing operates on .data (e.g. agents[0]).
+        # String indexing falls through to additional_properties for
+        # backward-compatibility with the generated-client pattern.
+        if isinstance(key, int):
+            if isinstance(self.data, Unset) or self.data is None:
+                raise IndexError(key)
+            return self.data[key]
         return self.additional_properties[key]
 
     def __setitem__(self, key: str, value: Any) -> None:

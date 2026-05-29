@@ -4,6 +4,8 @@ All notable changes to this project are documented here. Format based on [Keep a
 
 ## [Unreleased]
 
+## [0.3.0]
+
 ### Added
 
 - `AethexAI.list_tag_vocabulary()` / `AsyncAethexAI.list_tag_vocabulary()` — wrapper for `GET /api/v1/voices/tag-vocabulary`. Returns the closed-vocabulary tag set (tone, voice_texture, delivery_style, business_persona) used by voice tagging and accepted by `GET /voices?tag=...`. (AET-1533)
@@ -11,6 +13,11 @@ All notable changes to this project are documented here. Format based on [Keep a
 ### Changed
 
 - `cancel_transcription_job` (sync and async) now returns a typed `CancelTranscriptionJobResponse` (`id`, `status`) instead of a raw `dict`, matching the other transcription wrappers. The on-the-wire shape is unchanged, but code that indexed the old dict result (e.g. `result["id"]`) must now use attribute access (`result.id`). (AET-1538)
+- **Breaking:** `list_agents`, `list_calls`, and `list_conversations` now return a `PaginatedResponse[T]` whose `.data` items are typed model instances (`AgentResponse`, `CallResponse`, `ConversationResponse` respectively) instead of raw dicts. Code that indexed items as dicts (e.g. `result.data[0]["id"]`) must be updated to use attribute access (`result.data[0].id`). (AET-1598)
+- `result[0]` integer indexing on the `PaginatedResponse` returned by these methods now works without raising `KeyError`. Previously only string keys were supported; integer keys now index into `.data` directly. (AET-1598)
+- `PaginatedResponse` now exposes a `has_more` property that returns `True` when `offset + len(data) < total`, making it straightforward to detect and page through multi-page result sets without accidentally treating a single page as the full dataset. (AET-1598)
+- `PaginatedResponse.__iter__` and `__len__` have been removed. They silently operated on a single page, so `for a in client.list_agents()` would drop items beyond the first page and `len()` returned the page count rather than `total`. Use `page.data` to iterate items on the current page, and loop while `page.has_more` to consume all pages. (AET-1598)
+- The three list wrappers in `AethexAI`, `AsyncAethexAI`, and `Kora` now declare `-> PaginatedResponse[T]` return types (e.g. `PaginatedResponse[AgentResponse]`) so IDEs and mypy resolve the item type statically. (AET-1598)
 
 ### Fixed
 - `[realtime]` extra now installs from a binary wheel on supported Pythons instead of forcing a from-source PyAV build. The `av` constraint was `>=12.0.0`, which resolved to `av==14.4.0` — a release published **sdist-only** (no wheels) — so installing the extra always compiled PyAV from source against system FFmpeg and failed on FFmpeg 8 (`AVFMT_ALLOW_FLUSH` was removed in FFmpeg 8; `av` 14.x targets FFmpeg ≤7). Pinned to `av>=14.0.0,!=14.4.0,<15` so it resolves to `av==14.2.0` — the newest 14.x with cp310–cp313 wheels (FFmpeg bundled), so no system FFmpeg is needed on manylinux/macOS/Windows. (Only `14.4.0` is sdist-only; `14.3.0` has no usable files and `14.2.1` was never released, so `!=14.4.0` is the meaningful exclusion. Alpine/musl has no `av` 14.x musllinux wheel and still builds from source — no regression.) The README's `brew install ffmpeg` note (which yields FFmpeg 8) is corrected to `brew install ffmpeg@7` for the source-build case. Moving `av` forward is blocked upstream: the `aioice<0.10` pin (load-bearing for `realtime/_aioice_patches.py`) caps `aiortc` at `1.11.0`, which caps `av<15`, so even `av>=15` is unreachable until aioice/aiortc are bumped (tracked in AET-1600). (AET-1596)
