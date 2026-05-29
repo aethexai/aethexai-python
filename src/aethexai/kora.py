@@ -29,7 +29,7 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 from io import BytesIO
-from typing import Any, BinaryIO
+from typing import Any, BinaryIO, cast
 from uuid import UUID
 
 import httpx
@@ -106,6 +106,7 @@ from aethexai._generated.models.body_transcribe_sync_api_v1_transcribe_post impo
     BodyTranscribeSyncApiV1TranscribePost,
 )
 from aethexai._generated.models.call_create import CallCreate
+from aethexai._generated.models.paginated_response import PaginatedResponse
 from aethexai._generated.models.tts_request import TTSRequest
 from aethexai._generated.models.tts_stream_request import TTSStreamRequest
 from aethexai._generated.models.voice_preview_request import VoicePreviewRequest
@@ -259,12 +260,19 @@ class Kora:
         *,
         limit: int | None = None,
         offset: int | None = None,
-    ) -> Any:
-        """List agents on the current account."""
-        return self._call(
-            _list_agents_op.sync_detailed,
-            limit=limit if limit is not None else UNSET,
-            offset=offset if offset is not None else UNSET,
+    ) -> PaginatedResponse:
+        """List agents on the current account.
+
+        Returns a single-page ``PaginatedResponse``; ``.data`` items are
+        ``AgentResponse`` instances. Use ``.has_more`` to detect additional pages.
+        """
+        return cast(
+            PaginatedResponse,
+            self._call(
+                _list_agents_op.sync_detailed,
+                limit=limit if limit is not None else UNSET,
+                offset=offset if offset is not None else UNSET,
+            ),
         )
 
     def update_agent(self, agent_id: str | UUID, **kwargs: Any) -> Any:
@@ -312,12 +320,19 @@ class Kora:
         *,
         limit: int | None = None,
         offset: int | None = None,
-    ) -> Any:
-        """List recent calls on the current account."""
-        return self._call(
-            _list_calls_op.sync_detailed,
-            limit=limit if limit is not None else UNSET,
-            offset=offset if offset is not None else UNSET,
+    ) -> PaginatedResponse:
+        """List recent calls on the current account.
+
+        Returns a single-page ``PaginatedResponse``; ``.data`` items are
+        ``CallResponse`` instances. Use ``.has_more`` to detect additional pages.
+        """
+        return cast(
+            PaginatedResponse,
+            self._call(
+                _list_calls_op.sync_detailed,
+                limit=limit if limit is not None else UNSET,
+                offset=offset if offset is not None else UNSET,
+            ),
         )
 
     def get_call_status(self, call_id: str | UUID) -> Any:
@@ -505,17 +520,23 @@ class Kora:
         agent_id: str | UUID | None = None,
         limit: int | None = None,
         offset: int | None = None,
-    ) -> Any:
+    ) -> PaginatedResponse:
         """List conversations on the current account.
+
+        Returns a single-page ``PaginatedResponse``; ``.data`` items are
+        ``ConversationResponse`` instances. Use ``.has_more`` to detect additional pages.
 
         Note: the underlying ``GET /api/v1/conversations`` endpoint does not
         support an ``agent_id`` filter; if one is supplied here it is applied
         client-side to the returned page.
         """
-        result = self._call(
-            _list_conversations_op.sync_detailed,
-            limit=limit if limit is not None else UNSET,
-            offset=offset if offset is not None else UNSET,
+        result = cast(
+            PaginatedResponse,
+            self._call(
+                _list_conversations_op.sync_detailed,
+                limit=limit if limit is not None else UNSET,
+                offset=offset if offset is not None else UNSET,
+            ),
         )
         if agent_id is None or result is None:
             return result

@@ -615,9 +615,12 @@ def _apply_paginated_list_ergonomics_patch() -> int:
 
     Two sub-patches:
 
-    1. ``PaginatedResponse``: add ``__iter__``, ``__len__``, and fix
-       ``__getitem__`` to support integer indexing over ``.data`` (while
-       preserving existing string-key behaviour on ``additional_properties``).
+    1. ``PaginatedResponse``: fix ``__getitem__`` to support integer indexing
+       over ``.data`` (while preserving existing string-key behaviour on
+       ``additional_properties``), guard ``data=None`` in both ``__getitem__``
+       and the new ``has_more`` property, and add a clear docstring warning
+       that ``.data`` is a SINGLE page. ``__iter__`` and ``__len__`` are NOT
+       re-added — they silently truncated to a single page.
 
     2. Three list-op files (``list_agents``, ``list_calls``,
        ``list_conversations``): parse ``.data`` items into their typed models
@@ -639,38 +642,38 @@ def _apply_paginated_list_ergonomics_patch() -> int:
 
     pr_source = pr_path.read_text()
     if _PAGINATED_ERGONOMICS_SENTINEL not in pr_source:
-        # Add Iterator import alongside the existing Mapping import.
-        pr_source = pr_source.replace(
-            "from collections.abc import Mapping",
-            "from collections.abc import Iterator, Mapping",
-        )
-        # Replace the generated __getitem__ and add __iter__ / __len__.
+        # Replace the generated __getitem__, add has_more, and prepend a
+        # docstring warning that .data is a single page.
         old_getitem = (
             "    def __getitem__(self, key: str) -> Any:\n"
             "        return self.additional_properties[key]\n"
         )
         new_getitem = (
-            f"    {_PAGINATED_ERGONOMICS_SENTINEL}: make PaginatedResponse iterable and\n"
-            "    # indexable over .data so that agents[0]/calls[0]/conversations[0] work\n"
-            "    # and for-loops iterate items. String-key access on additional_properties\n"
-            "    # is preserved for backward compatibility. Re-applied by sync_from_prod.py.\n"
+            f"    {_PAGINATED_ERGONOMICS_SENTINEL}: make PaginatedResponse indexable over\n"
+            "    # .data so that agents[0]/calls[0]/conversations[0] work without raising\n"
+            "    # KeyError. String-key access on additional_properties is preserved for\n"
+            "    # backward compatibility. __iter__ and __len__ are intentionally NOT added\n"
+            "    # — they silently operated on a single page. Use .data to iterate items on\n"
+            "    # the current page, and loop while .has_more to consume all pages.\n"
+            "    # Re-applied by scripts/sync_from_prod.py after every regeneration.\n"
+            "\n"
+            "    @property\n"
+            "    def has_more(self) -> bool:\n"
+            '        """``True`` when there are more pages beyond this one."""\n'
+            "        if isinstance(self.offset, Unset) or self.offset is None:\n"
+            "            return False\n"
+            "        if isinstance(self.total, Unset) or self.total is None:\n"
+            "            return False\n"
+            "        if isinstance(self.data, Unset) or self.data is None:\n"
+            "            return False\n"
+            "        return self.offset + len(self.data) < self.total\n"
+            "\n"
             "    def __getitem__(self, key: int | str) -> Any:\n"
             "        if isinstance(key, int):\n"
-            "            if isinstance(self.data, Unset):\n"
+            "            if isinstance(self.data, Unset) or self.data is None:\n"
             "                raise IndexError(key)\n"
             "            return self.data[key]\n"
             "        return self.additional_properties[key]\n"
-            "\n"
-            "    def __iter__(self) -> Iterator[Any]:\n"
-            '        """Iterate over items in .data."""\n'
-            "        if isinstance(self.data, Unset):\n"
-            "            return iter([])\n"
-            "        return iter(self.data)\n"
-            "\n"
-            "    def __len__(self) -> int:\n"
-            "        if isinstance(self.data, Unset):\n"
-            "            return 0\n"
-            "        return len(self.data)\n"
         )
         if old_getitem not in pr_source:
             print(
