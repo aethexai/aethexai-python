@@ -52,9 +52,7 @@ def test_create_agent_201_returns_typed_agent_response(client: AethexAI) -> None
     Before AET-1597: ``agent["id"]`` worked; ``agent.id`` raised AttributeError.
     After AET-1597: both work, and ``isinstance(agent, AgentResponse)`` is True.
     """
-    respx.post(f"{BASE_URL}/api/v1/agents").mock(
-        return_value=httpx.Response(201, json=_AGENT_BODY)
-    )
+    respx.post(f"{BASE_URL}/api/v1/agents").mock(return_value=httpx.Response(201, json=_AGENT_BODY))
 
     agent = client.create_agent(name="Bot", system_prompt="You are helpful.", voice_id="fatima")
 
@@ -70,9 +68,7 @@ def test_create_agent_201_returns_typed_agent_response(client: AethexAI) -> None
 @respx.mock
 def test_create_agent_200_returns_typed_agent_response(client: AethexAI) -> None:
     """create_agent must also return AgentResponse on a 200 response."""
-    respx.post(f"{BASE_URL}/api/v1/agents").mock(
-        return_value=httpx.Response(200, json=_AGENT_BODY)
-    )
+    respx.post(f"{BASE_URL}/api/v1/agents").mock(return_value=httpx.Response(200, json=_AGENT_BODY))
 
     agent = client.create_agent(name="Bot", system_prompt="You are helpful.", voice_id="fatima")
 
@@ -149,9 +145,7 @@ def test_readme_quickstart_pattern_does_not_raise(client: AethexAI) -> None:
 
     ``agent = client.create_agent(...); print(agent.id)`` must not raise.
     """
-    respx.post(f"{BASE_URL}/api/v1/agents").mock(
-        return_value=httpx.Response(201, json=_AGENT_BODY)
-    )
+    respx.post(f"{BASE_URL}/api/v1/agents").mock(return_value=httpx.Response(201, json=_AGENT_BODY))
 
     # Before AET-1597 this raised: AttributeError: 'dict' object has no attribute 'id'
     agent = client.create_agent(name="Bot", system_prompt="You are helpful.", voice_id="fatima")
