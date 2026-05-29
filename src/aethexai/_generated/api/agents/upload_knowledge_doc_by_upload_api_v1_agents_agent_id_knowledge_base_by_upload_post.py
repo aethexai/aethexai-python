@@ -39,16 +39,9 @@ def _get_kwargs(
 def _parse_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
 ) -> Any | HTTPValidationError | None:
-    # AETHEX-PATCH (AET-1580): backend returns 201 Created on this resource POST
-    # (aethex PR #955). Parse it exactly like 200 so the wrapper layer returns
-    # the created resource instead of None. Re-applied by sync_from_prod.py.
     if response.status_code == 201:
         response_201 = response.json()
         return response_201
-
-    if response.status_code == 200:
-        response_200 = response.json()
-        return response_200
 
     if response.status_code == 422:
         response_422 = HTTPValidationError.from_dict(response.json())
@@ -79,8 +72,6 @@ def sync_detailed(
     body: KnowledgeDocByUploadRequest,
 ) -> Response[Any | HTTPValidationError]:
     """Upload Knowledge Doc By Upload
-
-     Ingest a knowledge-base document via a presigned upload (no WAF body inspection).
 
     Args:
         agent_id (UUID):
@@ -114,8 +105,6 @@ def sync(
 ) -> Any | HTTPValidationError | None:
     """Upload Knowledge Doc By Upload
 
-     Ingest a knowledge-base document via a presigned upload (no WAF body inspection).
-
     Args:
         agent_id (UUID):
         body (KnowledgeDocByUploadRequest):
@@ -142,8 +131,6 @@ async def asyncio_detailed(
     body: KnowledgeDocByUploadRequest,
 ) -> Response[Any | HTTPValidationError]:
     """Upload Knowledge Doc By Upload
-
-     Ingest a knowledge-base document via a presigned upload (no WAF body inspection).
 
     Args:
         agent_id (UUID):
@@ -174,8 +161,6 @@ async def asyncio(
     body: KnowledgeDocByUploadRequest,
 ) -> Any | HTTPValidationError | None:
     """Upload Knowledge Doc By Upload
-
-     Ingest a knowledge-base document via a presigned upload (no WAF body inspection).
 
     Args:
         agent_id (UUID):

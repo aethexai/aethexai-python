@@ -29,6 +29,7 @@ from aethexai._exceptions import (
     APITimeoutError,
     AuthenticationError,
     _map_status_to_exception,
+    parse_success_body,
 )
 from aethexai._generated.client import AuthenticatedClient
 from aethexai._generated.types import UNSET, Unset
@@ -66,7 +67,6 @@ class AethexAI:
         # It lives only inside ``self._client`` (the generated ``AuthenticatedClient``),
         # which suppresses it from ``repr()``. Anything that stores the raw key
         # on ``self`` would leak via ``vars(client)`` / ``client.__dict__``.
-        # See finding A.5 in docs/audits/pre-launch-2026-05-17.md.
         self._base_url = base_url.rstrip("/")
         self._timeout = timeout
         self._max_retries = max_retries
@@ -122,7 +122,7 @@ class AethexAI:
             raise APIConnectionError(cause=exc) from exc
         status = int(response.status_code)
         if 200 <= status < 300:
-            return response.parsed
+            return parse_success_body(response.content)
         raise _map_status_to_exception(status, response.content, response.headers)
 
     # ─── agents ────────────────────────────────────────────────────────
@@ -307,7 +307,7 @@ class AethexAI:
 
         return self._call(_op.sync_detailed, UUID(str(key_id)))
 
-    # NOTE (2026-05-17, audit finding A.1): the 8 billing methods that used
+    # NOTE: the 8 billing methods that used
     # to live here (get_balance, list_plans, select_plan, list_invoices,
     # list_transactions, list_payment_methods,
     # create_payment_method_setup_intent, detach_payment_method) were
@@ -480,7 +480,7 @@ class AethexAI:
 
         The 200 response is ``audio/wav`` even though ``openapi.json`` declares it
         as ``application/json``; we bypass the generated parser to avoid a
-        ``UnicodeDecodeError`` (AET-1522). Mirrors :meth:`synthesize_speech`.
+        ``UnicodeDecodeError``. Mirrors :meth:`synthesize_speech`.
         """
         from urllib.parse import quote
 
@@ -919,12 +919,12 @@ class AethexAI:
 
         The 200 response is ``audio/wav`` even though ``openapi.json`` declares it
         as ``application/json``; we bypass the generated parser to avoid a
-        ``UnicodeDecodeError`` (AET-1522). Mirrors :meth:`synthesize_speech`.
+        ``UnicodeDecodeError``. Mirrors :meth:`synthesize_speech`.
         """
         from aethexai._generated.models.voice_preview_request import VoicePreviewRequest
 
-        # build_body (AET-1524) gives a missing-field pre-flight ValidationError;
-        # inline httpx (AET-1522) avoids the generated parser's response.json()
+        # build_body gives a missing-field pre-flight ValidationError;
+        # inline httpx avoids the generated parser's response.json()
         # crash on the audio/wav body.
         body = build_body(VoicePreviewRequest, fields)
         httpx_client = self._client.get_httpx_client()

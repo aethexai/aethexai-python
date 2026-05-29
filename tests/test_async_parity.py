@@ -24,18 +24,6 @@ from aethexai import AethexAI, AsyncAethexAI
 BASE_URL = "https://api.test.aethexai.com"
 
 
-# ─── helpers ────────────────────────────────────────────────────────────────
-
-
-def _attrs(obj: object) -> dict[str, object]:
-    """Return a dict view of an attrs-style response model for comparison."""
-    if obj is None:
-        return {}
-    if hasattr(obj, "to_dict"):
-        return obj.to_dict()
-    return obj.__dict__ if hasattr(obj, "__dict__") else {}
-
-
 @pytest.fixture
 def sync_client() -> AethexAI:
     c = AethexAI(api_key="ae_live_test", base_url=BASE_URL)
@@ -67,8 +55,8 @@ async def test_parity_list_voices(sync_client: AethexAI, async_client: AsyncAeth
     assert isinstance(sync_voices, list)
     assert isinstance(async_voices, list)
     assert len(sync_voices) == len(async_voices) == 2
-    assert [v.id for v in sync_voices] == [v.id for v in async_voices]
-    assert [v.name for v in sync_voices] == [v.name for v in async_voices]
+    assert [v["id"] for v in sync_voices] == [v["id"] for v in async_voices]
+    assert [v["name"] for v in sync_voices] == [v["name"] for v in async_voices]
 
 
 # ─── list_tag_vocabulary ────────────────────────────────────────────────────
@@ -91,7 +79,7 @@ async def test_parity_list_tag_vocabulary(
     sync_vocab = sync_client.list_tag_vocabulary()
     async_vocab = await async_client.list_tag_vocabulary()
 
-    assert _attrs(sync_vocab) == _attrs(async_vocab) == payload
+    assert sync_vocab == async_vocab == payload
 
 
 # ─── list_agents (paginated) ────────────────────────────────────────────────
@@ -113,8 +101,8 @@ async def test_parity_list_agents(sync_client: AethexAI, async_client: AsyncAeth
     sync_page = sync_client.list_agents()
     async_page = await async_client.list_agents()
 
-    assert sync_page.total == async_page.total == 2
-    assert len(sync_page.data) == len(async_page.data) == 2
+    assert sync_page["total"] == async_page["total"] == 2
+    assert len(sync_page["data"]) == len(async_page["data"]) == 2
 
 
 # ─── create_agent ───────────────────────────────────────────────────────────
@@ -160,9 +148,9 @@ async def test_parity_get_call(sync_client: AethexAI, async_client: AsyncAethexA
     sync_call = sync_client.get_call(call_id)
     async_call = await async_client.get_call(call_id)
 
-    assert sync_call.id == async_call.id == str(call_id)
-    assert sync_call.status == async_call.status
-    assert _attrs(sync_call) == _attrs(async_call)
+    assert sync_call["id"] == async_call["id"] == str(call_id)
+    assert sync_call["status"] == async_call["status"]
+    assert sync_call == async_call
 
 
 # ─── synthesize_speech (binary) ─────────────────────────────────────────────
@@ -254,11 +242,7 @@ async def test_parity_delete_agent(sync_client: AethexAI, async_client: AsyncAet
 async def test_parity_cancel_transcription_job(
     sync_client: AethexAI, async_client: AsyncAethexAI
 ) -> None:
-    """Sync and async wrappers both return ``CancelTranscriptionJobResponse``."""
-    from aethexai._generated.models.cancel_transcription_job_response import (
-        CancelTranscriptionJobResponse,
-    )
-
+    """Sync and async wrappers both return the decoded JSON body as a dict."""
     job_id = uuid4()
     respx.delete(f"{BASE_URL}/api/v1/transcribe/{job_id}").mock(
         return_value=httpx.Response(200, json={"id": str(job_id), "status": "cancelled"})
@@ -267,7 +251,5 @@ async def test_parity_cancel_transcription_job(
     sync_out = sync_client.cancel_transcription_job(job_id)
     async_out = await async_client.cancel_transcription_job(job_id)
 
-    assert isinstance(sync_out, CancelTranscriptionJobResponse)
-    assert isinstance(async_out, CancelTranscriptionJobResponse)
-    assert sync_out.id == str(job_id) == async_out.id
-    assert sync_out.status == async_out.status == "cancelled"
+    assert sync_out["id"] == str(job_id) == async_out["id"]
+    assert sync_out["status"] == async_out["status"] == "cancelled"

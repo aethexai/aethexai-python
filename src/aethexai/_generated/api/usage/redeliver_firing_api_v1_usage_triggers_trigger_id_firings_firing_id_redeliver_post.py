@@ -68,19 +68,15 @@ def sync_detailed(
 ) -> Response[HTTPValidationError | UsageTriggerFiringResponse]:
     r"""Redeliver Firing
 
-     Re-attempt webhook delivery for a single firing.
-
-    Replays the EXACT bytes we POSTed the first time so the receiver
+     Re-attempt webhook delivery for a single firing. Replays the EXACT bytes we POSTed the first time so
+    the receiver
     sees identical signature + payload. Updates the same audit row
     in place (incrementing ``attempt_count``, refreshing
     ``delivery_status`` / ``http_status`` / ``last_error``); we do
     NOT insert a new firing row because each row represents one
     \"threshold crossed for this period\" event and a redeliver is the
-    same logical event, just retried.
-
-    404 when trigger or firing isn't owned by the calling tenant
-    (no cross-tenant probing).
-    400 when the tenant has rotated their webhook_secret and the old
+    same logical event, just retried. 404 when trigger or firing isn't owned by the calling tenant
+    (no cross-tenant probing). 400 when the tenant has rotated their webhook_secret and the old
     signature would no longer verify on the receiver — refuse the
     redeliver because the receiver would silently reject it as
     tampered. Customer recovery: configure a new trigger or wait for
@@ -118,19 +114,15 @@ def sync(
 ) -> HTTPValidationError | UsageTriggerFiringResponse | None:
     r"""Redeliver Firing
 
-     Re-attempt webhook delivery for a single firing.
-
-    Replays the EXACT bytes we POSTed the first time so the receiver
+     Re-attempt webhook delivery for a single firing. Replays the EXACT bytes we POSTed the first time so
+    the receiver
     sees identical signature + payload. Updates the same audit row
     in place (incrementing ``attempt_count``, refreshing
     ``delivery_status`` / ``http_status`` / ``last_error``); we do
     NOT insert a new firing row because each row represents one
     \"threshold crossed for this period\" event and a redeliver is the
-    same logical event, just retried.
-
-    404 when trigger or firing isn't owned by the calling tenant
-    (no cross-tenant probing).
-    400 when the tenant has rotated their webhook_secret and the old
+    same logical event, just retried. 404 when trigger or firing isn't owned by the calling tenant
+    (no cross-tenant probing). 400 when the tenant has rotated their webhook_secret and the old
     signature would no longer verify on the receiver — refuse the
     redeliver because the receiver would silently reject it as
     tampered. Customer recovery: configure a new trigger or wait for
@@ -163,19 +155,15 @@ async def asyncio_detailed(
 ) -> Response[HTTPValidationError | UsageTriggerFiringResponse]:
     r"""Redeliver Firing
 
-     Re-attempt webhook delivery for a single firing.
-
-    Replays the EXACT bytes we POSTed the first time so the receiver
+     Re-attempt webhook delivery for a single firing. Replays the EXACT bytes we POSTed the first time so
+    the receiver
     sees identical signature + payload. Updates the same audit row
     in place (incrementing ``attempt_count``, refreshing
     ``delivery_status`` / ``http_status`` / ``last_error``); we do
     NOT insert a new firing row because each row represents one
     \"threshold crossed for this period\" event and a redeliver is the
-    same logical event, just retried.
-
-    404 when trigger or firing isn't owned by the calling tenant
-    (no cross-tenant probing).
-    400 when the tenant has rotated their webhook_secret and the old
+    same logical event, just retried. 404 when trigger or firing isn't owned by the calling tenant
+    (no cross-tenant probing). 400 when the tenant has rotated their webhook_secret and the old
     signature would no longer verify on the receiver — refuse the
     redeliver because the receiver would silently reject it as
     tampered. Customer recovery: configure a new trigger or wait for
@@ -211,19 +199,15 @@ async def asyncio(
 ) -> HTTPValidationError | UsageTriggerFiringResponse | None:
     r"""Redeliver Firing
 
-     Re-attempt webhook delivery for a single firing.
-
-    Replays the EXACT bytes we POSTed the first time so the receiver
+     Re-attempt webhook delivery for a single firing. Replays the EXACT bytes we POSTed the first time so
+    the receiver
     sees identical signature + payload. Updates the same audit row
     in place (incrementing ``attempt_count``, refreshing
     ``delivery_status`` / ``http_status`` / ``last_error``); we do
     NOT insert a new firing row because each row represents one
     \"threshold crossed for this period\" event and a redeliver is the
-    same logical event, just retried.
-
-    404 when trigger or firing isn't owned by the calling tenant
-    (no cross-tenant probing).
-    400 when the tenant has rotated their webhook_secret and the old
+    same logical event, just retried. 404 when trigger or firing isn't owned by the calling tenant
+    (no cross-tenant probing). 400 when the tenant has rotated their webhook_secret and the old
     signature would no longer verify on the receiver — refuse the
     redeliver because the receiver would silently reject it as
     tampered. Customer recovery: configure a new trigger or wait for

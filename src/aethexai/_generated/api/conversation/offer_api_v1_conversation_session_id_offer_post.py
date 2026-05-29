@@ -72,9 +72,8 @@ def sync_detailed(
 ) -> Response[Any | HTTPValidationError]:
     """Offer
 
-     Submit SDP offer for an authenticated session.
-
-    Verifies session ownership, then starts the pipeline with the config
+     Submit SDP offer for an authenticated session. Verifies session ownership, then starts the pipeline
+    with the config
     that was locked in at /connect time. Client config overrides are
     ignored. Accepts either ``X-API-Key`` or a developer JWT — see
     ``connect`` for the rationale.
@@ -82,13 +81,11 @@ def sync_detailed(
     Args:
         session_id (str):
         body (SmallWebRTCRequest): Small WebRTC transport session arguments for the runner.
-
             Parameters:
-                sdp: The SDP string (Session Description Protocol).
-                type: The type of the SDP, either "offer" or "answer".
-                pc_id: Optional identifier for the peer connection.
-                restart_pc: Optional whether to restart the peer connection.
-                request_data: Optional custom data sent by the customer.
+             sdp: The SDP string (Session Description Protocol). type: The type of the SDP, either
+            "offer" or "answer". pc_id: Optional identifier for the peer connection. restart_pc:
+            Optional whether to restart the peer connection. request_data: Optional custom data sent
+            by the customer.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -118,9 +115,8 @@ def sync(
 ) -> Any | HTTPValidationError | None:
     """Offer
 
-     Submit SDP offer for an authenticated session.
-
-    Verifies session ownership, then starts the pipeline with the config
+     Submit SDP offer for an authenticated session. Verifies session ownership, then starts the pipeline
+    with the config
     that was locked in at /connect time. Client config overrides are
     ignored. Accepts either ``X-API-Key`` or a developer JWT — see
     ``connect`` for the rationale.
@@ -128,13 +124,11 @@ def sync(
     Args:
         session_id (str):
         body (SmallWebRTCRequest): Small WebRTC transport session arguments for the runner.
-
             Parameters:
-                sdp: The SDP string (Session Description Protocol).
-                type: The type of the SDP, either "offer" or "answer".
-                pc_id: Optional identifier for the peer connection.
-                restart_pc: Optional whether to restart the peer connection.
-                request_data: Optional custom data sent by the customer.
+             sdp: The SDP string (Session Description Protocol). type: The type of the SDP, either
+            "offer" or "answer". pc_id: Optional identifier for the peer connection. restart_pc:
+            Optional whether to restart the peer connection. request_data: Optional custom data sent
+            by the customer.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -159,9 +153,8 @@ async def asyncio_detailed(
 ) -> Response[Any | HTTPValidationError]:
     """Offer
 
-     Submit SDP offer for an authenticated session.
-
-    Verifies session ownership, then starts the pipeline with the config
+     Submit SDP offer for an authenticated session. Verifies session ownership, then starts the pipeline
+    with the config
     that was locked in at /connect time. Client config overrides are
     ignored. Accepts either ``X-API-Key`` or a developer JWT — see
     ``connect`` for the rationale.
@@ -169,13 +162,11 @@ async def asyncio_detailed(
     Args:
         session_id (str):
         body (SmallWebRTCRequest): Small WebRTC transport session arguments for the runner.
-
             Parameters:
-                sdp: The SDP string (Session Description Protocol).
-                type: The type of the SDP, either "offer" or "answer".
-                pc_id: Optional identifier for the peer connection.
-                restart_pc: Optional whether to restart the peer connection.
-                request_data: Optional custom data sent by the customer.
+             sdp: The SDP string (Session Description Protocol). type: The type of the SDP, either
+            "offer" or "answer". pc_id: Optional identifier for the peer connection. restart_pc:
+            Optional whether to restart the peer connection. request_data: Optional custom data sent
+            by the customer.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -203,9 +194,8 @@ async def asyncio(
 ) -> Any | HTTPValidationError | None:
     """Offer
 
-     Submit SDP offer for an authenticated session.
-
-    Verifies session ownership, then starts the pipeline with the config
+     Submit SDP offer for an authenticated session. Verifies session ownership, then starts the pipeline
+    with the config
     that was locked in at /connect time. Client config overrides are
     ignored. Accepts either ``X-API-Key`` or a developer JWT — see
     ``connect`` for the rationale.
@@ -213,13 +203,11 @@ async def asyncio(
     Args:
         session_id (str):
         body (SmallWebRTCRequest): Small WebRTC transport session arguments for the runner.
-
             Parameters:
-                sdp: The SDP string (Session Description Protocol).
-                type: The type of the SDP, either "offer" or "answer".
-                pc_id: Optional identifier for the peer connection.
-                restart_pc: Optional whether to restart the peer connection.
-                request_data: Optional custom data sent by the customer.
+             sdp: The SDP string (Session Description Protocol). type: The type of the SDP, either
+            "offer" or "answer". pc_id: Optional identifier for the peer connection. restart_pc:
+            Optional whether to restart the peer connection. request_data: Optional custom data sent
+            by the customer.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.

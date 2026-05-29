@@ -153,3 +153,21 @@ def _map_status_to_exception(
         headers_dict = {k: v for k, v in headers.items()}
 
     return APIStatusError.from_response(status_code, parsed, headers_dict)
+
+
+def parse_success_body(content: bytes | None) -> Any:
+    """Decode a 2xx response body into plain JSON (dict / list / scalar) or None.
+
+    Every wrapper returns the decoded JSON body rather than a generated model
+    instance, so the public return contract is stable no matter whether the
+    backend declares a response schema for a route (or changes its success
+    status code). Empty bodies (e.g. ``204 No Content``) return ``None``; a
+    2xx body that isn't valid JSON returns its decoded text. Binary endpoints
+    (audio) don't route through here -- they return ``bytes`` directly.
+    """
+    if not content:
+        return None
+    try:
+        return json.loads(content)
+    except (ValueError, TypeError):
+        return content.decode("utf-8", errors="replace")

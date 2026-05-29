@@ -70,32 +70,21 @@ def sync_detailed(
 ) -> Response[HTTPValidationError | TwilioAccountResponse]:
     """Register Twilio Account
 
-     Register a Twilio Account SID for this tenant.
-
-    Validates the supplied ``account_sid`` + ``auth_token`` pair by
+     Register a Twilio Account SID for this tenant. Validates the supplied ``account_sid`` +
+    ``auth_token`` pair by
     fetching the account from Twilio. Persists the SID and the (encrypted)
     auth token; the token is needed at runtime for inbound-webhook
     signature verification and outbound API calls and is decrypted via
-    the ``EncryptedString`` column type.
-
-    Status codes:
-      * 422 -- Twilio rejected the request (400/401/403/404): bad
-        credentials, or a SID that doesn't exist or that the supplied
-        token can't access; or the fetched SID does not match the
-        supplied SID.
-      * 409 -- the Account SID is already claimed by another active row,
-        or the tenant has reached the active-account cap.
-      * 429 -- per-tenant registration rate limit exceeded.
-      * 503 -- server-side service issue: encryption key not configured,
-        Twilio API unreachable / 5xx / 429, Twilio did not respond
-        within the configured timeout, or the rate limiter (Redis) is
-        offline -- this endpoint is destructive enough that we fail
-        closed when admission control can't run, rather than silently
-        unthrottling Twilio API and worker-slot pressure.
+    the ``EncryptedString`` column type. Status codes:
+     * 422 -- Twilio rejected the request (400/401/403/404): bad
+     credentials, or a SID that doesn't exist or that the supplied
+     token can't access; or the fetched SID does not match the
+     supplied SID. * 409 -- the Account SID is already claimed by another active row,
+     or the tenant has reached the active-account cap. * 429 -- per-tenant registration rate limit
+    exceeded.
 
     Args:
         body (TwilioAccountCreate): Request body for ``POST /api/v1/twilio-accounts``.
-
             ``auth_token`` is required at registration time so we can verify the
             SID/token pair with Twilio before persisting.
 
@@ -125,32 +114,21 @@ def sync(
 ) -> HTTPValidationError | TwilioAccountResponse | None:
     """Register Twilio Account
 
-     Register a Twilio Account SID for this tenant.
-
-    Validates the supplied ``account_sid`` + ``auth_token`` pair by
+     Register a Twilio Account SID for this tenant. Validates the supplied ``account_sid`` +
+    ``auth_token`` pair by
     fetching the account from Twilio. Persists the SID and the (encrypted)
     auth token; the token is needed at runtime for inbound-webhook
     signature verification and outbound API calls and is decrypted via
-    the ``EncryptedString`` column type.
-
-    Status codes:
-      * 422 -- Twilio rejected the request (400/401/403/404): bad
-        credentials, or a SID that doesn't exist or that the supplied
-        token can't access; or the fetched SID does not match the
-        supplied SID.
-      * 409 -- the Account SID is already claimed by another active row,
-        or the tenant has reached the active-account cap.
-      * 429 -- per-tenant registration rate limit exceeded.
-      * 503 -- server-side service issue: encryption key not configured,
-        Twilio API unreachable / 5xx / 429, Twilio did not respond
-        within the configured timeout, or the rate limiter (Redis) is
-        offline -- this endpoint is destructive enough that we fail
-        closed when admission control can't run, rather than silently
-        unthrottling Twilio API and worker-slot pressure.
+    the ``EncryptedString`` column type. Status codes:
+     * 422 -- Twilio rejected the request (400/401/403/404): bad
+     credentials, or a SID that doesn't exist or that the supplied
+     token can't access; or the fetched SID does not match the
+     supplied SID. * 409 -- the Account SID is already claimed by another active row,
+     or the tenant has reached the active-account cap. * 429 -- per-tenant registration rate limit
+    exceeded.
 
     Args:
         body (TwilioAccountCreate): Request body for ``POST /api/v1/twilio-accounts``.
-
             ``auth_token`` is required at registration time so we can verify the
             SID/token pair with Twilio before persisting.
 
@@ -175,32 +153,21 @@ async def asyncio_detailed(
 ) -> Response[HTTPValidationError | TwilioAccountResponse]:
     """Register Twilio Account
 
-     Register a Twilio Account SID for this tenant.
-
-    Validates the supplied ``account_sid`` + ``auth_token`` pair by
+     Register a Twilio Account SID for this tenant. Validates the supplied ``account_sid`` +
+    ``auth_token`` pair by
     fetching the account from Twilio. Persists the SID and the (encrypted)
     auth token; the token is needed at runtime for inbound-webhook
     signature verification and outbound API calls and is decrypted via
-    the ``EncryptedString`` column type.
-
-    Status codes:
-      * 422 -- Twilio rejected the request (400/401/403/404): bad
-        credentials, or a SID that doesn't exist or that the supplied
-        token can't access; or the fetched SID does not match the
-        supplied SID.
-      * 409 -- the Account SID is already claimed by another active row,
-        or the tenant has reached the active-account cap.
-      * 429 -- per-tenant registration rate limit exceeded.
-      * 503 -- server-side service issue: encryption key not configured,
-        Twilio API unreachable / 5xx / 429, Twilio did not respond
-        within the configured timeout, or the rate limiter (Redis) is
-        offline -- this endpoint is destructive enough that we fail
-        closed when admission control can't run, rather than silently
-        unthrottling Twilio API and worker-slot pressure.
+    the ``EncryptedString`` column type. Status codes:
+     * 422 -- Twilio rejected the request (400/401/403/404): bad
+     credentials, or a SID that doesn't exist or that the supplied
+     token can't access; or the fetched SID does not match the
+     supplied SID. * 409 -- the Account SID is already claimed by another active row,
+     or the tenant has reached the active-account cap. * 429 -- per-tenant registration rate limit
+    exceeded.
 
     Args:
         body (TwilioAccountCreate): Request body for ``POST /api/v1/twilio-accounts``.
-
             ``auth_token`` is required at registration time so we can verify the
             SID/token pair with Twilio before persisting.
 
@@ -228,32 +195,21 @@ async def asyncio(
 ) -> HTTPValidationError | TwilioAccountResponse | None:
     """Register Twilio Account
 
-     Register a Twilio Account SID for this tenant.
-
-    Validates the supplied ``account_sid`` + ``auth_token`` pair by
+     Register a Twilio Account SID for this tenant. Validates the supplied ``account_sid`` +
+    ``auth_token`` pair by
     fetching the account from Twilio. Persists the SID and the (encrypted)
     auth token; the token is needed at runtime for inbound-webhook
     signature verification and outbound API calls and is decrypted via
-    the ``EncryptedString`` column type.
-
-    Status codes:
-      * 422 -- Twilio rejected the request (400/401/403/404): bad
-        credentials, or a SID that doesn't exist or that the supplied
-        token can't access; or the fetched SID does not match the
-        supplied SID.
-      * 409 -- the Account SID is already claimed by another active row,
-        or the tenant has reached the active-account cap.
-      * 429 -- per-tenant registration rate limit exceeded.
-      * 503 -- server-side service issue: encryption key not configured,
-        Twilio API unreachable / 5xx / 429, Twilio did not respond
-        within the configured timeout, or the rate limiter (Redis) is
-        offline -- this endpoint is destructive enough that we fail
-        closed when admission control can't run, rather than silently
-        unthrottling Twilio API and worker-slot pressure.
+    the ``EncryptedString`` column type. Status codes:
+     * 422 -- Twilio rejected the request (400/401/403/404): bad
+     credentials, or a SID that doesn't exist or that the supplied
+     token can't access; or the fetched SID does not match the
+     supplied SID. * 409 -- the Account SID is already claimed by another active row,
+     or the tenant has reached the active-account cap. * 429 -- per-tenant registration rate limit
+    exceeded.
 
     Args:
         body (TwilioAccountCreate): Request body for ``POST /api/v1/twilio-accounts``.
-
             ``auth_token`` is required at registration time so we can verify the
             SID/token pair with Twilio before persisting.
 

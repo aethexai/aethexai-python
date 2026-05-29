@@ -8,7 +8,7 @@ from attrs import define, field, evolve
 # after every ``openapi-python-client generate`` and uses this sentinel to
 # detect already-patched files. DO NOT remove without auditing every call
 # site that depends on ``token`` and the auth-header value not appearing in
-# ``repr(client)`` / structured-log output. See ``docs/audits/pre-launch-2026-05-17.md`` finding A.5.
+# ``repr(client)`` / structured-log output.
 _SECRET_FIELDS_PATCHED = True
 import httpx
 

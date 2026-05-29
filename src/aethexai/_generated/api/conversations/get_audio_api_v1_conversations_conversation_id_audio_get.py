@@ -63,14 +63,12 @@ def sync_detailed(
 ) -> Response[Any | HTTPValidationError]:
     """Get Audio
 
-     Return a short-lived signed URL pointing to the audio stream.
-
-    The URL is served by this API (region/bucket are internal) and carries
+     Return a short-lived signed URL pointing to the audio stream. The URL is served by this API
+    (region/bucket are internal) and carries
     a signed ``token`` query param so the URL is directly playable in a
     browser ``<audio>`` tag without setting auth headers, mirroring the old
-    presigned-URL behaviour. Token TTL matches ``_AUDIO_TOKEN_TTL_SECONDS``.
-
-    The URL extension and the ``format`` field both reflect the underlying
+    presigned-URL behaviour. Token TTL matches ``_AUDIO_TOKEN_TTL_SECONDS``. The URL extension and the
+    ``format`` field both reflect the underlying
     recording's format (``wav`` for the primary path, ``CallRecording.format``
     for the fallback) so clients can pick a decoder from either signal.
 
@@ -103,14 +101,12 @@ def sync(
 ) -> Any | HTTPValidationError | None:
     """Get Audio
 
-     Return a short-lived signed URL pointing to the audio stream.
-
-    The URL is served by this API (region/bucket are internal) and carries
+     Return a short-lived signed URL pointing to the audio stream. The URL is served by this API
+    (region/bucket are internal) and carries
     a signed ``token`` query param so the URL is directly playable in a
     browser ``<audio>`` tag without setting auth headers, mirroring the old
-    presigned-URL behaviour. Token TTL matches ``_AUDIO_TOKEN_TTL_SECONDS``.
-
-    The URL extension and the ``format`` field both reflect the underlying
+    presigned-URL behaviour. Token TTL matches ``_AUDIO_TOKEN_TTL_SECONDS``. The URL extension and the
+    ``format`` field both reflect the underlying
     recording's format (``wav`` for the primary path, ``CallRecording.format``
     for the fallback) so clients can pick a decoder from either signal.
 
@@ -138,14 +134,12 @@ async def asyncio_detailed(
 ) -> Response[Any | HTTPValidationError]:
     """Get Audio
 
-     Return a short-lived signed URL pointing to the audio stream.
-
-    The URL is served by this API (region/bucket are internal) and carries
+     Return a short-lived signed URL pointing to the audio stream. The URL is served by this API
+    (region/bucket are internal) and carries
     a signed ``token`` query param so the URL is directly playable in a
     browser ``<audio>`` tag without setting auth headers, mirroring the old
-    presigned-URL behaviour. Token TTL matches ``_AUDIO_TOKEN_TTL_SECONDS``.
-
-    The URL extension and the ``format`` field both reflect the underlying
+    presigned-URL behaviour. Token TTL matches ``_AUDIO_TOKEN_TTL_SECONDS``. The URL extension and the
+    ``format`` field both reflect the underlying
     recording's format (``wav`` for the primary path, ``CallRecording.format``
     for the fallback) so clients can pick a decoder from either signal.
 
@@ -176,14 +170,12 @@ async def asyncio(
 ) -> Any | HTTPValidationError | None:
     """Get Audio
 
-     Return a short-lived signed URL pointing to the audio stream.
-
-    The URL is served by this API (region/bucket are internal) and carries
+     Return a short-lived signed URL pointing to the audio stream. The URL is served by this API
+    (region/bucket are internal) and carries
     a signed ``token`` query param so the URL is directly playable in a
     browser ``<audio>`` tag without setting auth headers, mirroring the old
-    presigned-URL behaviour. Token TTL matches ``_AUDIO_TOKEN_TTL_SECONDS``.
-
-    The URL extension and the ``format`` field both reflect the underlying
+    presigned-URL behaviour. Token TTL matches ``_AUDIO_TOKEN_TTL_SECONDS``. The URL extension and the
+    ``format`` field both reflect the underlying
     recording's format (``wav`` for the primary path, ``CallRecording.format``
     for the fallback) so clients can pick a decoder from either signal.
 

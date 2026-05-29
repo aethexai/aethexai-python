@@ -54,9 +54,8 @@ def sync_detailed(
     """Create Payment Method Setup Intent
 
      Return a SetupIntent the portal Payment Element can confirm
-    against to attach a card to the tenant's Stripe Customer.
-
-    ``usage='off_session'`` is set on the SetupIntent so the saved
+    against to attach a card to the tenant's Stripe Customer. ``usage='off_session'`` is set on the
+    SetupIntent so the saved
     card can be charged later for PAYG overage without re-prompting
     for 3DS. Customer is created lazily on first call.
 
@@ -84,9 +83,8 @@ def sync(
     """Create Payment Method Setup Intent
 
      Return a SetupIntent the portal Payment Element can confirm
-    against to attach a card to the tenant's Stripe Customer.
-
-    ``usage='off_session'`` is set on the SetupIntent so the saved
+    against to attach a card to the tenant's Stripe Customer. ``usage='off_session'`` is set on the
+    SetupIntent so the saved
     card can be charged later for PAYG overage without re-prompting
     for 3DS. Customer is created lazily on first call.
 
@@ -110,9 +108,8 @@ async def asyncio_detailed(
     """Create Payment Method Setup Intent
 
      Return a SetupIntent the portal Payment Element can confirm
-    against to attach a card to the tenant's Stripe Customer.
-
-    ``usage='off_session'`` is set on the SetupIntent so the saved
+    against to attach a card to the tenant's Stripe Customer. ``usage='off_session'`` is set on the
+    SetupIntent so the saved
     card can be charged later for PAYG overage without re-prompting
     for 3DS. Customer is created lazily on first call.
 
@@ -138,9 +135,8 @@ async def asyncio(
     """Create Payment Method Setup Intent
 
      Return a SetupIntent the portal Payment Element can confirm
-    against to attach a card to the tenant's Stripe Customer.
-
-    ``usage='off_session'`` is set on the SetupIntent so the saved
+    against to attach a card to the tenant's Stripe Customer. ``usage='off_session'`` is set on the
+    SetupIntent so the saved
     card can be charged later for PAYG overage without re-prompting
     for 3DS. Customer is created lazily on first call.
 

@@ -341,7 +341,7 @@ class Conversation:
     #
     # ``send_text`` and ``inject_context`` were removed: the server has no
     # ``/conversation/{sid}/send-text`` or ``/conversation/{sid}/inject-context``
-    # routes (audit finding A.2(c) of docs/audits/pre-launch-2026-05-17.md).
+    # routes.
     # For mid-conversation text, send directly on the open data channel:
     # ``conv._dc.send(json.dumps({"type": "agent_text_input", "text": "..."}))``
     # or whatever schema the agent expects. For tool-call results, use

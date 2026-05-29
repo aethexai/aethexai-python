@@ -19,14 +19,11 @@ T = TypeVar("T", bound="DunningState")
 
 @_attrs_define
 class DunningState:
-    """Stripe-side dunning timeline for a ``past_due`` tenant.
-
-    Pulled live from Stripe (``stripe.Subscription.retrieve`` with the
+    """Stripe-side dunning timeline for a ``past_due`` tenant. Pulled live from Stripe (``stripe.Subscription.retrieve``
+    with the
     latest_invoice expanded) rather than cached in our DB — Stripe's
     Smart Retries reschedule on its side and any cached value would go
-    stale within hours. ``None`` for tenants that aren't ``past_due``.
-
-    The portal banner uses this trio to render
+    stale within hours. ``None`` for tenants that aren't ``past_due``. The portal banner uses this trio to render
     "Card declined Apr 28. We'll retry May 1. Service stops May 19 if
     unresolved." instead of the prior "Update card" with no timeline.
 

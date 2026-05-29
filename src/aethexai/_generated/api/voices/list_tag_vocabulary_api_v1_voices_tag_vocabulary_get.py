@@ -64,19 +64,14 @@ def sync_detailed(
 ]:
     """List Tag Vocabulary
 
-     Return the closed-vocabulary tag set the curator UI renders.
-
-    Gated behind ``voices:read`` so the route matches the rest of
+     Return the closed-vocabulary tag set the curator UI renders. Gated behind ``voices:read`` so the
+    route matches the rest of
     ``/voices/*``; tag categories are static configuration but the
     endpoint sits on the public API surface and every other voices
-    listing already requires the same scope.
-
-    The four-bucket grouping (``tone`` / ``voice_texture`` /
+    listing already requires the same scope. The four-bucket grouping (``tone`` / ``voice_texture`` /
     ``delivery_style`` / ``business_persona``) is purely a UI affordance;
     the storage column is a flat list and ``GET /voices?tag=...``
-    accepts any token from any bucket.
-
-    The schema-layer validator (``VoiceMetadataUpdate.tags``) rejects
+    accepts any token from any bucket. The schema-layer validator (``VoiceMetadataUpdate.tags``) rejects
     tokens outside this set with a 422 that points back at this
     endpoint, so dashboards / SDK consumers have one canonical place to
     discover the supported tokens.
@@ -107,19 +102,14 @@ def sync(
 ):
     """List Tag Vocabulary
 
-     Return the closed-vocabulary tag set the curator UI renders.
-
-    Gated behind ``voices:read`` so the route matches the rest of
+     Return the closed-vocabulary tag set the curator UI renders. Gated behind ``voices:read`` so the
+    route matches the rest of
     ``/voices/*``; tag categories are static configuration but the
     endpoint sits on the public API surface and every other voices
-    listing already requires the same scope.
-
-    The four-bucket grouping (``tone`` / ``voice_texture`` /
+    listing already requires the same scope. The four-bucket grouping (``tone`` / ``voice_texture`` /
     ``delivery_style`` / ``business_persona``) is purely a UI affordance;
     the storage column is a flat list and ``GET /voices?tag=...``
-    accepts any token from any bucket.
-
-    The schema-layer validator (``VoiceMetadataUpdate.tags``) rejects
+    accepts any token from any bucket. The schema-layer validator (``VoiceMetadataUpdate.tags``) rejects
     tokens outside this set with a 422 that points back at this
     endpoint, so dashboards / SDK consumers have one canonical place to
     discover the supported tokens.
@@ -145,19 +135,14 @@ async def asyncio_detailed(
 ]:
     """List Tag Vocabulary
 
-     Return the closed-vocabulary tag set the curator UI renders.
-
-    Gated behind ``voices:read`` so the route matches the rest of
+     Return the closed-vocabulary tag set the curator UI renders. Gated behind ``voices:read`` so the
+    route matches the rest of
     ``/voices/*``; tag categories are static configuration but the
     endpoint sits on the public API surface and every other voices
-    listing already requires the same scope.
-
-    The four-bucket grouping (``tone`` / ``voice_texture`` /
+    listing already requires the same scope. The four-bucket grouping (``tone`` / ``voice_texture`` /
     ``delivery_style`` / ``business_persona``) is purely a UI affordance;
     the storage column is a flat list and ``GET /voices?tag=...``
-    accepts any token from any bucket.
-
-    The schema-layer validator (``VoiceMetadataUpdate.tags``) rejects
+    accepts any token from any bucket. The schema-layer validator (``VoiceMetadataUpdate.tags``) rejects
     tokens outside this set with a 422 that points back at this
     endpoint, so dashboards / SDK consumers have one canonical place to
     discover the supported tokens.
@@ -186,19 +171,14 @@ async def asyncio(
 ):
     """List Tag Vocabulary
 
-     Return the closed-vocabulary tag set the curator UI renders.
-
-    Gated behind ``voices:read`` so the route matches the rest of
+     Return the closed-vocabulary tag set the curator UI renders. Gated behind ``voices:read`` so the
+    route matches the rest of
     ``/voices/*``; tag categories are static configuration but the
     endpoint sits on the public API surface and every other voices
-    listing already requires the same scope.
-
-    The four-bucket grouping (``tone`` / ``voice_texture`` /
+    listing already requires the same scope. The four-bucket grouping (``tone`` / ``voice_texture`` /
     ``delivery_style`` / ``business_persona``) is purely a UI affordance;
     the storage column is a flat list and ``GET /voices?tag=...``
-    accepts any token from any bucket.
-
-    The schema-layer validator (``VoiceMetadataUpdate.tags``) rejects
+    accepts any token from any bucket. The schema-layer validator (``VoiceMetadataUpdate.tags``) rejects
     tokens outside this set with a 422 that points back at this
     endpoint, so dashboards / SDK consumers have one canonical place to
     discover the supported tokens.

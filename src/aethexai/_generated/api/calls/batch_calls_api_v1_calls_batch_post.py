@@ -36,18 +36,10 @@ def _get_kwargs(
 def _parse_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
 ) -> BatchCallResponse | HTTPValidationError | None:
-    # AETHEX-PATCH (AET-1580): backend returns 201 Created on this resource POST
-    # (aethex PR #955). Parse it exactly like 200 so the wrapper layer returns
-    # the created resource instead of None. Re-applied by sync_from_prod.py.
     if response.status_code == 201:
         response_201 = BatchCallResponse.from_dict(response.json())
 
         return response_201
-
-    if response.status_code == 200:
-        response_200 = BatchCallResponse.from_dict(response.json())
-
-        return response_200
 
     if response.status_code == 422:
         response_422 = HTTPValidationError.from_dict(response.json())
@@ -78,12 +70,11 @@ def sync_detailed(
 ) -> Response[BatchCallResponse | HTTPValidationError]:
     """Batch Calls
 
-     Dispatch a batch of outbound calls (provider-agnostic).
-
-    Optional scheduling: ``start_at`` defers the dispatch until the given
+     Dispatch a batch of outbound calls (provider-agnostic). Optional scheduling: ``start_at`` defers the
+    dispatch until the given
     timestamp; ``end_at`` causes the worker to abandon any unstarted
-    recipients past that deadline. Both are timezone-aware ISO 8601.
-    Returns a ``batch_id`` for polling via ``GET /calls/batch/{id}``.
+    recipients past that deadline. Both are timezone-aware ISO 8601. Returns a ``batch_id`` for polling
+    via ``GET /calls/batch/{id}``.
 
     Args:
         body (BatchCallCreate):
@@ -114,12 +105,11 @@ def sync(
 ) -> BatchCallResponse | HTTPValidationError | None:
     """Batch Calls
 
-     Dispatch a batch of outbound calls (provider-agnostic).
-
-    Optional scheduling: ``start_at`` defers the dispatch until the given
+     Dispatch a batch of outbound calls (provider-agnostic). Optional scheduling: ``start_at`` defers the
+    dispatch until the given
     timestamp; ``end_at`` causes the worker to abandon any unstarted
-    recipients past that deadline. Both are timezone-aware ISO 8601.
-    Returns a ``batch_id`` for polling via ``GET /calls/batch/{id}``.
+    recipients past that deadline. Both are timezone-aware ISO 8601. Returns a ``batch_id`` for polling
+    via ``GET /calls/batch/{id}``.
 
     Args:
         body (BatchCallCreate):
@@ -145,12 +135,11 @@ async def asyncio_detailed(
 ) -> Response[BatchCallResponse | HTTPValidationError]:
     """Batch Calls
 
-     Dispatch a batch of outbound calls (provider-agnostic).
-
-    Optional scheduling: ``start_at`` defers the dispatch until the given
+     Dispatch a batch of outbound calls (provider-agnostic). Optional scheduling: ``start_at`` defers the
+    dispatch until the given
     timestamp; ``end_at`` causes the worker to abandon any unstarted
-    recipients past that deadline. Both are timezone-aware ISO 8601.
-    Returns a ``batch_id`` for polling via ``GET /calls/batch/{id}``.
+    recipients past that deadline. Both are timezone-aware ISO 8601. Returns a ``batch_id`` for polling
+    via ``GET /calls/batch/{id}``.
 
     Args:
         body (BatchCallCreate):
@@ -179,12 +168,11 @@ async def asyncio(
 ) -> BatchCallResponse | HTTPValidationError | None:
     """Batch Calls
 
-     Dispatch a batch of outbound calls (provider-agnostic).
-
-    Optional scheduling: ``start_at`` defers the dispatch until the given
+     Dispatch a batch of outbound calls (provider-agnostic). Optional scheduling: ``start_at`` defers the
+    dispatch until the given
     timestamp; ``end_at`` causes the worker to abandon any unstarted
-    recipients past that deadline. Both are timezone-aware ISO 8601.
-    Returns a ``batch_id`` for polling via ``GET /calls/batch/{id}``.
+    recipients past that deadline. Both are timezone-aware ISO 8601. Returns a ``batch_id`` for polling
+    via ``GET /calls/batch/{id}``.
 
     Args:
         body (BatchCallCreate):

@@ -63,19 +63,16 @@ def sync_detailed(
 ) -> Response[Any | HTTPValidationError]:
     """Release Twilio Account
 
-     Mark the row released so the active Account SID slot frees up.
-
-    Idempotent: returns 204 whether the row was active, already released,
-    or never existed under this tenant. The DB ``get()`` already enforces
-    tenant scope (``WHERE tenant_id = :tenant``) so the swallowed
+     Mark the row released so the active Account SID slot frees up. Idempotent: returns 204 whether the
+    row was active, already released,
+    or never existed under this tenant. The DB ``get`` already enforces
+    tenant scope (``WHERE tenant_id =:tenant``) so the swallowed
     ``NotFoundError`` cannot leak cross-tenant rows -- a request from
     tenant A targeting tenant B's row gets the same 204 as if the row
-    didn't exist, which is the desired idempotent shape.
-
-    Status codes:
-      * 204 -- row released, already released, or not found under tenant.
-      * 503 -- server-side encryption key missing/malformed while
-        scrubbing the stored credential.
+    didn't exist, which is the desired idempotent shape. Status codes:
+     * 204 -- row released, already released, or not found under tenant. * 503 -- server-side encryption
+    key missing/malformed while
+     scrubbing the stored credential.
 
     Args:
         account_id (UUID):
@@ -106,19 +103,16 @@ def sync(
 ) -> Any | HTTPValidationError | None:
     """Release Twilio Account
 
-     Mark the row released so the active Account SID slot frees up.
-
-    Idempotent: returns 204 whether the row was active, already released,
-    or never existed under this tenant. The DB ``get()`` already enforces
-    tenant scope (``WHERE tenant_id = :tenant``) so the swallowed
+     Mark the row released so the active Account SID slot frees up. Idempotent: returns 204 whether the
+    row was active, already released,
+    or never existed under this tenant. The DB ``get`` already enforces
+    tenant scope (``WHERE tenant_id =:tenant``) so the swallowed
     ``NotFoundError`` cannot leak cross-tenant rows -- a request from
     tenant A targeting tenant B's row gets the same 204 as if the row
-    didn't exist, which is the desired idempotent shape.
-
-    Status codes:
-      * 204 -- row released, already released, or not found under tenant.
-      * 503 -- server-side encryption key missing/malformed while
-        scrubbing the stored credential.
+    didn't exist, which is the desired idempotent shape. Status codes:
+     * 204 -- row released, already released, or not found under tenant. * 503 -- server-side encryption
+    key missing/malformed while
+     scrubbing the stored credential.
 
     Args:
         account_id (UUID):
@@ -144,19 +138,16 @@ async def asyncio_detailed(
 ) -> Response[Any | HTTPValidationError]:
     """Release Twilio Account
 
-     Mark the row released so the active Account SID slot frees up.
-
-    Idempotent: returns 204 whether the row was active, already released,
-    or never existed under this tenant. The DB ``get()`` already enforces
-    tenant scope (``WHERE tenant_id = :tenant``) so the swallowed
+     Mark the row released so the active Account SID slot frees up. Idempotent: returns 204 whether the
+    row was active, already released,
+    or never existed under this tenant. The DB ``get`` already enforces
+    tenant scope (``WHERE tenant_id =:tenant``) so the swallowed
     ``NotFoundError`` cannot leak cross-tenant rows -- a request from
     tenant A targeting tenant B's row gets the same 204 as if the row
-    didn't exist, which is the desired idempotent shape.
-
-    Status codes:
-      * 204 -- row released, already released, or not found under tenant.
-      * 503 -- server-side encryption key missing/malformed while
-        scrubbing the stored credential.
+    didn't exist, which is the desired idempotent shape. Status codes:
+     * 204 -- row released, already released, or not found under tenant. * 503 -- server-side encryption
+    key missing/malformed while
+     scrubbing the stored credential.
 
     Args:
         account_id (UUID):
@@ -185,19 +176,16 @@ async def asyncio(
 ) -> Any | HTTPValidationError | None:
     """Release Twilio Account
 
-     Mark the row released so the active Account SID slot frees up.
-
-    Idempotent: returns 204 whether the row was active, already released,
-    or never existed under this tenant. The DB ``get()`` already enforces
-    tenant scope (``WHERE tenant_id = :tenant``) so the swallowed
+     Mark the row released so the active Account SID slot frees up. Idempotent: returns 204 whether the
+    row was active, already released,
+    or never existed under this tenant. The DB ``get`` already enforces
+    tenant scope (``WHERE tenant_id =:tenant``) so the swallowed
     ``NotFoundError`` cannot leak cross-tenant rows -- a request from
     tenant A targeting tenant B's row gets the same 204 as if the row
-    didn't exist, which is the desired idempotent shape.
-
-    Status codes:
-      * 204 -- row released, already released, or not found under tenant.
-      * 503 -- server-side encryption key missing/malformed while
-        scrubbing the stored credential.
+    didn't exist, which is the desired idempotent shape. Status codes:
+     * 204 -- row released, already released, or not found under tenant. * 503 -- server-side encryption
+    key missing/malformed while
+     scrubbing the stored credential.
 
     Args:
         account_id (UUID):

@@ -74,22 +74,18 @@ def sync_detailed(
 ) -> Response[Any | HTTPValidationError]:
     r"""Get Usage Summary
 
-     Get usage summary for the developer's tenant.
-
-    When ``days`` is provided all aggregates (credits, tokens, audio,
+     Get usage summary for the developer's tenant. When ``days`` is provided all aggregates (credits,
+    tokens, audio,
     characters, call count) are filtered to the trailing N-day window so
     the KPI tiles on the usage page share the same window as the donut
     and daily chart. ``days=None`` (default) preserves the original
-    all-time behaviour for backwards compatibility.
-
-    ``call_count`` comes from ``vo_calls`` — the canonical record of
-    call attempts — rather than from ``vo_usage_log`` which counts HTTP
+    all-time behaviour for backwards compatibility. ``call_count`` comes from ```` — the canonical
+    record of
+    call attempts — rather than from ```` which counts HTTP
     requests to ``/api/v1/calls/*`` (list, status-poll, etc.) and would
-    over-count actual conversations.
-
-    Ledger amounts are signed (negative on deduction); we negate so the
-    customer-facing number reads as a positive \"credits used\" total.
-    The legacy token / audio-seconds fields stay on the response for
+    over-count actual conversations. Ledger amounts are signed (negative on deduction); we negate so the
+    customer-facing number reads as a positive \"credits used\" total. The legacy token / audio-seconds
+    fields stay on the response for
     back-compat with anything else that consumes them.
 
     Args:
@@ -121,22 +117,18 @@ def sync(
 ) -> Any | HTTPValidationError | None:
     r"""Get Usage Summary
 
-     Get usage summary for the developer's tenant.
-
-    When ``days`` is provided all aggregates (credits, tokens, audio,
+     Get usage summary for the developer's tenant. When ``days`` is provided all aggregates (credits,
+    tokens, audio,
     characters, call count) are filtered to the trailing N-day window so
     the KPI tiles on the usage page share the same window as the donut
     and daily chart. ``days=None`` (default) preserves the original
-    all-time behaviour for backwards compatibility.
-
-    ``call_count`` comes from ``vo_calls`` — the canonical record of
-    call attempts — rather than from ``vo_usage_log`` which counts HTTP
+    all-time behaviour for backwards compatibility. ``call_count`` comes from ```` — the canonical
+    record of
+    call attempts — rather than from ```` which counts HTTP
     requests to ``/api/v1/calls/*`` (list, status-poll, etc.) and would
-    over-count actual conversations.
-
-    Ledger amounts are signed (negative on deduction); we negate so the
-    customer-facing number reads as a positive \"credits used\" total.
-    The legacy token / audio-seconds fields stay on the response for
+    over-count actual conversations. Ledger amounts are signed (negative on deduction); we negate so the
+    customer-facing number reads as a positive \"credits used\" total. The legacy token / audio-seconds
+    fields stay on the response for
     back-compat with anything else that consumes them.
 
     Args:
@@ -163,22 +155,18 @@ async def asyncio_detailed(
 ) -> Response[Any | HTTPValidationError]:
     r"""Get Usage Summary
 
-     Get usage summary for the developer's tenant.
-
-    When ``days`` is provided all aggregates (credits, tokens, audio,
+     Get usage summary for the developer's tenant. When ``days`` is provided all aggregates (credits,
+    tokens, audio,
     characters, call count) are filtered to the trailing N-day window so
     the KPI tiles on the usage page share the same window as the donut
     and daily chart. ``days=None`` (default) preserves the original
-    all-time behaviour for backwards compatibility.
-
-    ``call_count`` comes from ``vo_calls`` — the canonical record of
-    call attempts — rather than from ``vo_usage_log`` which counts HTTP
+    all-time behaviour for backwards compatibility. ``call_count`` comes from ```` — the canonical
+    record of
+    call attempts — rather than from ```` which counts HTTP
     requests to ``/api/v1/calls/*`` (list, status-poll, etc.) and would
-    over-count actual conversations.
-
-    Ledger amounts are signed (negative on deduction); we negate so the
-    customer-facing number reads as a positive \"credits used\" total.
-    The legacy token / audio-seconds fields stay on the response for
+    over-count actual conversations. Ledger amounts are signed (negative on deduction); we negate so the
+    customer-facing number reads as a positive \"credits used\" total. The legacy token / audio-seconds
+    fields stay on the response for
     back-compat with anything else that consumes them.
 
     Args:
@@ -208,22 +196,18 @@ async def asyncio(
 ) -> Any | HTTPValidationError | None:
     r"""Get Usage Summary
 
-     Get usage summary for the developer's tenant.
-
-    When ``days`` is provided all aggregates (credits, tokens, audio,
+     Get usage summary for the developer's tenant. When ``days`` is provided all aggregates (credits,
+    tokens, audio,
     characters, call count) are filtered to the trailing N-day window so
     the KPI tiles on the usage page share the same window as the donut
     and daily chart. ``days=None`` (default) preserves the original
-    all-time behaviour for backwards compatibility.
-
-    ``call_count`` comes from ``vo_calls`` — the canonical record of
-    call attempts — rather than from ``vo_usage_log`` which counts HTTP
+    all-time behaviour for backwards compatibility. ``call_count`` comes from ```` — the canonical
+    record of
+    call attempts — rather than from ```` which counts HTTP
     requests to ``/api/v1/calls/*`` (list, status-poll, etc.) and would
-    over-count actual conversations.
-
-    Ledger amounts are signed (negative on deduction); we negate so the
-    customer-facing number reads as a positive \"credits used\" total.
-    The legacy token / audio-seconds fields stay on the response for
+    over-count actual conversations. Ledger amounts are signed (negative on deduction); we negate so the
+    customer-facing number reads as a positive \"credits used\" total. The legacy token / audio-seconds
+    fields stay on the response for
     back-compat with anything else that consumes them.
 
     Args:

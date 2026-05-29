@@ -49,10 +49,10 @@ def main() -> int:
         language="french",
         dialect_style="local",
     )
-    print(f"Created agent: {agent.id}")
+    print(f"Created agent: {agent["id"]}")
 
-    call = client.trigger_call(agent.id, to_number=to_number)
-    print(f"Started call: {call.id}")
+    call = client.trigger_call(agent["id"], to_number=to_number)
+    print(f"Started call: {call["id"]}")
     return 0
 
 

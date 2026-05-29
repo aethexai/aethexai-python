@@ -19,9 +19,8 @@ T = TypeVar("T", bound="PeriodSummary")
 @_attrs_define
 class PeriodSummary:
     """Snapshot of the current billing period: start/end + the
-    grant/used/remaining decomposition the portal billing card needs.
-
-    ``credits_granted`` is the **plan's monthly allocation**, not a
+    grant/used/remaining decomposition the portal billing card needs. ``credits_granted`` is the **plan's monthly
+    allocation**, not a
     sum of ledger grant rows in the current period. A tenant who
     upgraded mid-period or received a manual ``adjustment`` will see
     this field reflect the plan tier, not the literal credits that
@@ -31,17 +30,15 @@ class PeriodSummary:
     ``credits_used`` is the sum of ``tx_type='usage_deduction'`` ledger
     entries since ``started_at``. Excluded from this stat:
 
-      * ``plan_credit`` (signup seed)
-      * ``plan_renewal`` (monthly / yearly grant)
-      * ``adjustment`` (ops-driven manual changes; rare)
-      * future PAYG top-ups (will use a distinct ``tx_type``)
+     * ``plan_credit`` (signup seed)
+     * ``plan_renewal`` (monthly / yearly grant)
+     * ``adjustment`` (ops-driven manual changes; rare)
+     * future PAYG top-ups (will use a distinct ``tx_type``)
 
     Negative ``adjustment`` entries reduce ``credit_balance`` without
     incrementing ``credits_used`` — the portal can detect this when
     ``credits_granted - credits_used > credits_remaining`` and explain
-    the gap as "ops adjustment" if needed.
-
-    ``credits_remaining`` mirrors ``Tenant.credit_balance`` so the portal
+    the gap as "ops adjustment" if needed. ``credits_remaining`` mirrors ``Tenant.credit_balance`` so the portal
     can highlight a single source-of-truth number; it can exceed
     ``credits_granted`` after a PAYG top-up.
 

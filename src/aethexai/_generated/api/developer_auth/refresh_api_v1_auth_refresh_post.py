@@ -74,24 +74,18 @@ def sync_detailed(
 ) -> Response[AuthTokens | HTTPValidationError]:
     """Refresh
 
-     Rotate the developer's access/refresh pair.
-
-    Accepts the refresh token from the ``aethex_refresh_token`` HttpOnly
+     Rotate the developer's access/refresh pair. Accepts the refresh token from the
+    ``aethex_refresh_token`` HttpOnly
     cookie (preferred) or the request body (legacy / non-browser
-    callers). Per-IP and per-token Redis sliding windows protect
-    against spray and stuck-loop replay respectively; the per-token
-    bucket is keyed off an opaque hash of the raw token bytes so a
-    forged JWT can't burn a real session's budget.
-
-    The cookie lane is additionally CSRF-checked (double-submit
+    callers). The cookie lane is additionally CSRF-checked (double-submit
     ``X-CSRF-Token`` matches ``aethex_csrf_token``). This route does
     not depend on ``require_developer_jwt`` — by design, since the
     refresh token can be valid when the access token has expired —
     so the CSRF guard is wired here explicitly. Without it, a
     same-site sub-domain that gained XHR foothold could ride the
     victim's refresh cookie to advance ``refresh_generation`` /
-    burn budget / log them out via rotation-anomaly detection.
-    Body-token callers (no cookie present) skip the check.
+    burn budget / log them out via rotation-anomaly detection. Body-token callers (no cookie present)
+    skip the check.
 
     Args:
         body (None | RefreshRequest | Unset):
@@ -122,24 +116,18 @@ def sync(
 ) -> AuthTokens | HTTPValidationError | None:
     """Refresh
 
-     Rotate the developer's access/refresh pair.
-
-    Accepts the refresh token from the ``aethex_refresh_token`` HttpOnly
+     Rotate the developer's access/refresh pair. Accepts the refresh token from the
+    ``aethex_refresh_token`` HttpOnly
     cookie (preferred) or the request body (legacy / non-browser
-    callers). Per-IP and per-token Redis sliding windows protect
-    against spray and stuck-loop replay respectively; the per-token
-    bucket is keyed off an opaque hash of the raw token bytes so a
-    forged JWT can't burn a real session's budget.
-
-    The cookie lane is additionally CSRF-checked (double-submit
+    callers). The cookie lane is additionally CSRF-checked (double-submit
     ``X-CSRF-Token`` matches ``aethex_csrf_token``). This route does
     not depend on ``require_developer_jwt`` — by design, since the
     refresh token can be valid when the access token has expired —
     so the CSRF guard is wired here explicitly. Without it, a
     same-site sub-domain that gained XHR foothold could ride the
     victim's refresh cookie to advance ``refresh_generation`` /
-    burn budget / log them out via rotation-anomaly detection.
-    Body-token callers (no cookie present) skip the check.
+    burn budget / log them out via rotation-anomaly detection. Body-token callers (no cookie present)
+    skip the check.
 
     Args:
         body (None | RefreshRequest | Unset):
@@ -165,24 +153,18 @@ async def asyncio_detailed(
 ) -> Response[AuthTokens | HTTPValidationError]:
     """Refresh
 
-     Rotate the developer's access/refresh pair.
-
-    Accepts the refresh token from the ``aethex_refresh_token`` HttpOnly
+     Rotate the developer's access/refresh pair. Accepts the refresh token from the
+    ``aethex_refresh_token`` HttpOnly
     cookie (preferred) or the request body (legacy / non-browser
-    callers). Per-IP and per-token Redis sliding windows protect
-    against spray and stuck-loop replay respectively; the per-token
-    bucket is keyed off an opaque hash of the raw token bytes so a
-    forged JWT can't burn a real session's budget.
-
-    The cookie lane is additionally CSRF-checked (double-submit
+    callers). The cookie lane is additionally CSRF-checked (double-submit
     ``X-CSRF-Token`` matches ``aethex_csrf_token``). This route does
     not depend on ``require_developer_jwt`` — by design, since the
     refresh token can be valid when the access token has expired —
     so the CSRF guard is wired here explicitly. Without it, a
     same-site sub-domain that gained XHR foothold could ride the
     victim's refresh cookie to advance ``refresh_generation`` /
-    burn budget / log them out via rotation-anomaly detection.
-    Body-token callers (no cookie present) skip the check.
+    burn budget / log them out via rotation-anomaly detection. Body-token callers (no cookie present)
+    skip the check.
 
     Args:
         body (None | RefreshRequest | Unset):
@@ -211,24 +193,18 @@ async def asyncio(
 ) -> AuthTokens | HTTPValidationError | None:
     """Refresh
 
-     Rotate the developer's access/refresh pair.
-
-    Accepts the refresh token from the ``aethex_refresh_token`` HttpOnly
+     Rotate the developer's access/refresh pair. Accepts the refresh token from the
+    ``aethex_refresh_token`` HttpOnly
     cookie (preferred) or the request body (legacy / non-browser
-    callers). Per-IP and per-token Redis sliding windows protect
-    against spray and stuck-loop replay respectively; the per-token
-    bucket is keyed off an opaque hash of the raw token bytes so a
-    forged JWT can't burn a real session's budget.
-
-    The cookie lane is additionally CSRF-checked (double-submit
+    callers). The cookie lane is additionally CSRF-checked (double-submit
     ``X-CSRF-Token`` matches ``aethex_csrf_token``). This route does
     not depend on ``require_developer_jwt`` — by design, since the
     refresh token can be valid when the access token has expired —
     so the CSRF guard is wired here explicitly. Without it, a
     same-site sub-domain that gained XHR foothold could ride the
     victim's refresh cookie to advance ``refresh_generation`` /
-    burn budget / log them out via rotation-anomaly detection.
-    Body-token callers (no cookie present) skip the check.
+    burn budget / log them out via rotation-anomaly detection. Body-token callers (no cookie present)
+    skip the check.
 
     Args:
         body (None | RefreshRequest | Unset):

@@ -76,9 +76,8 @@ def sync_detailed(
 ) -> Response[DashboardOverview | HTTPValidationError]:
     """Get Overview
 
-     Get dashboard overview stats for the developer's tenant.
-
-    ``days`` (1-365) windows the ``total_calls`` count returned in the
+     Get dashboard overview stats for the developer's tenant. ``days`` (1-365) windows the
+    ``total_calls`` count returned in the
     response. Other fields stay all-time / today-only so the route
     remains backward-compatible with callers that don't pass a window.
 
@@ -111,9 +110,8 @@ def sync(
 ) -> DashboardOverview | HTTPValidationError | None:
     """Get Overview
 
-     Get dashboard overview stats for the developer's tenant.
-
-    ``days`` (1-365) windows the ``total_calls`` count returned in the
+     Get dashboard overview stats for the developer's tenant. ``days`` (1-365) windows the
+    ``total_calls`` count returned in the
     response. Other fields stay all-time / today-only so the route
     remains backward-compatible with callers that don't pass a window.
 
@@ -141,9 +139,8 @@ async def asyncio_detailed(
 ) -> Response[DashboardOverview | HTTPValidationError]:
     """Get Overview
 
-     Get dashboard overview stats for the developer's tenant.
-
-    ``days`` (1-365) windows the ``total_calls`` count returned in the
+     Get dashboard overview stats for the developer's tenant. ``days`` (1-365) windows the
+    ``total_calls`` count returned in the
     response. Other fields stay all-time / today-only so the route
     remains backward-compatible with callers that don't pass a window.
 
@@ -174,9 +171,8 @@ async def asyncio(
 ) -> DashboardOverview | HTTPValidationError | None:
     """Get Overview
 
-     Get dashboard overview stats for the developer's tenant.
-
-    ``days`` (1-365) windows the ``total_calls`` count returned in the
+     Get dashboard overview stats for the developer's tenant. ``days`` (1-365) windows the
+    ``total_calls`` count returned in the
     response. Other fields stay all-time / today-only so the route
     remains backward-compatible with callers that don't pass a window.
 

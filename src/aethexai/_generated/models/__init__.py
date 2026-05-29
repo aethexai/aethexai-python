@@ -51,11 +51,6 @@ from .call_status_response import CallStatusResponse
 from .call_status_response_provider import CallStatusResponseProvider
 from .cancel_transcription_job_response import CancelTranscriptionJobResponse
 from .connect_request import ConnectRequest
-from .conversation_diagnostic_event_response import ConversationDiagnosticEventResponse
-from .conversation_diagnostic_event_response_metadata_type_0 import (
-    ConversationDiagnosticEventResponseMetadataType0,
-)
-from .conversation_diagnostics_response import ConversationDiagnosticsResponse
 from .conversation_feedback import ConversationFeedback
 from .conversation_response import ConversationResponse
 from .conversation_turn_response import ConversationTurnResponse
@@ -141,11 +136,6 @@ from .usage_trigger_firing_response_payload import UsageTriggerFiringResponsePay
 from .usage_trigger_response import UsageTriggerResponse
 from .usage_trigger_update import UsageTriggerUpdate
 from .validation_error import ValidationError
-from .voice_catalog_entry import VoiceCatalogEntry
-from .voice_catalog_entry_status import VoiceCatalogEntryStatus
-from .voice_gender import VoiceGender
-from .voice_metadata_update import VoiceMetadataUpdate
-from .voice_metadata_update_status_type_0 import VoiceMetadataUpdateStatusType0
 from .voice_preview_request import VoicePreviewRequest
 from .voice_response import VoiceResponse
 
@@ -197,9 +187,6 @@ __all__ = (
     "CallStatusResponseProvider",
     "CancelTranscriptionJobResponse",
     "ConnectRequest",
-    "ConversationDiagnosticEventResponse",
-    "ConversationDiagnosticEventResponseMetadataType0",
-    "ConversationDiagnosticsResponse",
     "ConversationFeedback",
     "ConversationResponse",
     "ConversationTurnResponse",
@@ -283,11 +270,6 @@ __all__ = (
     "UsageTriggerResponse",
     "UsageTriggerUpdate",
     "ValidationError",
-    "VoiceCatalogEntry",
-    "VoiceCatalogEntryStatus",
-    "VoiceGender",
-    "VoiceMetadataUpdate",
-    "VoiceMetadataUpdateStatusType0",
     "VoicePreviewRequest",
     "VoiceResponse",
 )

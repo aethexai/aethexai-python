@@ -69,10 +69,8 @@ def sync_detailed(
 ) -> Response[Any | HTTPValidationError]:
     r"""Get Usage Daily
 
-     Get daily usage breakdown.
-
-    Includes a per-day ``credits_used`` aggregate from
-    ``vo_credit_ledger`` so the dashboard chart can render credits
+     Get daily usage breakdown. Includes a per-day ``credits_used`` aggregate from
+    ```` so the dashboard chart can render credits
     spend over time alongside requests / tokens / audio. The credit
     rollup runs as a second query and is left-joined by date in
     Python; joining in SQL would force the API to choose a single
@@ -109,10 +107,8 @@ def sync(
 ) -> Any | HTTPValidationError | None:
     r"""Get Usage Daily
 
-     Get daily usage breakdown.
-
-    Includes a per-day ``credits_used`` aggregate from
-    ``vo_credit_ledger`` so the dashboard chart can render credits
+     Get daily usage breakdown. Includes a per-day ``credits_used`` aggregate from
+    ```` so the dashboard chart can render credits
     spend over time alongside requests / tokens / audio. The credit
     rollup runs as a second query and is left-joined by date in
     Python; joining in SQL would force the API to choose a single
@@ -144,10 +140,8 @@ async def asyncio_detailed(
 ) -> Response[Any | HTTPValidationError]:
     r"""Get Usage Daily
 
-     Get daily usage breakdown.
-
-    Includes a per-day ``credits_used`` aggregate from
-    ``vo_credit_ledger`` so the dashboard chart can render credits
+     Get daily usage breakdown. Includes a per-day ``credits_used`` aggregate from
+    ```` so the dashboard chart can render credits
     spend over time alongside requests / tokens / audio. The credit
     rollup runs as a second query and is left-joined by date in
     Python; joining in SQL would force the API to choose a single
@@ -182,10 +176,8 @@ async def asyncio(
 ) -> Any | HTTPValidationError | None:
     r"""Get Usage Daily
 
-     Get daily usage breakdown.
-
-    Includes a per-day ``credits_used`` aggregate from
-    ``vo_credit_ledger`` so the dashboard chart can render credits
+     Get daily usage breakdown. Includes a per-day ``credits_used`` aggregate from
+    ```` so the dashboard chart can render credits
     spend over time alongside requests / tokens / audio. The credit
     rollup runs as a second query and is left-joined by date in
     Python; joining in SQL would force the API to choose a single

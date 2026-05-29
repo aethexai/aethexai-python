@@ -16,9 +16,8 @@ T = TypeVar("T", bound="UsageByResourceEntry")
 
 @_attrs_define
 class UsageByResourceEntry:
-    """One bucket value in ``UsageSummary.by_resource_type``.
-
-    Keys mirror what the usage tracker aggregates per ``resource_type``:
+    """One bucket value in ``UsageSummary.by_resource_type``. Keys mirror what the usage tracker aggregates per
+    ``resource_type``:
     request count, token totals, audio seconds, and TTS input
     characters. All fields default to zero so an empty bucket is a
     well-typed object rather than a partial dict.

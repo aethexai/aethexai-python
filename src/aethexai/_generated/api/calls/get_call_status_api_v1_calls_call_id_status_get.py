@@ -65,19 +65,16 @@ def sync_detailed(
 ) -> Response[CallStatusResponse | HTTPValidationError]:
     """Get Call Status
 
-     Return telephony status for a call.
-
-    Today's writers emit one of the eight values enumerated by
+     Return telephony status for a call. Today's writers emit one of the eight values enumerated by
     ``CallStatusLiteral`` (queued / ringing / in-progress / completed /
     failed / no-answer / busy / canceled). ``connected`` is intentionally
     absent: no code path writes it today, and including it would imply an
-    observable state customers cannot reach. See AET-1473.
-
-    ``CallStatusResponse.status`` is typed as ``str`` rather than
+    observable state customers cannot reach. See. ``CallStatusResponse.status`` is typed as ``str``
+    rather than
     ``CallStatusLiteral`` to remain forward-compatible with historical
-    ``vo_calls`` rows whose status (e.g. ``'initiated'``, still referenced
-    in ``post_call.py``'s CASE expression) sits outside that closed set.
-    The route's *filter* boundary (``GET /calls?status=...``) is the strict
+    ```` rows whose status (e.g. ``'initiated'``, still referenced
+    in ``post_call.py``'s CASE expression) sits outside that closed set. The route's *filter* boundary
+    (``GET /calls?status=...``) is the strict
     one — it rejects junk inputs at 422 — and the response is the lenient
     one so legacy data round-trips cleanly.
 
@@ -110,19 +107,16 @@ def sync(
 ) -> CallStatusResponse | HTTPValidationError | None:
     """Get Call Status
 
-     Return telephony status for a call.
-
-    Today's writers emit one of the eight values enumerated by
+     Return telephony status for a call. Today's writers emit one of the eight values enumerated by
     ``CallStatusLiteral`` (queued / ringing / in-progress / completed /
     failed / no-answer / busy / canceled). ``connected`` is intentionally
     absent: no code path writes it today, and including it would imply an
-    observable state customers cannot reach. See AET-1473.
-
-    ``CallStatusResponse.status`` is typed as ``str`` rather than
+    observable state customers cannot reach. See. ``CallStatusResponse.status`` is typed as ``str``
+    rather than
     ``CallStatusLiteral`` to remain forward-compatible with historical
-    ``vo_calls`` rows whose status (e.g. ``'initiated'``, still referenced
-    in ``post_call.py``'s CASE expression) sits outside that closed set.
-    The route's *filter* boundary (``GET /calls?status=...``) is the strict
+    ```` rows whose status (e.g. ``'initiated'``, still referenced
+    in ``post_call.py``'s CASE expression) sits outside that closed set. The route's *filter* boundary
+    (``GET /calls?status=...``) is the strict
     one — it rejects junk inputs at 422 — and the response is the lenient
     one so legacy data round-trips cleanly.
 
@@ -150,19 +144,16 @@ async def asyncio_detailed(
 ) -> Response[CallStatusResponse | HTTPValidationError]:
     """Get Call Status
 
-     Return telephony status for a call.
-
-    Today's writers emit one of the eight values enumerated by
+     Return telephony status for a call. Today's writers emit one of the eight values enumerated by
     ``CallStatusLiteral`` (queued / ringing / in-progress / completed /
     failed / no-answer / busy / canceled). ``connected`` is intentionally
     absent: no code path writes it today, and including it would imply an
-    observable state customers cannot reach. See AET-1473.
-
-    ``CallStatusResponse.status`` is typed as ``str`` rather than
+    observable state customers cannot reach. See. ``CallStatusResponse.status`` is typed as ``str``
+    rather than
     ``CallStatusLiteral`` to remain forward-compatible with historical
-    ``vo_calls`` rows whose status (e.g. ``'initiated'``, still referenced
-    in ``post_call.py``'s CASE expression) sits outside that closed set.
-    The route's *filter* boundary (``GET /calls?status=...``) is the strict
+    ```` rows whose status (e.g. ``'initiated'``, still referenced
+    in ``post_call.py``'s CASE expression) sits outside that closed set. The route's *filter* boundary
+    (``GET /calls?status=...``) is the strict
     one — it rejects junk inputs at 422 — and the response is the lenient
     one so legacy data round-trips cleanly.
 
@@ -193,19 +184,16 @@ async def asyncio(
 ) -> CallStatusResponse | HTTPValidationError | None:
     """Get Call Status
 
-     Return telephony status for a call.
-
-    Today's writers emit one of the eight values enumerated by
+     Return telephony status for a call. Today's writers emit one of the eight values enumerated by
     ``CallStatusLiteral`` (queued / ringing / in-progress / completed /
     failed / no-answer / busy / canceled). ``connected`` is intentionally
     absent: no code path writes it today, and including it would imply an
-    observable state customers cannot reach. See AET-1473.
-
-    ``CallStatusResponse.status`` is typed as ``str`` rather than
+    observable state customers cannot reach. See. ``CallStatusResponse.status`` is typed as ``str``
+    rather than
     ``CallStatusLiteral`` to remain forward-compatible with historical
-    ``vo_calls`` rows whose status (e.g. ``'initiated'``, still referenced
-    in ``post_call.py``'s CASE expression) sits outside that closed set.
-    The route's *filter* boundary (``GET /calls?status=...``) is the strict
+    ```` rows whose status (e.g. ``'initiated'``, still referenced
+    in ``post_call.py``'s CASE expression) sits outside that closed set. The route's *filter* boundary
+    (``GET /calls?status=...``) is the strict
     one — it rejects junk inputs at 422 — and the response is the lenient
     one so legacy data round-trips cleanly.
 

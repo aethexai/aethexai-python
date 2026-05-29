@@ -119,7 +119,7 @@ def test_get_balance_uses_bearer_jwt() -> None:
         assert route.called
         sent = route.calls[0].request
         assert sent.headers.get("Authorization") == f"Bearer {ACCESS}"
-        assert balance.credit_balance == "12.34"
+        assert balance["credit_balance"] == "12.34"
     finally:
         c.close()
 
@@ -144,7 +144,7 @@ def test_list_plans() -> None:
     try:
         resp = c.list_plans()
         assert route.called
-        assert resp.current_plan_slug == "free"
+        assert resp["current_plan_slug"] == "free"
     finally:
         c.close()
 
@@ -165,7 +165,7 @@ def test_select_plan() -> None:
     try:
         resp = c.select_plan("pro", body=SelectPlanRequest(interval="monthly"))
         assert route.called
-        assert resp.plan_slug == "pro"
+        assert resp["plan_slug"] == "pro"
     finally:
         c.close()
 
@@ -185,7 +185,7 @@ def test_select_plan_default_body_no_unset_crash() -> None:
         resp = c.select_plan("pro")
         assert route.called
         assert route.calls.last.request.content == b""
-        assert resp.plan_slug == "pro"
+        assert resp["plan_slug"] == "pro"
     finally:
         c.close()
 
@@ -202,7 +202,7 @@ async def test_select_plan_default_body_no_unset_crash_async() -> None:
         resp = await c.select_plan("pro")
         assert route.called
         assert route.calls.last.request.content == b""
-        assert resp.plan_slug == "pro"
+        assert resp["plan_slug"] == "pro"
     finally:
         await c.close()
 
@@ -216,7 +216,7 @@ def test_list_invoices() -> None:
     try:
         resp = c.list_invoices(page_size=10)
         assert route.called
-        assert resp.invoices == []
+        assert resp["invoices"] == []
     finally:
         c.close()
 
@@ -230,7 +230,7 @@ def test_list_transactions() -> None:
     try:
         resp = c.list_transactions()
         assert route.called
-        assert resp.transactions == []
+        assert resp["transactions"] == []
     finally:
         c.close()
 
@@ -244,7 +244,7 @@ def test_list_payment_methods() -> None:
     try:
         resp = c.list_payment_methods()
         assert route.called
-        assert resp.has_payment_method is False
+        assert resp["has_payment_method"] is False
     finally:
         c.close()
 
@@ -264,7 +264,7 @@ def test_create_payment_method_setup_intent() -> None:
     try:
         resp = c.create_payment_method_setup_intent()
         assert route.called
-        assert resp.client_secret == "seti_secret"
+        assert resp["client_secret"] == "seti_secret"
     finally:
         c.close()
 
@@ -300,7 +300,7 @@ def test_get_me() -> None:
     try:
         me = c.get_me()
         assert route.called
-        assert me.email == "dev@example.com"
+        assert me["email"] == "dev@example.com"
     finally:
         c.close()
 
@@ -329,7 +329,7 @@ def test_refresh_on_401_then_retries() -> None:
     c = DeveloperClient(ACCESS, refresh_token=REFRESH, base_url=BASE_URL)
     try:
         balance = c.get_balance()
-        assert balance.credit_balance == "12.34"
+        assert balance["credit_balance"] == "12.34"
         # Both balance attempts were made.
         assert balance_route.call_count == 2
         assert refresh_route.called
@@ -444,7 +444,7 @@ async def test_async_developer_client_get_balance() -> None:
         c = AsyncDeveloperClient(ACCESS, base_url=base)
         try:
             balance = await c.get_balance()
-            assert balance.credit_balance == "12.34"
+            assert balance["credit_balance"] == "12.34"
         finally:
             await c.close()
 

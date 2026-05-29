@@ -35,16 +35,9 @@ def _get_kwargs(
 def _parse_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
 ) -> Any | HTTPValidationError | None:
-    # AETHEX-PATCH (AET-1580): backend returns 201 Created on this resource POST
-    # (aethex PR #955). Parse it exactly like 200 so the wrapper layer returns
-    # the created resource instead of None. Re-applied by sync_from_prod.py.
     if response.status_code == 201:
         response_201 = response.json()
         return response_201
-
-    if response.status_code == 200:
-        response_200 = response.json()
-        return response_200
 
     if response.status_code == 422:
         response_422 = HTTPValidationError.from_dict(response.json())
@@ -75,22 +68,19 @@ def sync_detailed(
 ) -> Response[Any | HTTPValidationError]:
     """Register Twilio
 
-     Register a Twilio phone number under a tenant-owned Twilio account.
-
-    The caller must supply a ``twilio_account_id`` that resolves to an
-    active row in ``vo_twilio_accounts`` owned by this tenant -- the
+     Register a Twilio phone number under a tenant-owned Twilio account. The caller must supply a
+    ``twilio_account_id`` that resolves to an
+    active row in ```` owned by this tenant -- the
     legacy cluster-wide ``TWILIO_ACCOUNT_SID`` env-var fallback is gone
-    (migration 061 wiped any remaining legacy rows). The service uses
+    ( wiped any remaining legacy rows). The service uses
     that tenant's credentials to bind the number's Voice URL on
     Twilio's side and persists ``phone_number.twilio_account_id`` so
-    update/release can find the same credentials later.
-
-    Status codes:
-      * 404 -- agent_id (when supplied) does not exist for this tenant.
-      * 422 -- twilio_account_id is invalid / cross-tenant / released,
-        or the phone number isn't in the supplied Twilio account.
-      * 503 -- encryption key not configured (cannot decrypt the
-        Twilio auth_token), or Twilio API unreachable / timed out.
+    update/release can find the same credentials later. Status codes:
+     * 404 -- agent_id (when supplied) does not exist for this tenant. * 422 -- twilio_account_id is
+    invalid / cross-tenant / released,
+     or the phone number isn't in the supplied Twilio account. * 503 -- encryption key not configured
+    (cannot decrypt the
+     Twilio auth_token), or Twilio API unreachable / timed out.
 
     Args:
         body (TwilioRegisterRequest):
@@ -121,22 +111,19 @@ def sync(
 ) -> Any | HTTPValidationError | None:
     """Register Twilio
 
-     Register a Twilio phone number under a tenant-owned Twilio account.
-
-    The caller must supply a ``twilio_account_id`` that resolves to an
-    active row in ``vo_twilio_accounts`` owned by this tenant -- the
+     Register a Twilio phone number under a tenant-owned Twilio account. The caller must supply a
+    ``twilio_account_id`` that resolves to an
+    active row in ```` owned by this tenant -- the
     legacy cluster-wide ``TWILIO_ACCOUNT_SID`` env-var fallback is gone
-    (migration 061 wiped any remaining legacy rows). The service uses
+    ( wiped any remaining legacy rows). The service uses
     that tenant's credentials to bind the number's Voice URL on
     Twilio's side and persists ``phone_number.twilio_account_id`` so
-    update/release can find the same credentials later.
-
-    Status codes:
-      * 404 -- agent_id (when supplied) does not exist for this tenant.
-      * 422 -- twilio_account_id is invalid / cross-tenant / released,
-        or the phone number isn't in the supplied Twilio account.
-      * 503 -- encryption key not configured (cannot decrypt the
-        Twilio auth_token), or Twilio API unreachable / timed out.
+    update/release can find the same credentials later. Status codes:
+     * 404 -- agent_id (when supplied) does not exist for this tenant. * 422 -- twilio_account_id is
+    invalid / cross-tenant / released,
+     or the phone number isn't in the supplied Twilio account. * 503 -- encryption key not configured
+    (cannot decrypt the
+     Twilio auth_token), or Twilio API unreachable / timed out.
 
     Args:
         body (TwilioRegisterRequest):
@@ -162,22 +149,19 @@ async def asyncio_detailed(
 ) -> Response[Any | HTTPValidationError]:
     """Register Twilio
 
-     Register a Twilio phone number under a tenant-owned Twilio account.
-
-    The caller must supply a ``twilio_account_id`` that resolves to an
-    active row in ``vo_twilio_accounts`` owned by this tenant -- the
+     Register a Twilio phone number under a tenant-owned Twilio account. The caller must supply a
+    ``twilio_account_id`` that resolves to an
+    active row in ```` owned by this tenant -- the
     legacy cluster-wide ``TWILIO_ACCOUNT_SID`` env-var fallback is gone
-    (migration 061 wiped any remaining legacy rows). The service uses
+    ( wiped any remaining legacy rows). The service uses
     that tenant's credentials to bind the number's Voice URL on
     Twilio's side and persists ``phone_number.twilio_account_id`` so
-    update/release can find the same credentials later.
-
-    Status codes:
-      * 404 -- agent_id (when supplied) does not exist for this tenant.
-      * 422 -- twilio_account_id is invalid / cross-tenant / released,
-        or the phone number isn't in the supplied Twilio account.
-      * 503 -- encryption key not configured (cannot decrypt the
-        Twilio auth_token), or Twilio API unreachable / timed out.
+    update/release can find the same credentials later. Status codes:
+     * 404 -- agent_id (when supplied) does not exist for this tenant. * 422 -- twilio_account_id is
+    invalid / cross-tenant / released,
+     or the phone number isn't in the supplied Twilio account. * 503 -- encryption key not configured
+    (cannot decrypt the
+     Twilio auth_token), or Twilio API unreachable / timed out.
 
     Args:
         body (TwilioRegisterRequest):
@@ -206,22 +190,19 @@ async def asyncio(
 ) -> Any | HTTPValidationError | None:
     """Register Twilio
 
-     Register a Twilio phone number under a tenant-owned Twilio account.
-
-    The caller must supply a ``twilio_account_id`` that resolves to an
-    active row in ``vo_twilio_accounts`` owned by this tenant -- the
+     Register a Twilio phone number under a tenant-owned Twilio account. The caller must supply a
+    ``twilio_account_id`` that resolves to an
+    active row in ```` owned by this tenant -- the
     legacy cluster-wide ``TWILIO_ACCOUNT_SID`` env-var fallback is gone
-    (migration 061 wiped any remaining legacy rows). The service uses
+    ( wiped any remaining legacy rows). The service uses
     that tenant's credentials to bind the number's Voice URL on
     Twilio's side and persists ``phone_number.twilio_account_id`` so
-    update/release can find the same credentials later.
-
-    Status codes:
-      * 404 -- agent_id (when supplied) does not exist for this tenant.
-      * 422 -- twilio_account_id is invalid / cross-tenant / released,
-        or the phone number isn't in the supplied Twilio account.
-      * 503 -- encryption key not configured (cannot decrypt the
-        Twilio auth_token), or Twilio API unreachable / timed out.
+    update/release can find the same credentials later. Status codes:
+     * 404 -- agent_id (when supplied) does not exist for this tenant. * 422 -- twilio_account_id is
+    invalid / cross-tenant / released,
+     or the phone number isn't in the supplied Twilio account. * 503 -- encryption key not configured
+    (cannot decrypt the
+     Twilio auth_token), or Twilio API unreachable / timed out.
 
     Args:
         body (TwilioRegisterRequest):

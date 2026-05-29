@@ -22,16 +22,12 @@ T = TypeVar("T", bound="TransactionListResponse")
 class TransactionListResponse:
     """``GET /billing/transactions`` payload. Cursor pagination so the
     portal can scroll through arbitrarily large ledgers without offset
-    pathologies on hot tenants.
-
-    Clients pass ``next_cursor`` back as ``?cursor=...`` (the canonical
+    pathologies on hot tenants. Clients pass ``next_cursor`` back as ``?cursor=...`` (the canonical
     request param). ``?next_cursor=...`` is also accepted for clients
     that intuitively echo the response field name. When ``next_cursor``
-    is null the caller has reached the oldest entry.
-
-    The response field is named ``next_cursor`` (not ``cursor``) and must
-    stay that way: the portal and SDK consumers have typed against it.
-    Only the *request* surface accepts both names.
+    is null the caller has reached the oldest entry. The response field is named ``next_cursor`` (not ``cursor``) and
+    must
+    stay that way: the portal and SDK consumers have typed against it. Only the *request* surface accepts both names.
 
         Attributes:
             transactions (list[TransactionEntry]):

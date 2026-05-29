@@ -70,8 +70,8 @@ def sync_detailed(
 ) -> Response[HTTPValidationError | PresignUploadResponse]:
     """Get a presigned URL to upload a file directly to storage
 
-     Binary bodies bypass the API ALB/WAF. After the PUT succeeds, pass `upload_id` to the consuming
-    endpoint (e.g. `POST /transcribe/by-upload`).
+     After the PUT succeeds, pass `upload_id` to the consuming endpoint (e.g. `POST /transcribe/by-
+    upload`).
 
     Args:
         body (PresignUploadRequest): Ask the server for a presigned URL the client can PUT a file
@@ -103,8 +103,8 @@ def sync(
 ) -> HTTPValidationError | PresignUploadResponse | None:
     """Get a presigned URL to upload a file directly to storage
 
-     Binary bodies bypass the API ALB/WAF. After the PUT succeeds, pass `upload_id` to the consuming
-    endpoint (e.g. `POST /transcribe/by-upload`).
+     After the PUT succeeds, pass `upload_id` to the consuming endpoint (e.g. `POST /transcribe/by-
+    upload`).
 
     Args:
         body (PresignUploadRequest): Ask the server for a presigned URL the client can PUT a file
@@ -131,8 +131,8 @@ async def asyncio_detailed(
 ) -> Response[HTTPValidationError | PresignUploadResponse]:
     """Get a presigned URL to upload a file directly to storage
 
-     Binary bodies bypass the API ALB/WAF. After the PUT succeeds, pass `upload_id` to the consuming
-    endpoint (e.g. `POST /transcribe/by-upload`).
+     After the PUT succeeds, pass `upload_id` to the consuming endpoint (e.g. `POST /transcribe/by-
+    upload`).
 
     Args:
         body (PresignUploadRequest): Ask the server for a presigned URL the client can PUT a file
@@ -162,8 +162,8 @@ async def asyncio(
 ) -> HTTPValidationError | PresignUploadResponse | None:
     """Get a presigned URL to upload a file directly to storage
 
-     Binary bodies bypass the API ALB/WAF. After the PUT succeeds, pass `upload_id` to the consuming
-    endpoint (e.g. `POST /transcribe/by-upload`).
+     After the PUT succeeds, pass `upload_id` to the consuming endpoint (e.g. `POST /transcribe/by-
+    upload`).
 
     Args:
         body (PresignUploadRequest): Ask the server for a presigned URL the client can PUT a file

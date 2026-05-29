@@ -4,7 +4,7 @@ Mirrors ``developer.DeveloperClient`` 1:1 — every method has an
 identically-named ``async def`` here and dispatches the matching
 generated ``asyncio_detailed`` op.
 
-See ``developer.py`` for the design rationale (audit finding A.1).
+See ``developer.py`` for the design rationale.
 """
 
 from __future__ import annotations
@@ -20,6 +20,7 @@ from aethexai._exceptions import (
     APITimeoutError,
     AuthenticationError,
     _map_status_to_exception,
+    parse_success_body,
 )
 from aethexai._generated.client import AuthenticatedClient
 from aethexai._generated.types import UNSET, Unset
@@ -107,14 +108,14 @@ class AsyncDeveloperClient:
             return False
         if not 200 <= int(response.status_code) < 300:
             return False
-        tokens = response.parsed
-        access_token = getattr(tokens, "access_token", "") if tokens is not None else ""
+        tokens = parse_success_body(response.content)
+        access_token = tokens.get("access_token", "") if isinstance(tokens, dict) else ""
         if not access_token:
             return False
         self._client.token = access_token
         if self._client._async_client is not None:
             self._client._async_client.headers["Authorization"] = f"Bearer {access_token}"
-        new_refresh = getattr(tokens, "refresh_token", "") if tokens is not None else ""
+        new_refresh = tokens.get("refresh_token", "") if isinstance(tokens, dict) else ""
         if new_refresh:
             self._refresh_token_box[0] = new_refresh
         return True
@@ -130,7 +131,7 @@ class AsyncDeveloperClient:
             raise APIConnectionError(cause=exc) from exc
         status = int(response.status_code)
         if 200 <= status < 300:
-            return response.parsed
+            return parse_success_body(response.content)
         if status == 401 and await self._refresh_access_token():
             try:
                 response = await op_func(*args, client=self._client, **kwargs)
@@ -140,7 +141,7 @@ class AsyncDeveloperClient:
                 raise APIConnectionError(cause=exc) from exc
             status = int(response.status_code)
             if 200 <= status < 300:
-                return response.parsed
+                return parse_success_body(response.content)
         raise _map_status_to_exception(status, response.content, response.headers)
 
     # ── auth/me ────────────────────────────────────────────────────────

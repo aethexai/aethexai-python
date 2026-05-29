@@ -35,16 +35,9 @@ def _get_kwargs(
 def _parse_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
 ) -> Any | HTTPValidationError | None:
-    # AETHEX-PATCH (AET-1580): backend returns 201 Created on this resource POST
-    # (aethex PR #955). Parse it exactly like 200 so the wrapper layer returns
-    # the created resource instead of None. Re-applied by sync_from_prod.py.
     if response.status_code == 201:
         response_201 = response.json()
         return response_201
-
-    if response.status_code == 200:
-        response_200 = response.json()
-        return response_200
 
     if response.status_code == 422:
         response_422 = HTTPValidationError.from_dict(response.json())
@@ -75,12 +68,9 @@ def sync_detailed(
 ) -> Response[Any | HTTPValidationError]:
     r"""Connect
 
-     Create an authenticated WebRTC session.
-
-    Loads agent config server-side and bakes it into Redis. The client
-    receives only a session_id and ICE config — never agent config.
-
-    Accepts either an ``X-API-Key`` (production callers) or a developer
+     Create an authenticated WebRTC session. The client
+    receives only a session_id and ICE config — never agent config. Accepts either an ``X-API-Key``
+    (production callers) or a developer
     ``Authorization: Bearer`` JWT (the portal Test-in-browser surface, so
     the dashboard never has to mint a real ``ae_live_*`` key just to talk
     to its own agent). The latter is gated by the JWT's own tenant scope —
@@ -117,12 +107,9 @@ def sync(
 ) -> Any | HTTPValidationError | None:
     r"""Connect
 
-     Create an authenticated WebRTC session.
-
-    Loads agent config server-side and bakes it into Redis. The client
-    receives only a session_id and ICE config — never agent config.
-
-    Accepts either an ``X-API-Key`` (production callers) or a developer
+     Create an authenticated WebRTC session. The client
+    receives only a session_id and ICE config — never agent config. Accepts either an ``X-API-Key``
+    (production callers) or a developer
     ``Authorization: Bearer`` JWT (the portal Test-in-browser surface, so
     the dashboard never has to mint a real ``ae_live_*`` key just to talk
     to its own agent). The latter is gated by the JWT's own tenant scope —
@@ -154,12 +141,9 @@ async def asyncio_detailed(
 ) -> Response[Any | HTTPValidationError]:
     r"""Connect
 
-     Create an authenticated WebRTC session.
-
-    Loads agent config server-side and bakes it into Redis. The client
-    receives only a session_id and ICE config — never agent config.
-
-    Accepts either an ``X-API-Key`` (production callers) or a developer
+     Create an authenticated WebRTC session. The client
+    receives only a session_id and ICE config — never agent config. Accepts either an ``X-API-Key``
+    (production callers) or a developer
     ``Authorization: Bearer`` JWT (the portal Test-in-browser surface, so
     the dashboard never has to mint a real ``ae_live_*`` key just to talk
     to its own agent). The latter is gated by the JWT's own tenant scope —
@@ -194,12 +178,9 @@ async def asyncio(
 ) -> Any | HTTPValidationError | None:
     r"""Connect
 
-     Create an authenticated WebRTC session.
-
-    Loads agent config server-side and bakes it into Redis. The client
-    receives only a session_id and ICE config — never agent config.
-
-    Accepts either an ``X-API-Key`` (production callers) or a developer
+     Create an authenticated WebRTC session. The client
+    receives only a session_id and ICE config — never agent config. Accepts either an ``X-API-Key``
+    (production callers) or a developer
     ``Authorization: Bearer`` JWT (the portal Test-in-browser surface, so
     the dashboard never has to mint a real ``ae_live_*`` key just to talk
     to its own agent). The latter is gated by the JWT's own tenant scope —

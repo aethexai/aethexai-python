@@ -62,12 +62,11 @@ def sync_detailed(
 ) -> Response[Any | HTTPValidationError]:
     """End Session
 
-     Gracefully end an active WebRTC session via REST.
-
-    Looks up the running PipelineTask by session_id and queues a
+     Gracefully end an active WebRTC session via REST. Looks up the running PipelineTask by session_id
+    and queues a
     CancelTaskFrame to trigger a clean shutdown. If the pipeline lives
-    on a different pod, the request is proxied transparently (AET-857).
-    Accepts either ``X-API-Key`` or a developer JWT — see ``connect`` for
+    on a different pod, the request is proxied transparently. Accepts either ``X-API-Key`` or a
+    developer JWT — see ``connect`` for
     the rationale.
 
     Args:
@@ -99,12 +98,11 @@ def sync(
 ) -> Any | HTTPValidationError | None:
     """End Session
 
-     Gracefully end an active WebRTC session via REST.
-
-    Looks up the running PipelineTask by session_id and queues a
+     Gracefully end an active WebRTC session via REST. Looks up the running PipelineTask by session_id
+    and queues a
     CancelTaskFrame to trigger a clean shutdown. If the pipeline lives
-    on a different pod, the request is proxied transparently (AET-857).
-    Accepts either ``X-API-Key`` or a developer JWT — see ``connect`` for
+    on a different pod, the request is proxied transparently. Accepts either ``X-API-Key`` or a
+    developer JWT — see ``connect`` for
     the rationale.
 
     Args:
@@ -131,12 +129,11 @@ async def asyncio_detailed(
 ) -> Response[Any | HTTPValidationError]:
     """End Session
 
-     Gracefully end an active WebRTC session via REST.
-
-    Looks up the running PipelineTask by session_id and queues a
+     Gracefully end an active WebRTC session via REST. Looks up the running PipelineTask by session_id
+    and queues a
     CancelTaskFrame to trigger a clean shutdown. If the pipeline lives
-    on a different pod, the request is proxied transparently (AET-857).
-    Accepts either ``X-API-Key`` or a developer JWT — see ``connect`` for
+    on a different pod, the request is proxied transparently. Accepts either ``X-API-Key`` or a
+    developer JWT — see ``connect`` for
     the rationale.
 
     Args:
@@ -166,12 +163,11 @@ async def asyncio(
 ) -> Any | HTTPValidationError | None:
     """End Session
 
-     Gracefully end an active WebRTC session via REST.
-
-    Looks up the running PipelineTask by session_id and queues a
+     Gracefully end an active WebRTC session via REST. Looks up the running PipelineTask by session_id
+    and queues a
     CancelTaskFrame to trigger a clean shutdown. If the pipeline lives
-    on a different pod, the request is proxied transparently (AET-857).
-    Accepts either ``X-API-Key`` or a developer JWT — see ``connect`` for
+    on a different pod, the request is proxied transparently. Accepts either ``X-API-Key`` or a
+    developer JWT — see ``connect`` for
     the rationale.
 
     Args:

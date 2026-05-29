@@ -75,9 +75,8 @@ def sync_detailed(
 ) -> Response[HTTPValidationError | KnowledgeQueryResponse]:
     r"""Query Knowledge Base
 
-     Test RAG retrieval against an agent's knowledge base.
-
-    Body: {\"query\": \"your question here\", \"top_k\": 3}
+     Test RAG retrieval against an agent's knowledge base. Body: {\"query\": \"your question here\",
+    \"top_k\": 3}
     Returns ranked chunks with scores from pgvector hybrid search.
 
     Args:
@@ -112,9 +111,8 @@ def sync(
 ) -> HTTPValidationError | KnowledgeQueryResponse | None:
     r"""Query Knowledge Base
 
-     Test RAG retrieval against an agent's knowledge base.
-
-    Body: {\"query\": \"your question here\", \"top_k\": 3}
+     Test RAG retrieval against an agent's knowledge base. Body: {\"query\": \"your question here\",
+    \"top_k\": 3}
     Returns ranked chunks with scores from pgvector hybrid search.
 
     Args:
@@ -144,9 +142,8 @@ async def asyncio_detailed(
 ) -> Response[HTTPValidationError | KnowledgeQueryResponse]:
     r"""Query Knowledge Base
 
-     Test RAG retrieval against an agent's knowledge base.
-
-    Body: {\"query\": \"your question here\", \"top_k\": 3}
+     Test RAG retrieval against an agent's knowledge base. Body: {\"query\": \"your question here\",
+    \"top_k\": 3}
     Returns ranked chunks with scores from pgvector hybrid search.
 
     Args:
@@ -179,9 +176,8 @@ async def asyncio(
 ) -> HTTPValidationError | KnowledgeQueryResponse | None:
     r"""Query Knowledge Base
 
-     Test RAG retrieval against an agent's knowledge base.
-
-    Body: {\"query\": \"your question here\", \"top_k\": 3}
+     Test RAG retrieval against an agent's knowledge base. Body: {\"query\": \"your question here\",
+    \"top_k\": 3}
     Returns ranked chunks with scores from pgvector hybrid search.
 
     Args:

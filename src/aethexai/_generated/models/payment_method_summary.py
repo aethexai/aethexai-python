@@ -18,9 +18,8 @@ T = TypeVar("T", bound="PaymentMethodSummary")
 
 @_attrs_define
 class PaymentMethodSummary:
-    """Trimmed PaymentMethod view for the portal billing panel.
-
-    Covers both card and Stripe Link PMs. No PAN, no CVV, no full card
+    """Trimmed PaymentMethod view for the portal billing panel. Covers both card and Stripe Link PMs. No PAN, no CVV, no
+    full card
     number, Stripe never returns those to us. For cards the brand,
     last4, and expiry fields populate; for Link PMs those are null and
     ``link_email`` carries the Link account's email so the portal can

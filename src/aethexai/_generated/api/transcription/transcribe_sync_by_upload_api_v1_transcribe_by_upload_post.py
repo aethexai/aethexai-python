@@ -72,8 +72,6 @@ def sync_detailed(
 
      Transcribe a file previously staged via /uploads/presign.
 
-    Bodies don't transit the ALB/WAF — only a small JSON reference does.
-
     Args:
         body (TranscribeByUploadRequest):
 
@@ -105,8 +103,6 @@ def sync(
 
      Transcribe a file previously staged via /uploads/presign.
 
-    Bodies don't transit the ALB/WAF — only a small JSON reference does.
-
     Args:
         body (TranscribeByUploadRequest):
 
@@ -132,8 +128,6 @@ async def asyncio_detailed(
     """Transcribe Sync By Upload
 
      Transcribe a file previously staged via /uploads/presign.
-
-    Bodies don't transit the ALB/WAF — only a small JSON reference does.
 
     Args:
         body (TranscribeByUploadRequest):
@@ -163,8 +157,6 @@ async def asyncio(
     """Transcribe Sync By Upload
 
      Transcribe a file previously staged via /uploads/presign.
-
-    Bodies don't transit the ALB/WAF — only a small JSON reference does.
 
     Args:
         body (TranscribeByUploadRequest):

@@ -68,9 +68,8 @@ def sync_detailed(
 ) -> Response[Any | HTTPValidationError]:
     r"""Trigger Call
 
-     Create a call record and schedule the outbound dial (async / 202).
-
-    Returns **202 Accepted** with the Call record (``status=\"queued\"``)
+     Create a call record and schedule the outbound dial (async / 202). Returns **202 Accepted** with the
+    Call record (``status=\"queued\"``)
     as soon as the row is persisted. The actual provider dial — which
     includes an up-to-300 s wait for TTS to become ready — runs as a
     background task so the HTTP response is never held open past the
@@ -108,9 +107,8 @@ def sync(
 ) -> Any | HTTPValidationError | None:
     r"""Trigger Call
 
-     Create a call record and schedule the outbound dial (async / 202).
-
-    Returns **202 Accepted** with the Call record (``status=\"queued\"``)
+     Create a call record and schedule the outbound dial (async / 202). Returns **202 Accepted** with the
+    Call record (``status=\"queued\"``)
     as soon as the row is persisted. The actual provider dial — which
     includes an up-to-300 s wait for TTS to become ready — runs as a
     background task so the HTTP response is never held open past the
@@ -143,9 +141,8 @@ async def asyncio_detailed(
 ) -> Response[Any | HTTPValidationError]:
     r"""Trigger Call
 
-     Create a call record and schedule the outbound dial (async / 202).
-
-    Returns **202 Accepted** with the Call record (``status=\"queued\"``)
+     Create a call record and schedule the outbound dial (async / 202). Returns **202 Accepted** with the
+    Call record (``status=\"queued\"``)
     as soon as the row is persisted. The actual provider dial — which
     includes an up-to-300 s wait for TTS to become ready — runs as a
     background task so the HTTP response is never held open past the
@@ -181,9 +178,8 @@ async def asyncio(
 ) -> Any | HTTPValidationError | None:
     r"""Trigger Call
 
-     Create a call record and schedule the outbound dial (async / 202).
-
-    Returns **202 Accepted** with the Call record (``status=\"queued\"``)
+     Create a call record and schedule the outbound dial (async / 202). Returns **202 Accepted** with the
+    Call record (``status=\"queued\"``)
     as soon as the row is persisted. The actual provider dial — which
     includes an up-to-300 s wait for TTS to become ready — runs as a
     background task so the HTTP response is never held open past the

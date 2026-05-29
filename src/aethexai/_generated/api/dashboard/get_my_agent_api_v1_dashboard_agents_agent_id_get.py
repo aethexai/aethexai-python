@@ -63,12 +63,11 @@ def sync_detailed(
 ) -> Response[Any | HTTPValidationError]:
     r"""Get My Agent
 
-     Fetch a small header view of a single agent for the developer's tenant.
-
-    Distinct from ``GET /api/v1/agents/{id}`` (API-key-authed, full record):
+     Fetch a small header view of a single agent for the developer's tenant. Distinct from ``GET
+    /api/v1/agents/{id}`` (API-key-authed, full record):
     this JWT-authed variant returns only the fields the dashboard renders
     on the agent detail / Test surfaces. Pairs ``voice_id`` with the
-    curator-authored display name from ``vo_voices`` so the page can show
+    curator-authored display name from ```` so the page can show
     \"Adamma\" instead of an internal slug. Returns 404 if the agent doesn't
     exist or doesn't belong to the developer's tenant — same shape as the
     API-key endpoint so the portal can reuse its missing-agent rendering.
@@ -102,12 +101,11 @@ def sync(
 ) -> Any | HTTPValidationError | None:
     r"""Get My Agent
 
-     Fetch a small header view of a single agent for the developer's tenant.
-
-    Distinct from ``GET /api/v1/agents/{id}`` (API-key-authed, full record):
+     Fetch a small header view of a single agent for the developer's tenant. Distinct from ``GET
+    /api/v1/agents/{id}`` (API-key-authed, full record):
     this JWT-authed variant returns only the fields the dashboard renders
     on the agent detail / Test surfaces. Pairs ``voice_id`` with the
-    curator-authored display name from ``vo_voices`` so the page can show
+    curator-authored display name from ```` so the page can show
     \"Adamma\" instead of an internal slug. Returns 404 if the agent doesn't
     exist or doesn't belong to the developer's tenant — same shape as the
     API-key endpoint so the portal can reuse its missing-agent rendering.
@@ -136,12 +134,11 @@ async def asyncio_detailed(
 ) -> Response[Any | HTTPValidationError]:
     r"""Get My Agent
 
-     Fetch a small header view of a single agent for the developer's tenant.
-
-    Distinct from ``GET /api/v1/agents/{id}`` (API-key-authed, full record):
+     Fetch a small header view of a single agent for the developer's tenant. Distinct from ``GET
+    /api/v1/agents/{id}`` (API-key-authed, full record):
     this JWT-authed variant returns only the fields the dashboard renders
     on the agent detail / Test surfaces. Pairs ``voice_id`` with the
-    curator-authored display name from ``vo_voices`` so the page can show
+    curator-authored display name from ```` so the page can show
     \"Adamma\" instead of an internal slug. Returns 404 if the agent doesn't
     exist or doesn't belong to the developer's tenant — same shape as the
     API-key endpoint so the portal can reuse its missing-agent rendering.
@@ -173,12 +170,11 @@ async def asyncio(
 ) -> Any | HTTPValidationError | None:
     r"""Get My Agent
 
-     Fetch a small header view of a single agent for the developer's tenant.
-
-    Distinct from ``GET /api/v1/agents/{id}`` (API-key-authed, full record):
+     Fetch a small header view of a single agent for the developer's tenant. Distinct from ``GET
+    /api/v1/agents/{id}`` (API-key-authed, full record):
     this JWT-authed variant returns only the fields the dashboard renders
     on the agent detail / Test surfaces. Pairs ``voice_id`` with the
-    curator-authored display name from ``vo_voices`` so the page can show
+    curator-authored display name from ```` so the page can show
     \"Adamma\" instead of an internal slug. Returns 404 if the agent doesn't
     exist or doesn't belong to the developer's tenant — same shape as the
     API-key endpoint so the portal can reuse its missing-agent rendering.

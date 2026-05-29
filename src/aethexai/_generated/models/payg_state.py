@@ -19,9 +19,8 @@ T = TypeVar("T", bound="PaygState")
 
 @_attrs_define
 class PaygState:
-    """Pay-as-you-go (overage) accounting state for the current period.
-
-    Surfaced when ``credit_balance < 0`` so the portal can render
+    """Pay-as-you-go (overage) accounting state for the current period. Surfaced when ``credit_balance < 0`` so the portal
+    can render
     "X credits over · ~$Y will charge at the next $5 threshold". Tenants
     on ``has_payment_method=False`` see the same negative balance but
     can't be charged — the portal renders "Add a card to keep service

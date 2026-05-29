@@ -276,9 +276,6 @@ def regenerate_client() -> int:
     http_patch_rc = _apply_http_validation_error_patch()
     if http_patch_rc != 0:
         return http_patch_rc
-    created_201_rc = _apply_created_201_patch()
-    if created_201_rc != 0:
-        return created_201_rc
     return result.returncode
 
 
@@ -347,8 +344,7 @@ def _apply_post_codegen_patches() -> int:
         "# after every ``openapi-python-client generate`` and uses this sentinel to\n"
         "# detect already-patched files. DO NOT remove without auditing every call\n"
         "# site that depends on ``token`` and the auth-header value not appearing in\n"
-        "# ``repr(client)`` / structured-log output. See"
-        " ``docs/audits/pre-launch-2026-05-17.md`` finding A.5.\n"
+        "# ``repr(client)`` / structured-log output.\n"
         "_SECRET_FIELDS_PATCHED = True\n"
     )
     # Anchor on any ``from attrs import ...`` line. openapi-python-client has
@@ -399,7 +395,7 @@ def _apply_http_validation_error_patch() -> int:
         return 0
 
     source = target.read_text()
-    if "AETHEX-PATCH (AET-1523)" in source:
+    if "aethexai-error-envelope-tolerant" in source:
         print("post-codegen patch: http-validation-error already applied (sentinel present)")
         return 0
 
@@ -415,7 +411,7 @@ def _apply_http_validation_error_patch() -> int:
         "                detail.append(detail_item)\n"
     )
     replacement = (
-        "        # AETHEX-PATCH (AET-1523): tolerate the aethex unified error envelope.\n"
+        "        # aethexai-error-envelope-tolerant: accept the unified error envelope on 422.\n"
         "        # The OpenAPI spec types 422 as FastAPI's ``HTTPValidationError``\n"
         "        # (``detail: list[ValidationError]``), but the real API returns\n"
         "        # ``{error, code, detail: <string>, request_id}``. Without this guard,\n"
@@ -464,124 +460,159 @@ def _apply_http_validation_error_patch() -> int:
     return 0
 
 
-# AET-1580: resource-creation endpoints whose backend returns HTTP 201 Created
-# (aethex PR #955 / AET-1566). Once ``openapi.json`` declares ``201`` for these
-# routes, openapi-python-client emits a native ``201`` branch and the patch is
-# a no-op skip. The list and patch remain as a defensive net: if a future spec
-# dump regresses to ``200``-only, or codegen reverts to a 200-only shape, the
-# patch re-applies the ``201`` branch so create wrappers don't silently return
-# ``None``. Each path is relative to ``src/aethexai/_generated/api/``; keep it
-# in sync with the ``status_code=201`` resource-creation routes in the backend.
-_CREATED_201_ENDPOINTS = (
-    "agents/create_agent_api_v1_agents_post.py",
-    "agents/duplicate_agent_api_v1_agents_agent_id_duplicate_post.py",
-    "agents/add_tool_api_v1_agents_agent_id_tools_post.py",
-    "agents/upload_knowledge_doc_api_v1_agents_agent_id_knowledge_base_post.py",
-    "agents/upload_knowledge_doc_by_upload_api_v1_agents_agent_id_knowledge_base_by_upload_post.py",
-    "api_keys/create_api_key_api_v1_api_keys_post.py",
-    "calls/create_call_record_api_v1_calls_post.py",
-    "calls/batch_calls_api_v1_calls_batch_post.py",
-    "conversation/connect_api_v1_conversation_connect_post.py",
-    "dashboard/create_my_api_key_api_v1_dashboard_api_keys_post.py",
-    "phone_numbers/register_twilio_api_v1_phone_numbers_twilio_register_post.py",
-    "phone_numbers/register_sip_api_v1_phone_numbers_sip_register_post.py",
-    "tts/batch_synthesize_api_v1_tts_batch_post.py",
+# ── Spec sanitization ──────────────────────────────────────────────────────
+#
+# The committed ``openapi.json`` (and every file generated from it) ships to
+# customers. The raw spec dumped from the backend's ``create_app().openapi()``
+# exposes the FULL internal app: operational probes, internal/admin routes, and
+# descriptions that narrate infrastructure, ticket numbers, and internal table
+# names. ``_sanitize_spec`` strips that surface so the published SDK is purely
+# customer-facing while staying functional for every public endpoint. It runs on
+# every sync, so future dumps stay clean without manual intervention.
+
+# Operations carrying any of these OpenAPI tags are internal/operational and
+# never belong in a customer SDK.
+_NON_PUBLIC_TAGS = frozenset({"internal", "internal-admin", "health", "metrics"})
+
+# Path prefixes that are internal regardless of tagging (belt-and-suspenders).
+_NON_PUBLIC_PATH_PREFIXES = ("/internal",)
+
+_HTTP_METHODS = frozenset({"get", "put", "post", "delete", "options", "head", "patch", "trace"})
+
+# Inline tokens that leak internal context into customer-facing text. Stripped
+# wherever they appear in any description / summary / title.
+_TEXT_SCRUB_PATTERNS = (
+    re.compile(r"\(?\bAET-\d+(?:\s*,\s*AET-\d+)*\)?:?"),  # ticket ids
+    re.compile(r"\(?\b(?:aethex\s+)?PR\s*#\d+\)?", re.IGNORECASE),  # PR refs
+    re.compile(r"\(#\d+\)"),  # bare (#123)
+    re.compile(r"\bmigration\s+\d+\b", re.IGNORECASE),  # migration numbers
+    re.compile(r"docs/audits/\S+"),  # internal audit docs
+    re.compile(r"X-Internal-[\w-]+"),  # internal auth header names
+    re.compile(r"\bvo_[a-z_]+\b"),  # internal DB table names
+    re.compile(r":(?:data|meth|class|func|attr|mod):`[^`]*`"),  # sphinx symbol refs
+    re.compile(r"\bAETHEX_[A-Z][A-Z0-9_]*\b"),  # internal env-var names
 )
 
-_CREATED_201_SENTINEL = "# AETHEX-PATCH (AET-1580)"
+# A sentence mentioning any of these infra nouns is dropped wholesale — customers
+# don't need (and shouldn't see) our deployment internals.
+_INFRA_SENTENCE_TERMS = re.compile(
+    r"\b(redis|elasticache|postgres|clickhouse|langfuse|grafana|cloudwatch|kubernetes|"
+    r"k8s|kubectl|prestop|sigterm|alb|waf|nlb|karpenter|ecr|eks|pgbouncer|coturn|"
+    r"pipecat|vllm|omniasr|cloudflare|sentry|preStop)\b|app\.state",
+    re.IGNORECASE,
+)
 
 
-def _patch_created_201_source(source: str) -> str | None:
-    """Add a ``201`` branch mirroring the ``200`` branch in a ``_parse_response``.
+def _scrub_text(text: str) -> str:
+    """Remove internal references from a single customer-visible string."""
+    for pattern in _TEXT_SCRUB_PATTERNS:
+        text = pattern.sub("", text)
+    # Drop whole sentences that narrate infrastructure.
+    sentences = re.split(r"(?<=[.!?])\s+", text)
+    text = " ".join(s for s in sentences if not _INFRA_SENTENCE_TERMS.search(s))
+    # Tidy whitespace and orphaned punctuation left behind by the removals.
+    text = re.sub(r"\s+([,.;:])", r"\1", text)
+    text = re.sub(r"\(\s*[,;]?\s*\)", "", text)
+    text = re.sub(r"[ \t]{2,}", " ", text)
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    return text.strip()
 
-    Returns the patched source, ``None`` if no patch is needed (file already
-    patched, or codegen already produced a native ``201`` branch from a
-    spec that declares ``201``), or raises ``ValueError`` if neither a ``200``
-    nor a ``201`` branch can be located -- indicating openapi-python-client's
-    output shape changed in an unexpected way.
 
-    openapi-python-client emits the success branch as either an untyped
-    pass-through::
+def _scrub_in_place(node: Any) -> None:
+    """Recursively scrub ``description`` / ``summary`` / ``title`` strings."""
+    if isinstance(node, dict):
+        for key, value in node.items():
+            if key in ("description", "summary", "title") and isinstance(value, str):
+                node[key] = _scrub_text(value)
+            else:
+                _scrub_in_place(value)
+    elif isinstance(node, list):
+        for item in node:
+            _scrub_in_place(item)
 
-        if response.status_code == 200:
-            response_200 = response.json()
-            return response_200
 
-    or a typed model parse::
+def _collect_schema_refs(node: Any, out: set[str]) -> None:
+    """Collect every ``#/components/schemas/<Name>`` reference under ``node``."""
+    if isinstance(node, dict):
+        ref = node.get("$ref")
+        if isinstance(ref, str) and ref.startswith("#/components/schemas/"):
+            out.add(ref.rsplit("/", 1)[-1])
+        for value in node.values():
+            _collect_schema_refs(value, out)
+    elif isinstance(node, list):
+        for item in node:
+            _collect_schema_refs(item, out)
 
-        if response.status_code == 200:
-            response_200 = SomeModel.from_dict(response.json())
 
-            return response_200
+def _prune_unused_schemas(spec: dict[str, Any]) -> int:
+    """Drop component schemas no longer reachable from the (sanitized) paths."""
+    components = spec.get("components") or {}
+    schemas = components.get("schemas") or {}
+    if not schemas:
+        return 0
+    reachable: set[str] = set()
+    _collect_schema_refs(spec.get("paths") or {}, reachable)
+    for key, value in components.items():
+        if key != "schemas":  # parameters / responses / requestBodies may ref schemas
+            _collect_schema_refs(value, reachable)
+    frontier = list(reachable)
+    while frontier:
+        name = frontier.pop()
+        if name not in schemas:
+            continue
+        deps: set[str] = set()
+        _collect_schema_refs(schemas[name], deps)
+        for dep in deps - reachable:
+            reachable.add(dep)
+            frontier.append(dep)
+    removed = [name for name in schemas if name not in reachable]
+    for name in removed:
+        del schemas[name]
+    return len(removed)
 
-    Both forms are duplicated verbatim with ``200`` -> ``201`` so a 201 Created
-    response is parsed into the same model (or raw body) instead of falling
-    through to ``return None``.
+
+def _sanitize_spec(spec: dict[str, Any]) -> dict[str, Any]:
+    """Strip internal surface and scrub internal commentary from an OpenAPI spec.
+
+    Idempotent and total: drops operations tagged internal/operational (and any
+    ``/internal`` path), removes the now-unreferenced component schemas, drops
+    the orphaned tag declarations, and scrubs ticket ids / internal table names /
+    infra narration from every customer-visible description. Mutates and returns
+    ``spec``.
     """
-    if _CREATED_201_SENTINEL in source:
-        return None
-    if re.search(r"^ {4}if response\.status_code == 201:", source, re.MULTILINE):
-        # Codegen produced a native 201 branch directly (the spec declares 201
-        # for this route). Nothing to patch -- this is the expected steady
-        # state after openapi.json is in sync with the backend.
-        return None
-
-    match = re.search(
-        r"( {4}if response\.status_code == 200:\n(?: {8}.*\n|\n)*? {8}return response_200\n)",
-        source,
+    paths = spec.get("paths") or {}
+    dropped_ops = 0
+    for path in list(paths):
+        ops = paths[path]
+        if not isinstance(ops, dict):
+            continue
+        if any(path.startswith(prefix) for prefix in _NON_PUBLIC_PATH_PREFIXES):
+            dropped_ops += sum(1 for m in ops if m.lower() in _HTTP_METHODS)
+            del paths[path]
+            continue
+        for method in list(ops):
+            if method.lower() not in _HTTP_METHODS:
+                continue
+            op = ops[method]
+            tags = set(op.get("tags") or []) if isinstance(op, dict) else set()
+            if _NON_PUBLIC_TAGS & tags:
+                del ops[method]
+                dropped_ops += 1
+        if not any(m.lower() in _HTTP_METHODS for m in ops):
+            del paths[path]
+    if isinstance(spec.get("tags"), list):
+        spec["tags"] = [
+            tag
+            for tag in spec["tags"]
+            if not (isinstance(tag, dict) and tag.get("name") in _NON_PUBLIC_TAGS)
+        ]
+    dropped_schemas = _prune_unused_schemas(spec)
+    _scrub_in_place(spec)
+    print(
+        f"sanitized spec: dropped {dropped_ops} internal/operational operation(s) "
+        f"and {dropped_schemas} orphaned schema(s)"
     )
-    if match is None:
-        raise ValueError("could not locate the stock 200 branch in _parse_response")
-
-    block_200 = match.group(1)
-    block_201 = (
-        f"    {_CREATED_201_SENTINEL}: backend returns 201 Created on this resource POST\n"
-        "    # (aethex PR #955). Parse it exactly like 200 so the wrapper layer returns\n"
-        "    # the created resource instead of None. Re-applied by sync_from_prod.py.\n"
-        + block_200.replace("status_code == 200", "status_code == 201").replace(
-            "response_200", "response_201"
-        )
-    )
-    insert_at = match.start()
-    return source[:insert_at] + block_201 + "\n" + source[insert_at:]
-
-
-def _apply_created_201_patch() -> int:
-    """Re-apply the AET-1580 patch: parse HTTP 201 create responses like 200.
-
-    Idempotent via the ``AETHEX-PATCH (AET-1580)`` sentinel. Each target file is
-    patched independently; a single miss is fatal (return 2) so the regression
-    surfaces loudly rather than silently letting create wrappers return ``None``.
-    """
-    api_dir = GENERATED_DIR / "api"
-    patched = 0
-    for rel in _CREATED_201_ENDPOINTS:
-        target = api_dir / rel
-        if not target.exists():
-            print(
-                f"warn: created-201 patch could not find {target.relative_to(REPO_ROOT)}; "
-                "the endpoint may have been renamed or removed. Update "
-                "_CREATED_201_ENDPOINTS in scripts/sync_from_prod.py.",
-                file=sys.stderr,
-            )
-            return 2
-        source = target.read_text()
-        try:
-            new_source = _patch_created_201_source(source)
-        except ValueError as exc:
-            print(
-                f"warn: created-201 patch failed for {target.relative_to(REPO_ROOT)}: {exc}. "
-                "openapi-python-client may have changed its output shape — the AET-1580 "
-                "201 fix is at risk of regressing.",
-                file=sys.stderr,
-            )
-            return 2
-        if new_source is None:
-            continue  # already patched
-        target.write_text(new_source)
-        patched += 1
-    print(f"post-codegen patch: applied created-201 handling to {patched} endpoint(s)")
-    return 0
+    return spec
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -625,7 +656,8 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     old_spec = _load_json(SPEC_PATH)
-    new_spec = _load_json(NEW_SPEC_PATH)
+    new_spec = _sanitize_spec(_load_json(NEW_SPEC_PATH))
+    NEW_SPEC_PATH.write_text(json.dumps(new_spec, indent=2, sort_keys=True) + "\n")
     drift = compute_drift(old_spec, new_spec)
 
     # Show a textual stat alongside the structural drift.

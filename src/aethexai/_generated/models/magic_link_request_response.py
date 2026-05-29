@@ -16,9 +16,7 @@ T = TypeVar("T", bound="MagicLinkRequestResponse")
 
 @_attrs_define
 class MagicLinkRequestResponse:
-    """Identical body for all well-formed requests.
-
-    Email sign-in creates an account only after the ownership-proof link
+    """Identical body for all well-formed requests. Email sign-in creates an account only after the ownership-proof link
     is verified. The request step returns the same acknowledgement for
     new and returning developers.
 

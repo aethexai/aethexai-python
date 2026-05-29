@@ -48,9 +48,8 @@ def sync_detailed(
 ) -> Response[Any]:
     """Logout
 
-     Logout and revoke the current server-side JWT session.
-
-    Rate-limited per-session: a stolen access token cannot flood
+     Logout and revoke the current server-side JWT session. Rate-limited per-session: a stolen access
+    token cannot flood
     /auth/logout to burn the user's session row repeatedly and mask
     other malicious activity in audit trails. Per ayooluwa-aethex
     round-2 MUST #2.
@@ -78,9 +77,8 @@ async def asyncio_detailed(
 ) -> Response[Any]:
     """Logout
 
-     Logout and revoke the current server-side JWT session.
-
-    Rate-limited per-session: a stolen access token cannot flood
+     Logout and revoke the current server-side JWT session. Rate-limited per-session: a stolen access
+    token cannot flood
     /auth/logout to burn the user's session row repeatedly and mask
     other malicious activity in audit trails. Per ayooluwa-aethex
     round-2 MUST #2.

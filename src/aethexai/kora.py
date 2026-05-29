@@ -22,7 +22,7 @@ Example::
         language="french",
         dialect_style="local",
     )
-    client.trigger_call(agent.id, to_number="+221...")
+    client.trigger_call(agent["id"], to_number="+221...")
 """
 
 from __future__ import annotations
@@ -38,6 +38,7 @@ from aethexai._exceptions import (
     APIConnectionError,
     APITimeoutError,
     _map_status_to_exception,
+    parse_success_body,
 )
 from aethexai._generated.api.agents import (
     create_agent_api_v1_agents_post as _create_agent_op,
@@ -168,10 +169,9 @@ class Kora:
             raise ValueError("api_key is required. Pass it positionally: Kora(base_url, api_key).")
         self._base_url = base_url
         # NOTE: api_key is intentionally NOT stored as an instance attribute.
-        # See ``AethexAI.__init__`` for the rationale (finding A.5 of the
-        # 2026-05-17 pre-launch audit). Kora was the easiest leak vector
-        # because both ``Kora._api_key`` and ``AuthenticatedClient.token``
-        # carried the same secret.
+        # See ``AethexAI.__init__`` for the rationale: storing the key on
+        # ``self`` would leak it via ``vars(client)`` / ``client.__dict__``.
+        # It lives only inside ``self._client.token`` (suppressed from repr).
         timeout_arg: httpx.Timeout | None = httpx.Timeout(timeout) if timeout is not None else None
         self._client = AuthenticatedClient(
             base_url=base_url,
@@ -210,7 +210,7 @@ class Kora:
         response = op_func(*args, client=self._client, **kwargs)
         status = int(response.status_code)
         if 200 <= status < 300:
-            return response.parsed
+            return parse_success_body(response.content)
         raise _map_status_to_exception(status, response.content, response.headers)
 
     # ── Agents ────────────────────────────────────────────────────────────
@@ -356,7 +356,7 @@ class Kora:
 
         The 200 response is ``audio/wav`` even though ``openapi.json`` declares it
         as ``application/json``; we bypass the generated parser to avoid a
-        ``UnicodeDecodeError`` (AET-1522). Mirrors :meth:`synthesize_speech`.
+        ``UnicodeDecodeError``. Mirrors :meth:`synthesize_speech`.
         """
         body_kwargs: dict[str, Any] = {"voice_id": voice_id}
         if text is not None:
@@ -392,7 +392,7 @@ class Kora:
 
         The 200 response is ``audio/wav`` even though ``openapi.json`` declares it
         as ``application/json``; we bypass the generated parser to avoid a
-        ``UnicodeDecodeError`` (AET-1522).
+        ``UnicodeDecodeError``.
 
         Returns the raw audio payload on success; raises a typed
         :class:`~aethexai.APIStatusError` subclass on any non-2xx response.
@@ -517,20 +517,15 @@ class Kora:
             limit=limit if limit is not None else UNSET,
             offset=offset if offset is not None else UNSET,
         )
-        if agent_id is None or result is None:
+        if agent_id is None or not isinstance(result, dict):
             return result
         wanted = str(agent_id)
-        data = getattr(result, "data", None)
+        data = result.get("data")
         if isinstance(data, list):
-            result.data = [
+            result["data"] = [
                 item
                 for item in data
-                if str(
-                    getattr(
-                        item, "agent_id", item.get("agent_id") if isinstance(item, dict) else None
-                    )
-                )
-                == wanted
+                if isinstance(item, dict) and str(item.get("agent_id")) == wanted
             ]
         return result
 
@@ -543,7 +538,7 @@ class Kora:
 
         The 200 response is ``audio/wav`` even though ``openapi.json`` declares it
         as ``application/json``; we bypass the generated parser to avoid a
-        ``UnicodeDecodeError`` (AET-1522). Mirrors :meth:`synthesize_speech`.
+        ``UnicodeDecodeError``. Mirrors :meth:`synthesize_speech`.
         """
         from urllib.parse import quote
 

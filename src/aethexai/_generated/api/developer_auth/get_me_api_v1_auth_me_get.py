@@ -53,9 +53,8 @@ def sync_detailed(
 ) -> Response[DeveloperResponse]:
     """Get Me
 
-     Get current developer profile.
-
-    Requires JWT bearer token (not API key). Use Google or email magic-link sign-in
+     Get current developer profile. Requires JWT bearer token (not API key). Use Google or email magic-
+    link sign-in
     to obtain a token.
 
     Raises:
@@ -81,9 +80,8 @@ def sync(
 ) -> DeveloperResponse | None:
     """Get Me
 
-     Get current developer profile.
-
-    Requires JWT bearer token (not API key). Use Google or email magic-link sign-in
+     Get current developer profile. Requires JWT bearer token (not API key). Use Google or email magic-
+    link sign-in
     to obtain a token.
 
     Raises:
@@ -105,9 +103,8 @@ async def asyncio_detailed(
 ) -> Response[DeveloperResponse]:
     """Get Me
 
-     Get current developer profile.
-
-    Requires JWT bearer token (not API key). Use Google or email magic-link sign-in
+     Get current developer profile. Requires JWT bearer token (not API key). Use Google or email magic-
+    link sign-in
     to obtain a token.
 
     Raises:
@@ -131,9 +128,8 @@ async def asyncio(
 ) -> DeveloperResponse | None:
     """Get Me
 
-     Get current developer profile.
-
-    Requires JWT bearer token (not API key). Use Google or email magic-link sign-in
+     Get current developer profile. Requires JWT bearer token (not API key). Use Google or email magic-
+    link sign-in
     to obtain a token.
 
     Raises:

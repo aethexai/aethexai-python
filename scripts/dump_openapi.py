@@ -22,7 +22,6 @@ import os
 import sys
 from pathlib import Path
 
-DEFAULT_BACKEND_PATH = "/Users/ayooluwao/aethex"
 DEFAULT_OUTPUT = Path(__file__).resolve().parent.parent / "openapi.json"
 
 # Dummy env values used only to satisfy import-time validation in the backend.
@@ -51,7 +50,12 @@ def _seed_env() -> None:
 
 def _resolve_backend_path(cli_value: str | None) -> Path:
     """Resolve backend path from CLI arg, env var, then default."""
-    raw = cli_value or os.environ.get("AETHEX_BACKEND_PATH") or DEFAULT_BACKEND_PATH
+    raw = cli_value or os.environ.get("AETHEX_BACKEND_PATH")
+    if not raw:
+        raise FileNotFoundError(
+            "backend path required: pass --backend-path or set AETHEX_BACKEND_PATH "
+            "to a local checkout of the aethex backend repo."
+        )
     path = Path(raw).expanduser().resolve()
     if not path.is_dir():
         raise FileNotFoundError(f"Backend path does not exist or is not a directory: {path}")
@@ -112,7 +116,7 @@ def main(argv: list[str] | None = None) -> int:
         default=None,
         help=(
             "Path to a local aethex backend checkout. "
-            f"Defaults to $AETHEX_BACKEND_PATH or {DEFAULT_BACKEND_PATH}."
+            "Falls back to the $AETHEX_BACKEND_PATH env var; one of the two is required."
         ),
     )
     parser.add_argument(

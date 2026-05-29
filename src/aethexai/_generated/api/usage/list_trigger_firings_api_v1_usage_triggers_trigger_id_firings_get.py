@@ -81,9 +81,8 @@ def sync_detailed(
 ) -> Response[HTTPValidationError | list[UsageTriggerFiringResponse]]:
     """List Trigger Firings
 
-     Audit log for a single trigger's firing attempts.
-
-    Newest-first. ``limit`` is enforced 1..200 by Pydantic; values
+     Audit log for a single trigger's firing attempts. Newest-first. ``limit`` is enforced 1..200 by
+    Pydantic; values
     outside that range 422 at the boundary. Returns 404 if the trigger
     isn't owned by the calling tenant so a customer can't probe other
     tenants' trigger ids by guessing.
@@ -120,9 +119,8 @@ def sync(
 ) -> HTTPValidationError | list[UsageTriggerFiringResponse] | None:
     """List Trigger Firings
 
-     Audit log for a single trigger's firing attempts.
-
-    Newest-first. ``limit`` is enforced 1..200 by Pydantic; values
+     Audit log for a single trigger's firing attempts. Newest-first. ``limit`` is enforced 1..200 by
+    Pydantic; values
     outside that range 422 at the boundary. Returns 404 if the trigger
     isn't owned by the calling tenant so a customer can't probe other
     tenants' trigger ids by guessing.
@@ -154,9 +152,8 @@ async def asyncio_detailed(
 ) -> Response[HTTPValidationError | list[UsageTriggerFiringResponse]]:
     """List Trigger Firings
 
-     Audit log for a single trigger's firing attempts.
-
-    Newest-first. ``limit`` is enforced 1..200 by Pydantic; values
+     Audit log for a single trigger's firing attempts. Newest-first. ``limit`` is enforced 1..200 by
+    Pydantic; values
     outside that range 422 at the boundary. Returns 404 if the trigger
     isn't owned by the calling tenant so a customer can't probe other
     tenants' trigger ids by guessing.
@@ -191,9 +188,8 @@ async def asyncio(
 ) -> HTTPValidationError | list[UsageTriggerFiringResponse] | None:
     """List Trigger Firings
 
-     Audit log for a single trigger's firing attempts.
-
-    Newest-first. ``limit`` is enforced 1..200 by Pydantic; values
+     Audit log for a single trigger's firing attempts. Newest-first. ``limit`` is enforced 1..200 by
+    Pydantic; values
     outside that range 422 at the boundary. Returns 404 if the trigger
     isn't owned by the calling tenant so a customer can't probe other
     tenants' trigger ids by guessing.

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "aethexai"
-version = "0.2.1"
+version = "0.3.0"
 description = "Official Python SDK for the Aethex voice AI platform"
 readme = "README.md"
 license = "MIT"
@@ -64,11 +64,30 @@ dev = [
 [tool.hatch.build.targets.wheel]
 packages = ["src/aethexai"]
 
+# The published source distribution carries only customer-facing files. Internal
+# tooling (``scripts/``), the test suite, CI config, and contributor docs are
+# deliberately excluded so nothing internal ships to PyPI.
+[tool.hatch.build.targets.sdist]
+include = [
+    "src/aethexai",
+    "openapi.json",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md",
+]
+exclude = [
+    "examples",
+    "docs",
+    "scripts",
+    "tests",
+    ".github",
+]
+
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
 testpaths = ["tests"]
 markers = [
-    "integration: requires AETHEX_API_KEY env var and hits dev-api.aethexai.com",
+    "integration: requires AETHEX_API_KEY env var and hits the live API",
     "slow: longer-running tests",
 ]
 

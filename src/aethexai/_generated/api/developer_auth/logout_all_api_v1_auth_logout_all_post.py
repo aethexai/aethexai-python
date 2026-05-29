@@ -53,9 +53,8 @@ def sync_detailed(
 ) -> Response[LogoutAllResponse]:
     """Logout All
 
-     Revoke every active session for the developer.
-
-    Rate-limited per-developer so a stolen access token cannot be used
+     Revoke every active session for the developer. Rate-limited per-developer so a stolen access token
+    cannot be used
     to repeatedly burn the legitimate user's recovery path. The cookies
     on this response are cleared because the caller's own session is
     among those revoked.
@@ -83,9 +82,8 @@ def sync(
 ) -> LogoutAllResponse | None:
     """Logout All
 
-     Revoke every active session for the developer.
-
-    Rate-limited per-developer so a stolen access token cannot be used
+     Revoke every active session for the developer. Rate-limited per-developer so a stolen access token
+    cannot be used
     to repeatedly burn the legitimate user's recovery path. The cookies
     on this response are cleared because the caller's own session is
     among those revoked.
@@ -109,9 +107,8 @@ async def asyncio_detailed(
 ) -> Response[LogoutAllResponse]:
     """Logout All
 
-     Revoke every active session for the developer.
-
-    Rate-limited per-developer so a stolen access token cannot be used
+     Revoke every active session for the developer. Rate-limited per-developer so a stolen access token
+    cannot be used
     to repeatedly burn the legitimate user's recovery path. The cookies
     on this response are cleared because the caller's own session is
     among those revoked.
@@ -137,9 +134,8 @@ async def asyncio(
 ) -> LogoutAllResponse | None:
     """Logout All
 
-     Revoke every active session for the developer.
-
-    Rate-limited per-developer so a stolen access token cannot be used
+     Revoke every active session for the developer. Rate-limited per-developer so a stolen access token
+    cannot be used
     to repeatedly burn the legitimate user's recovery path. The cookies
     on this response are cleared because the caller's own session is
     among those revoked.

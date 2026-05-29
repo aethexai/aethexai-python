@@ -23,22 +23,18 @@ T = TypeVar("T", bound="BalanceResponse")
 
 @_attrs_define
 class BalanceResponse:
-    """``GET /billing/balance`` payload.
-
-    Renders the portal billing card without a second round-trip:
-    balance, current plan, and the period decomposition.
-    ``estimated_minutes_remaining`` is derived (1 credit ≈ 1 agent
+    """``GET /billing/balance`` payload. Renders the portal billing card without a second round-trip:
+    balance, current plan, and the period decomposition. ``estimated_minutes_remaining`` is derived (1 credit ≈ 1 agent
     minute) so the UI doesn't have to know the conversion ratio.
 
         Attributes:
-            credit_balance (str): Authoritative balance from ``vo_tenants.credit_balance``. Decimal-string to preserve
-                precision for JavaScript clients.
+            credit_balance (str): Authoritative balance from ``.credit_balance``. Decimal-string to preserve precision for
+                JavaScript clients.
             estimated_minutes_remaining (int): Approximate agent-call minutes the current balance covers, computed at the
                 standard 1 credit per minute conversion.
             period (PeriodSummary): Snapshot of the current billing period: start/end + the
-                grant/used/remaining decomposition the portal billing card needs.
-
-                ``credits_granted`` is the **plan's monthly allocation**, not a
+                grant/used/remaining decomposition the portal billing card needs. ``credits_granted`` is the **plan's monthly
+                allocation**, not a
                 sum of ledger grant rows in the current period. A tenant who
                 upgraded mid-period or received a manual ``adjustment`` will see
                 this field reflect the plan tier, not the literal credits that
@@ -48,17 +44,15 @@ class BalanceResponse:
                 ``credits_used`` is the sum of ``tx_type='usage_deduction'`` ledger
                 entries since ``started_at``. Excluded from this stat:
 
-                  * ``plan_credit`` (signup seed)
-                  * ``plan_renewal`` (monthly / yearly grant)
-                  * ``adjustment`` (ops-driven manual changes; rare)
-                  * future PAYG top-ups (will use a distinct ``tx_type``)
+                 * ``plan_credit`` (signup seed)
+                 * ``plan_renewal`` (monthly / yearly grant)
+                 * ``adjustment`` (ops-driven manual changes; rare)
+                 * future PAYG top-ups (will use a distinct ``tx_type``)
 
                 Negative ``adjustment`` entries reduce ``credit_balance`` without
                 incrementing ``credits_used`` — the portal can detect this when
                 ``credits_granted - credits_used > credits_remaining`` and explain
-                the gap as "ops adjustment" if needed.
-
-                ``credits_remaining`` mirrors ``Tenant.credit_balance`` so the portal
+                the gap as "ops adjustment" if needed. ``credits_remaining`` mirrors ``Tenant.credit_balance`` so the portal
                 can highlight a single source-of-truth number; it can exceed
                 ``credits_granted`` after a PAYG top-up.
             plan (PlanInfo): Compact plan view used inside the balance response. The full
@@ -73,8 +67,8 @@ class BalanceResponse:
             subscription_interval (None | str | Unset): Payment cadence on the tenant's active Stripe subscription:
                 ``monthly``, ``yearly``, or ``null`` (free tier or no paid sub). Surfaced so the portal can label the price hero
                 correctly ('$5/mo' vs '$50/yr') and the plan picker can enable monthly↔yearly switching without a blind round-
-                trip. Distinct from the GRANT cadence (always monthly today), which lives on ``vo_tenants.billing_interval`` and
-                isn't exposed to the portal.
+                trip. Distinct from the GRANT cadence (always monthly today), which lives on ``.billing_interval`` and isn't
+                exposed to the portal.
     """
 
     credit_balance: str

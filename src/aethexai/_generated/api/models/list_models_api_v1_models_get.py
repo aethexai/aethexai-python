@@ -76,16 +76,13 @@ def sync_detailed(
 ) -> Response[HTTPValidationError | list[ModelEntry]]:
     r"""List Models
 
-     Return the public LLM model catalog.
-
-    The empty-string default alias is hidden; it is a backwards-compat
+     Return the public LLM model catalog. The empty-string default alias is hidden; it is a backwards-
+    compat
     sentinel for \"use the platform default\" and ``aethex-default`` is the
-    public name for the same routing decision.
-
-    When ``AETHEX_ALLOWED_LLM_MODELS`` is set, the catalog is further
+    public name for the same routing decision. When ```` is set, the catalog is further
     filtered to that allowlist so SDK/portal pickers never advertise a model
-    that ``check_llm_model`` would reject with a 422 on agent create/update.
-    The availability filter still applies first: a model in the allowlist
+    that ``check_llm_model`` would reject with a 422 on agent create/update. The availability filter
+    still applies first: a model in the allowlist
     whose provider key is missing still shows with ``available: false`` when
     ``?include_unavailable=true`` is set.
 
@@ -120,16 +117,13 @@ def sync(
 ) -> HTTPValidationError | list[ModelEntry] | None:
     r"""List Models
 
-     Return the public LLM model catalog.
-
-    The empty-string default alias is hidden; it is a backwards-compat
+     Return the public LLM model catalog. The empty-string default alias is hidden; it is a backwards-
+    compat
     sentinel for \"use the platform default\" and ``aethex-default`` is the
-    public name for the same routing decision.
-
-    When ``AETHEX_ALLOWED_LLM_MODELS`` is set, the catalog is further
+    public name for the same routing decision. When ```` is set, the catalog is further
     filtered to that allowlist so SDK/portal pickers never advertise a model
-    that ``check_llm_model`` would reject with a 422 on agent create/update.
-    The availability filter still applies first: a model in the allowlist
+    that ``check_llm_model`` would reject with a 422 on agent create/update. The availability filter
+    still applies first: a model in the allowlist
     whose provider key is missing still shows with ``available: false`` when
     ``?include_unavailable=true`` is set.
 
@@ -159,16 +153,13 @@ async def asyncio_detailed(
 ) -> Response[HTTPValidationError | list[ModelEntry]]:
     r"""List Models
 
-     Return the public LLM model catalog.
-
-    The empty-string default alias is hidden; it is a backwards-compat
+     Return the public LLM model catalog. The empty-string default alias is hidden; it is a backwards-
+    compat
     sentinel for \"use the platform default\" and ``aethex-default`` is the
-    public name for the same routing decision.
-
-    When ``AETHEX_ALLOWED_LLM_MODELS`` is set, the catalog is further
+    public name for the same routing decision. When ```` is set, the catalog is further
     filtered to that allowlist so SDK/portal pickers never advertise a model
-    that ``check_llm_model`` would reject with a 422 on agent create/update.
-    The availability filter still applies first: a model in the allowlist
+    that ``check_llm_model`` would reject with a 422 on agent create/update. The availability filter
+    still applies first: a model in the allowlist
     whose provider key is missing still shows with ``available: false`` when
     ``?include_unavailable=true`` is set.
 
@@ -201,16 +192,13 @@ async def asyncio(
 ) -> HTTPValidationError | list[ModelEntry] | None:
     r"""List Models
 
-     Return the public LLM model catalog.
-
-    The empty-string default alias is hidden; it is a backwards-compat
+     Return the public LLM model catalog. The empty-string default alias is hidden; it is a backwards-
+    compat
     sentinel for \"use the platform default\" and ``aethex-default`` is the
-    public name for the same routing decision.
-
-    When ``AETHEX_ALLOWED_LLM_MODELS`` is set, the catalog is further
+    public name for the same routing decision. When ```` is set, the catalog is further
     filtered to that allowlist so SDK/portal pickers never advertise a model
-    that ``check_llm_model`` would reject with a 422 on agent create/update.
-    The availability filter still applies first: a model in the allowlist
+    that ``check_llm_model`` would reject with a 422 on agent create/update. The availability filter
+    still applies first: a model in the allowlist
     whose provider key is missing still shows with ``available: false`` when
     ``?include_unavailable=true`` is set.
 

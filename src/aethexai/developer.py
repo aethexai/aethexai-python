@@ -6,8 +6,7 @@ that authenticate via ``require_api_key``. The ``/api/v1/billing/*`` and
 ``/api/v1/auth/me`` routes, however, require a developer-JWT bearer
 token (``Authorization: Bearer <jwt>``) — issued by the magic-link
 sign-in flow, the Google sign-in flow, or token refresh — and 401 on
-any API-key call (audit finding A.1 in
-``docs/audits/pre-launch-2026-05-17.md``).
+any API-key call.
 
 ``DeveloperClient`` is the JWT counterpart::
 
@@ -40,6 +39,7 @@ from aethexai._exceptions import (
     APITimeoutError,
     AuthenticationError,
     _map_status_to_exception,
+    parse_success_body,
 )
 from aethexai._generated.client import AuthenticatedClient
 from aethexai._generated.types import UNSET, Unset
@@ -82,10 +82,9 @@ class DeveloperClient:
                 status_code=401,
             )
         # NOTE: access/refresh tokens are intentionally NOT stored as instance
-        # attributes — see ``AethexAI.__init__`` for the rationale (audit A.5).
-        # The access token lives in ``self._client.token`` (with repr=False
-        # applied via the post-codegen patch in ``scripts/sync_from_prod.py``);
-        # the refresh token lives in the closure of ``_refresh_access_token``.
+        # attributes — see ``AethexAI.__init__`` for the rationale. The access
+        # token lives in ``self._client.token`` (suppressed from repr); the
+        # refresh token lives in the closure of ``_refresh_access_token``.
         self._base_url = base_url.rstrip("/")
         self._timeout = timeout
         self._max_retries = max_retries
@@ -157,8 +156,8 @@ class DeveloperClient:
             return False
         if not 200 <= int(response.status_code) < 300:
             return False
-        tokens = response.parsed
-        access_token = getattr(tokens, "access_token", "") if tokens is not None else ""
+        tokens = parse_success_body(response.content)
+        access_token = tokens.get("access_token", "") if isinstance(tokens, dict) else ""
         if not access_token:
             return False
         # Rotate: install the new access token onto the generated client
@@ -168,7 +167,7 @@ class DeveloperClient:
         # flush it so the next request picks up the new token.
         if self._client._client is not None:
             self._client._client.headers["Authorization"] = f"Bearer {access_token}"
-        new_refresh = getattr(tokens, "refresh_token", "") if tokens is not None else ""
+        new_refresh = tokens.get("refresh_token", "") if isinstance(tokens, dict) else ""
         if new_refresh:
             self._refresh_token_box[0] = new_refresh
         return True
@@ -190,7 +189,7 @@ class DeveloperClient:
             raise APIConnectionError(cause=exc) from exc
         status = int(response.status_code)
         if 200 <= status < 300:
-            return response.parsed
+            return parse_success_body(response.content)
         if status == 401 and self._refresh_access_token():
             try:
                 response = op_func(*args, client=self._client, **kwargs)
@@ -200,7 +199,7 @@ class DeveloperClient:
                 raise APIConnectionError(cause=exc) from exc
             status = int(response.status_code)
             if 200 <= status < 300:
-                return response.parsed
+                return parse_success_body(response.content)
         raise _map_status_to_exception(status, response.content, response.headers)
 
     # ── auth/me ────────────────────────────────────────────────────────

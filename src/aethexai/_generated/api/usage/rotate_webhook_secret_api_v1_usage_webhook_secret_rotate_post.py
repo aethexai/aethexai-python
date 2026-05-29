@@ -48,21 +48,17 @@ def sync_detailed(
 ) -> Response[Any]:
     """Rotate Webhook Secret
 
-     Generate (or replace) the tenant-level webhook signing secret.
-
-    Tenant-owned webhook bodies are signed with this secret via
+     Generate (or replace) the tenant-level webhook signing secret. Tenant-owned webhook bodies are
+    signed with this secret via
     HMAC-SHA256 (``X-Aethex-Signature`` header). This includes usage
-    triggers, async transcription callbacks, and TTS batch callbacks.
-    The secret is returned exactly once — store it securely. Rotating
+    triggers, async transcription callbacks, and TTS batch callbacks. The secret is returned exactly
+    once — store it securely. Rotating
     replaces it immediately; in-flight deliveries signed with the old
     secret will fail HMAC verification on the receiver side until you
-    update your handler.
-
-    A tenant that has never called this endpoint has no signing secret;
+    update your handler. A tenant that has never called this endpoint has no signing secret;
     the trigger evaluator records those firings as ``failed`` with
-    ``last_error='tenant has no webhook_secret configured'``.
-
-    Concurrency: the tenant row is locked with ``SELECT ... FOR UPDATE``
+    ``last_error='tenant has no webhook_secret configured'``. Concurrency: the tenant row is locked with
+    ``SELECT... FOR UPDATE``
     for the duration of this transaction so two simultaneous rotate
     calls serialise. Without the lock both callers could read the same
     pre-state, generate different new secrets, and only the last
@@ -93,21 +89,17 @@ async def asyncio_detailed(
 ) -> Response[Any]:
     """Rotate Webhook Secret
 
-     Generate (or replace) the tenant-level webhook signing secret.
-
-    Tenant-owned webhook bodies are signed with this secret via
+     Generate (or replace) the tenant-level webhook signing secret. Tenant-owned webhook bodies are
+    signed with this secret via
     HMAC-SHA256 (``X-Aethex-Signature`` header). This includes usage
-    triggers, async transcription callbacks, and TTS batch callbacks.
-    The secret is returned exactly once — store it securely. Rotating
+    triggers, async transcription callbacks, and TTS batch callbacks. The secret is returned exactly
+    once — store it securely. Rotating
     replaces it immediately; in-flight deliveries signed with the old
     secret will fail HMAC verification on the receiver side until you
-    update your handler.
-
-    A tenant that has never called this endpoint has no signing secret;
+    update your handler. A tenant that has never called this endpoint has no signing secret;
     the trigger evaluator records those firings as ``failed`` with
-    ``last_error='tenant has no webhook_secret configured'``.
-
-    Concurrency: the tenant row is locked with ``SELECT ... FOR UPDATE``
+    ``last_error='tenant has no webhook_secret configured'``. Concurrency: the tenant row is locked with
+    ``SELECT... FOR UPDATE``
     for the duration of this transaction so two simultaneous rotate
     calls serialise. Without the lock both callers could read the same
     pre-state, generate different new secrets, and only the last

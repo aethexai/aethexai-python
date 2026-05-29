@@ -89,23 +89,18 @@ def sync_detailed(
 ) -> Response[HTTPValidationError | InvoiceListResponse]:
     r"""List Tenant Invoices
 
-     List the tenant's Stripe invoices, newest-first.
-
-    Cursor pagination via Stripe's ``starting_after``: pass
+     List the tenant's Stripe invoices, newest-first. Cursor pagination via Stripe's ``starting_after``:
+    pass
     ``next_cursor`` from the previous response back as ``?cursor=``
     (canonical) or ``?next_cursor=`` (alias). Each row carries
     Stripe-hosted ``hosted_invoice_url`` (full
     invoice page) and ``invoice_pdf`` (direct PDF download). We do
     not render PDFs ourselves: Stripe handles invoice generation,
-    branding, and tax line items.
-
-    Returns an empty list when:
-      * No Stripe Customer has been created for this tenant yet
-        (free trial that never picked a paid plan).
-      * The tenant has a Customer but no invoices yet (rare; happens
-        only between Customer create and the first invoice cycle).
-
-    503 when ``AETHEX_STRIPE_SECRET_KEY`` is unset; the portal
+    branding, and tax line items. Returns an empty list when:
+     * No Stripe Customer has been created for this tenant yet
+     (free trial that never picked a paid plan). * The tenant has a Customer but no invoices yet (rare;
+    happens
+     only between Customer create and the first invoice cycle). 503 when ```` is unset; the portal
     surfaces this as \"billing isn't configured for this environment\".
 
     Args:
@@ -147,23 +142,18 @@ def sync(
 ) -> HTTPValidationError | InvoiceListResponse | None:
     r"""List Tenant Invoices
 
-     List the tenant's Stripe invoices, newest-first.
-
-    Cursor pagination via Stripe's ``starting_after``: pass
+     List the tenant's Stripe invoices, newest-first. Cursor pagination via Stripe's ``starting_after``:
+    pass
     ``next_cursor`` from the previous response back as ``?cursor=``
     (canonical) or ``?next_cursor=`` (alias). Each row carries
     Stripe-hosted ``hosted_invoice_url`` (full
     invoice page) and ``invoice_pdf`` (direct PDF download). We do
     not render PDFs ourselves: Stripe handles invoice generation,
-    branding, and tax line items.
-
-    Returns an empty list when:
-      * No Stripe Customer has been created for this tenant yet
-        (free trial that never picked a paid plan).
-      * The tenant has a Customer but no invoices yet (rare; happens
-        only between Customer create and the first invoice cycle).
-
-    503 when ``AETHEX_STRIPE_SECRET_KEY`` is unset; the portal
+    branding, and tax line items. Returns an empty list when:
+     * No Stripe Customer has been created for this tenant yet
+     (free trial that never picked a paid plan). * The tenant has a Customer but no invoices yet (rare;
+    happens
+     only between Customer create and the first invoice cycle). 503 when ```` is unset; the portal
     surfaces this as \"billing isn't configured for this environment\".
 
     Args:
@@ -200,23 +190,18 @@ async def asyncio_detailed(
 ) -> Response[HTTPValidationError | InvoiceListResponse]:
     r"""List Tenant Invoices
 
-     List the tenant's Stripe invoices, newest-first.
-
-    Cursor pagination via Stripe's ``starting_after``: pass
+     List the tenant's Stripe invoices, newest-first. Cursor pagination via Stripe's ``starting_after``:
+    pass
     ``next_cursor`` from the previous response back as ``?cursor=``
     (canonical) or ``?next_cursor=`` (alias). Each row carries
     Stripe-hosted ``hosted_invoice_url`` (full
     invoice page) and ``invoice_pdf`` (direct PDF download). We do
     not render PDFs ourselves: Stripe handles invoice generation,
-    branding, and tax line items.
-
-    Returns an empty list when:
-      * No Stripe Customer has been created for this tenant yet
-        (free trial that never picked a paid plan).
-      * The tenant has a Customer but no invoices yet (rare; happens
-        only between Customer create and the first invoice cycle).
-
-    503 when ``AETHEX_STRIPE_SECRET_KEY`` is unset; the portal
+    branding, and tax line items. Returns an empty list when:
+     * No Stripe Customer has been created for this tenant yet
+     (free trial that never picked a paid plan). * The tenant has a Customer but no invoices yet (rare;
+    happens
+     only between Customer create and the first invoice cycle). 503 when ```` is unset; the portal
     surfaces this as \"billing isn't configured for this environment\".
 
     Args:
@@ -256,23 +241,18 @@ async def asyncio(
 ) -> HTTPValidationError | InvoiceListResponse | None:
     r"""List Tenant Invoices
 
-     List the tenant's Stripe invoices, newest-first.
-
-    Cursor pagination via Stripe's ``starting_after``: pass
+     List the tenant's Stripe invoices, newest-first. Cursor pagination via Stripe's ``starting_after``:
+    pass
     ``next_cursor`` from the previous response back as ``?cursor=``
     (canonical) or ``?next_cursor=`` (alias). Each row carries
     Stripe-hosted ``hosted_invoice_url`` (full
     invoice page) and ``invoice_pdf`` (direct PDF download). We do
     not render PDFs ourselves: Stripe handles invoice generation,
-    branding, and tax line items.
-
-    Returns an empty list when:
-      * No Stripe Customer has been created for this tenant yet
-        (free trial that never picked a paid plan).
-      * The tenant has a Customer but no invoices yet (rare; happens
-        only between Customer create and the first invoice cycle).
-
-    503 when ``AETHEX_STRIPE_SECRET_KEY`` is unset; the portal
+    branding, and tax line items. Returns an empty list when:
+     * No Stripe Customer has been created for this tenant yet
+     (free trial that never picked a paid plan). * The tenant has a Customer but no invoices yet (rare;
+    happens
+     only between Customer create and the first invoice cycle). 503 when ```` is unset; the portal
     surfaces this as \"billing isn't configured for this environment\".
 
     Args:

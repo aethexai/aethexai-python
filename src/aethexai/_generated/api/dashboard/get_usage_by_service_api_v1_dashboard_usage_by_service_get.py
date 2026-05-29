@@ -74,37 +74,31 @@ def sync_detailed(
 ) -> Response[Any | HTTPValidationError]:
     """Get Usage By Service
 
-     Get usage breakdown by service type.
-
-    Augments the request-side rollup (``vo_usage_log``) with a
-    per-resource credits-used figure from ``vo_credit_ledger``.  The
+     Get usage breakdown by service type. Augments the request-side rollup (````) with a
+    per-resource credits-used figure from ````. The
     two tables use slightly different resource-type keys for voice
     calls: usage logs record ``resource_type='call'`` while the ledger
-    records ``resource_type='voice_call'``.  The ``USAGE_LOG_TO_LEDGER``
+    records ``resource_type='voice_call'``. The ``USAGE_LOG_TO_LEDGER``
     map below normalises usage-log keys to ledger keys before the
-    credit lookup so voice-call spend is not zeroed out.
-
-    Aggregation is done on the canonical (ledger) key in Python rather
+    credit lookup so voice-call spend is not zeroed out. Aggregation is done on the canonical (ledger)
+    key in Python rather
     than on the raw ``UsageLog.resource_type`` from SQL. Reason: SQL
     groups by the raw value, so if both ``call`` and a stray
     ``voice_call`` UsageLog row exist for the same tenant, the SQL
-    yields two separate group rows that both alias to ``voice_call``.
-    Emitting each as its own row would produce two ``service:
+    yields two separate group rows that both alias to ``voice_call``. Emitting each as its own row would
+    produce two ``service:
     voice_call`` entries, each claiming the FULL ledger credits spend
     for that key -- a double-count that could ship if any historical
     insert or future writer ever lands ``voice_call`` directly into
-    ``vo_usage_log`` (the column is ``String(30)`` with no enum
+    ```` (the column is ``String(30)`` with no enum
     constraint). Re-aggregating in Python collapses both into one
     bucket where ``credits_used`` is set exactly once at bucket
-    creation.
-
-    Response is the union of usage-log resource types and ledger
+    creation. Response is the union of usage-log resource types and ledger
     resource types: voice-call deductions can land via
     ``charge_voice_call`` / the post-call hook without a paired
     UsageLog row, and those would otherwise be hidden from the
-    by-service view despite real credit spend.
-
-    When ``days`` is provided, both the UsageLog request counts and the
+    by-service view despite real credit spend. When ``days`` is provided, both the UsageLog request
+    counts and the
     ledger credit deductions are filtered to entries created within the
     trailing window. ``days=None`` (default) preserves the original
     all-time behaviour so existing callers continue to work unchanged.
@@ -138,37 +132,31 @@ def sync(
 ) -> Any | HTTPValidationError | None:
     """Get Usage By Service
 
-     Get usage breakdown by service type.
-
-    Augments the request-side rollup (``vo_usage_log``) with a
-    per-resource credits-used figure from ``vo_credit_ledger``.  The
+     Get usage breakdown by service type. Augments the request-side rollup (````) with a
+    per-resource credits-used figure from ````. The
     two tables use slightly different resource-type keys for voice
     calls: usage logs record ``resource_type='call'`` while the ledger
-    records ``resource_type='voice_call'``.  The ``USAGE_LOG_TO_LEDGER``
+    records ``resource_type='voice_call'``. The ``USAGE_LOG_TO_LEDGER``
     map below normalises usage-log keys to ledger keys before the
-    credit lookup so voice-call spend is not zeroed out.
-
-    Aggregation is done on the canonical (ledger) key in Python rather
+    credit lookup so voice-call spend is not zeroed out. Aggregation is done on the canonical (ledger)
+    key in Python rather
     than on the raw ``UsageLog.resource_type`` from SQL. Reason: SQL
     groups by the raw value, so if both ``call`` and a stray
     ``voice_call`` UsageLog row exist for the same tenant, the SQL
-    yields two separate group rows that both alias to ``voice_call``.
-    Emitting each as its own row would produce two ``service:
+    yields two separate group rows that both alias to ``voice_call``. Emitting each as its own row would
+    produce two ``service:
     voice_call`` entries, each claiming the FULL ledger credits spend
     for that key -- a double-count that could ship if any historical
     insert or future writer ever lands ``voice_call`` directly into
-    ``vo_usage_log`` (the column is ``String(30)`` with no enum
+    ```` (the column is ``String(30)`` with no enum
     constraint). Re-aggregating in Python collapses both into one
     bucket where ``credits_used`` is set exactly once at bucket
-    creation.
-
-    Response is the union of usage-log resource types and ledger
+    creation. Response is the union of usage-log resource types and ledger
     resource types: voice-call deductions can land via
     ``charge_voice_call`` / the post-call hook without a paired
     UsageLog row, and those would otherwise be hidden from the
-    by-service view despite real credit spend.
-
-    When ``days`` is provided, both the UsageLog request counts and the
+    by-service view despite real credit spend. When ``days`` is provided, both the UsageLog request
+    counts and the
     ledger credit deductions are filtered to entries created within the
     trailing window. ``days=None`` (default) preserves the original
     all-time behaviour so existing callers continue to work unchanged.
@@ -197,37 +185,31 @@ async def asyncio_detailed(
 ) -> Response[Any | HTTPValidationError]:
     """Get Usage By Service
 
-     Get usage breakdown by service type.
-
-    Augments the request-side rollup (``vo_usage_log``) with a
-    per-resource credits-used figure from ``vo_credit_ledger``.  The
+     Get usage breakdown by service type. Augments the request-side rollup (````) with a
+    per-resource credits-used figure from ````. The
     two tables use slightly different resource-type keys for voice
     calls: usage logs record ``resource_type='call'`` while the ledger
-    records ``resource_type='voice_call'``.  The ``USAGE_LOG_TO_LEDGER``
+    records ``resource_type='voice_call'``. The ``USAGE_LOG_TO_LEDGER``
     map below normalises usage-log keys to ledger keys before the
-    credit lookup so voice-call spend is not zeroed out.
-
-    Aggregation is done on the canonical (ledger) key in Python rather
+    credit lookup so voice-call spend is not zeroed out. Aggregation is done on the canonical (ledger)
+    key in Python rather
     than on the raw ``UsageLog.resource_type`` from SQL. Reason: SQL
     groups by the raw value, so if both ``call`` and a stray
     ``voice_call`` UsageLog row exist for the same tenant, the SQL
-    yields two separate group rows that both alias to ``voice_call``.
-    Emitting each as its own row would produce two ``service:
+    yields two separate group rows that both alias to ``voice_call``. Emitting each as its own row would
+    produce two ``service:
     voice_call`` entries, each claiming the FULL ledger credits spend
     for that key -- a double-count that could ship if any historical
     insert or future writer ever lands ``voice_call`` directly into
-    ``vo_usage_log`` (the column is ``String(30)`` with no enum
+    ```` (the column is ``String(30)`` with no enum
     constraint). Re-aggregating in Python collapses both into one
     bucket where ``credits_used`` is set exactly once at bucket
-    creation.
-
-    Response is the union of usage-log resource types and ledger
+    creation. Response is the union of usage-log resource types and ledger
     resource types: voice-call deductions can land via
     ``charge_voice_call`` / the post-call hook without a paired
     UsageLog row, and those would otherwise be hidden from the
-    by-service view despite real credit spend.
-
-    When ``days`` is provided, both the UsageLog request counts and the
+    by-service view despite real credit spend. When ``days`` is provided, both the UsageLog request
+    counts and the
     ledger credit deductions are filtered to entries created within the
     trailing window. ``days=None`` (default) preserves the original
     all-time behaviour so existing callers continue to work unchanged.
@@ -259,37 +241,31 @@ async def asyncio(
 ) -> Any | HTTPValidationError | None:
     """Get Usage By Service
 
-     Get usage breakdown by service type.
-
-    Augments the request-side rollup (``vo_usage_log``) with a
-    per-resource credits-used figure from ``vo_credit_ledger``.  The
+     Get usage breakdown by service type. Augments the request-side rollup (````) with a
+    per-resource credits-used figure from ````. The
     two tables use slightly different resource-type keys for voice
     calls: usage logs record ``resource_type='call'`` while the ledger
-    records ``resource_type='voice_call'``.  The ``USAGE_LOG_TO_LEDGER``
+    records ``resource_type='voice_call'``. The ``USAGE_LOG_TO_LEDGER``
     map below normalises usage-log keys to ledger keys before the
-    credit lookup so voice-call spend is not zeroed out.
-
-    Aggregation is done on the canonical (ledger) key in Python rather
+    credit lookup so voice-call spend is not zeroed out. Aggregation is done on the canonical (ledger)
+    key in Python rather
     than on the raw ``UsageLog.resource_type`` from SQL. Reason: SQL
     groups by the raw value, so if both ``call`` and a stray
     ``voice_call`` UsageLog row exist for the same tenant, the SQL
-    yields two separate group rows that both alias to ``voice_call``.
-    Emitting each as its own row would produce two ``service:
+    yields two separate group rows that both alias to ``voice_call``. Emitting each as its own row would
+    produce two ``service:
     voice_call`` entries, each claiming the FULL ledger credits spend
     for that key -- a double-count that could ship if any historical
     insert or future writer ever lands ``voice_call`` directly into
-    ``vo_usage_log`` (the column is ``String(30)`` with no enum
+    ```` (the column is ``String(30)`` with no enum
     constraint). Re-aggregating in Python collapses both into one
     bucket where ``credits_used`` is set exactly once at bucket
-    creation.
-
-    Response is the union of usage-log resource types and ledger
+    creation. Response is the union of usage-log resource types and ledger
     resource types: voice-call deductions can land via
     ``charge_voice_call`` / the post-call hook without a paired
     UsageLog row, and those would otherwise be hidden from the
-    by-service view despite real credit spend.
-
-    When ``days`` is provided, both the UsageLog request counts and the
+    by-service view despite real credit spend. When ``days`` is provided, both the UsageLog request
+    counts and the
     ledger credit deductions are filtered to entries created within the
     trailing window. ``days=None`` (default) preserves the original
     all-time behaviour so existing callers continue to work unchanged.
