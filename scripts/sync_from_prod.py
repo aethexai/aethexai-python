@@ -282,6 +282,11 @@ def regenerate_client() -> int:
     paginated_rc = _apply_paginated_list_ergonomics_patch()
     if paginated_rc != 0:
         return paginated_rc
+    # AET-1597: must run AFTER created_201 so the 201 branches already exist
+    # before we rewrite them to AgentResponse.from_dict().
+    typed_agent_rc = _apply_typed_agent_response_patch()
+    if typed_agent_rc != 0:
+        return typed_agent_rc
     return result.returncode
 
 
@@ -495,6 +500,20 @@ _CREATED_201_SENTINEL = "# AETHEX-PATCH (AET-1580)"
 # AET-1597 upgraded the agent endpoints to typed AgentResponse.from_dict() parsing.
 # Recognise both sentinel forms so idempotency checks don't re-patch already-fixed files.
 _CREATED_201_SENTINELS = (_CREATED_201_SENTINEL, "# AETHEX-PATCH (AET-1597)")
+
+# AET-1597: agent endpoints that must return a typed ``AgentResponse`` instead of
+# a raw dict / None.  Three distinct shapes:
+#   - create_agent  (POST → 201, also handle 200 for compatibility)
+#   - update_agent  (PATCH → 200 only)
+#   - duplicate_agent (POST → 201, also handle 200 for compatibility)
+# Maps relative-to-api-dir path → tuple of success status codes (primary first).
+_TYPED_AGENT_RESPONSE_ENDPOINTS: dict[str, tuple[int, ...]] = {
+    "agents/create_agent_api_v1_agents_post.py": (201, 200),
+    "agents/update_agent_api_v1_agents_agent_id_patch.py": (200,),
+    "agents/duplicate_agent_api_v1_agents_agent_id_duplicate_post.py": (201, 200),
+}
+
+_TYPED_AGENT_RESPONSE_SENTINEL = "# AETHEX-PATCH (AET-1597)"
 
 
 def _patch_created_201_source(source: str) -> str | None:
@@ -882,6 +901,168 @@ def _apply_paginated_list_ergonomics_patch() -> int:
     print(
         f"post-codegen patch: AET-1598 paginated-list ergonomics applied to {patched_count} file(s)"
     )
+
+
+def _patch_agent_response_source(source: str, success_codes: tuple[int, ...]) -> str | None:
+    """Rewrite success branches in a ``_parse_response`` to use ``AgentResponse.from_dict``.
+
+    This is the AET-1597 durable-typing patch. It guarantees that even when
+    ``openapi.json`` declares ``{}`` (untyped) for an agent endpoint — e.g. while
+    the backend PR adding ``response_model`` is in flight — the generated
+    ``_parse_response`` still returns a typed ``AgentResponse`` instead of a raw
+    ``dict`` or ``None``.
+
+    ``success_codes`` is an ordered tuple of the HTTP status codes to rewrite,
+    primary first (e.g. ``(201, 200)`` for create/duplicate, ``(200,)`` for update).
+
+    The function handles four codegen shapes for each success branch:
+
+    1. Untyped pass-through (spec: ``{}``)::
+
+           if response.status_code == 200:
+               response_200 = response.json()
+               return response_200
+
+    2. ``cast`` pass-through (spec: ``{}``, typed codegen variant)::
+
+           if response.status_code == 200:
+               response_200 = cast(Any, response.json())
+               return response_200
+
+    3. Already-typed with a *different* model (spec has a schema, wrong model)::
+
+           if response.status_code == 200:
+               response_200 = SomeOtherModel.from_dict(response.json())
+
+               return response_200
+
+    4. Already correct — ``AgentResponse.from_dict`` present (patch is a no-op).
+
+    Returns the patched source string, or ``None`` if the patch was not needed
+    (sentinel already present, or all branches already call ``AgentResponse.from_dict``).
+    Raises ``ValueError`` if a required success branch cannot be located.
+    """
+    if _TYPED_AGENT_RESPONSE_SENTINEL in source:
+        return None
+
+    # Check if ALL required success branches already call AgentResponse.from_dict —
+    # that means a prior patch pass (or perfect codegen from a synced spec) has already
+    # typed the file correctly. Skip rather than double-patch.
+    all_already_typed = all(
+        re.search(
+            rf"^ {{4}}if response\.status_code == {code}:\n"
+            rf" {{8}}response_{code} = AgentResponse\.from_dict\(response\.json\(\)\)",
+            source,
+            re.MULTILINE,
+        )
+        for code in success_codes
+    )
+    if all_already_typed:
+        return None
+
+    patched = source
+    for code in success_codes:
+        # Match each success branch regardless of whether it's untyped, cast, or
+        # typed with a different model. The branch always ends with ``return response_NNN``.
+        branch_re = re.compile(
+            rf"( {{4}}if response\.status_code == {code}:\n"
+            rf"(?: {{8}}.*\n|\n)*? {{8}}return response_{code}\n)",
+            re.MULTILINE,
+        )
+        match = branch_re.search(patched)
+        if match is None:
+            # Branch is absent — only raise if this is the primary code; secondary
+            # codes (e.g. 200 on a POST that the spec only declares 201) may
+            # legitimately be missing from fresh codegen.
+            if code == success_codes[0]:
+                raise ValueError(
+                    f"could not locate the status_code == {code} branch in _parse_response"
+                )
+            continue  # secondary branch missing — skip
+
+        typed_block = (
+            f"    {_TYPED_AGENT_RESPONSE_SENTINEL}: return typed AgentResponse instead of raw dict.\n"
+            f"    # Durable across regen: even if openapi.json declares {{}} for this response\n"
+            f"    # (e.g. duplicate_agent before its backend response_model ships), this patch\n"
+            f"    # re-applies AgentResponse.from_dict() on every sync. Re-applied by sync_from_prod.py.\n"
+            f"    if response.status_code == {code}:\n"
+            f"        response_{code} = AgentResponse.from_dict(response.json())\n"
+            f"\n"
+            f"        return response_{code}\n"
+        )
+        patched = patched[: match.start()] + typed_block + patched[match.end() :]
+
+    # Ensure AgentResponse is imported; openapi-python-client may not emit the import
+    # when the spec schema is ``{}``.
+    agent_response_import = "from ...models.agent_response import AgentResponse\n"
+    if agent_response_import not in patched:
+        # Insert after the last ``from ...models.`` import line, or after the last
+        # top-level ``from`` import if no models imports exist.
+        insert_match = re.search(
+            r"((?:from \.\.\.models\.[^\n]+\n)+)",
+            patched,
+        )
+        if insert_match:
+            insert_pos = insert_match.end()
+            patched = patched[:insert_pos] + agent_response_import + patched[insert_pos:]
+        else:
+            # Fallback: insert after the last ``from`` import block.
+            last_import = None
+            for m in re.finditer(r"^from [^\n]+\n", patched, re.MULTILINE):
+                last_import = m
+            if last_import:
+                insert_pos = last_import.end()
+                patched = patched[:insert_pos] + agent_response_import + patched[insert_pos:]
+
+    return patched
+
+
+def _apply_typed_agent_response_patch() -> int:
+    """Re-apply the AET-1597 patch: ensure agent ops return typed ``AgentResponse``.
+
+    Covers all three agent mutation endpoints:
+    - ``create_agent``    (POST 201, also 200 for compatibility)
+    - ``update_agent``    (PATCH 200)
+    - ``duplicate_agent`` (POST 201, also 200 for compatibility)
+
+    This patch is *durable*: it guarantees ``AgentResponse.from_dict()`` parsing
+    even when ``openapi.json`` declares ``{}`` for the response (e.g. while the
+    ``duplicate_agent`` backend ``response_model`` PR is still in flight, or if a
+    future spec dump regresses). It runs after ``_apply_created_201_patch`` so
+    the 201 branches already exist when we rewrite them.
+
+    Idempotent via the ``AETHEX-PATCH (AET-1597)`` sentinel. Fatal (return 2) on
+    any miss so the regression surfaces loudly.
+    """
+    api_dir = GENERATED_DIR / "api"
+    patched = 0
+    for rel, success_codes in _TYPED_AGENT_RESPONSE_ENDPOINTS.items():
+        target = api_dir / rel
+        if not target.exists():
+            print(
+                f"warn: typed-agent-response patch could not find "
+                f"{target.relative_to(REPO_ROOT)}; the endpoint may have been renamed. "
+                "Update _TYPED_AGENT_RESPONSE_ENDPOINTS in scripts/sync_from_prod.py.",
+                file=sys.stderr,
+            )
+            return 2
+        source = target.read_text()
+        try:
+            new_source = _patch_agent_response_source(source, success_codes)
+        except ValueError as exc:
+            print(
+                f"warn: typed-agent-response patch failed for "
+                f"{target.relative_to(REPO_ROOT)}: {exc}. "
+                "openapi-python-client may have changed its output shape — typed "
+                "AgentResponse parsing (AET-1597) is at risk of regressing.",
+                file=sys.stderr,
+            )
+            return 2
+        if new_source is None:
+            continue  # already patched or all branches already correct
+        target.write_text(new_source)
+        patched += 1
+    print(f"post-codegen patch: applied typed-agent-response (AET-1597) to {patched} endpoint(s)")
     return 0
 
 
