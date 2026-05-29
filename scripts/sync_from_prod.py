@@ -610,24 +610,185 @@ _PAGINATED_LIST_OPS: tuple[tuple[str, str, str], ...] = (
 )
 
 
+def _patch_paginated_response_source(source: str) -> str | None:
+    """Apply all AET-1598 ergonomics patches to a ``paginated_response.py`` source string.
+
+    Returns the patched source, or ``None`` if the sentinel is already present
+    (the file was already patched — idempotency).
+
+    Raises ``ValueError`` if any expected codegen pattern cannot be found in
+    ``source``, which signals that openapi-python-client changed its output
+    shape.
+
+    Patches applied (in order):
+
+    1a. Replace the ``Generator`` import with ``Generic``.
+    1b. Inject ``_ItemT = TypeVar("_ItemT")`` after the ``T`` TypeVar.
+    1c. Make the class subclass ``Generic[_ItemT]``.
+    1d. Replace the minimal codegen docstring with the single-page warning
+        and the ``while .has_more`` paging example.
+    1e. Change the ``data`` field type from ``list[Any]`` to ``list[_ItemT]``.
+    1f. Replace the stock string-only ``__getitem__`` with the
+        integer-over-``.data`` variant plus the ``has_more`` property.
+    """
+    if _PAGINATED_ERGONOMICS_SENTINEL in source:
+        return None  # already patched
+
+    # ── 1a. Replace the ``Generator`` import with ``Generic`` ──────────
+    old_import = "from typing import Any, TypeVar, BinaryIO, TextIO, TYPE_CHECKING, Generator\n"
+    new_import = "from typing import Any, Generic, TypeVar, BinaryIO, TextIO, TYPE_CHECKING\n"
+    if old_import not in source:
+        raise ValueError(
+            "AET-1598 paginated_response patch could not locate the typing import; "
+            "openapi-python-client may have changed its output shape."
+        )
+    source = source.replace(old_import, new_import)
+
+    # ── 1b. Inject _ItemT TypeVar after the existing T TypeVar ──────────
+    old_t_var = 'T = TypeVar("T", bound="PaginatedResponse")\n'
+    new_t_var = (
+        'T = TypeVar("T", bound="PaginatedResponse")  # type: ignore[type-arg]\n'
+        "\n"
+        "# AETHEX-PATCH (AET-1598): generic type variable for typed .data items.\n"
+        '_ItemT = TypeVar("_ItemT")\n'
+    )
+    if old_t_var not in source:
+        raise ValueError(
+            "AET-1598 paginated_response patch could not locate T TypeVar; "
+            "openapi-python-client may have changed its output shape."
+        )
+    source = source.replace(old_t_var, new_t_var)
+
+    # ── 1c. Make the class subclass Generic[_ItemT] ──────────────────────
+    old_class_decl = "@_attrs_define\nclass PaginatedResponse:\n"
+    new_class_decl = "@_attrs_define\nclass PaginatedResponse(Generic[_ItemT]):\n"
+    if old_class_decl not in source:
+        raise ValueError(
+            "AET-1598 paginated_response patch could not locate class declaration; "
+            "openapi-python-client may have changed its output shape."
+        )
+    source = source.replace(old_class_decl, new_class_decl)
+
+    # ── 1d. Replace the minimal codegen docstring with the rich warning ──
+    old_docstring = (
+        '    """\n'
+        "    Attributes:\n"
+        "        data (list[Any] | Unset):\n"
+        "        limit (int | Unset):  Default: 50.\n"
+        "        offset (int | Unset):  Default: 0.\n"
+        "        total (int | Unset):  Default: 0.\n"
+        '    """\n'
+    )
+    new_docstring = (
+        '    """Single-page result from a list endpoint.\n'
+        "\n"
+        "    **Important:** ``.data`` holds ONE page of results (default limit=50).\n"
+        "    It does NOT represent the full dataset. To page through all results,\n"
+        "    advance ``offset`` by ``limit`` while ``.has_more`` is ``True``::\n"
+        "\n"
+        "        offset = 0\n"
+        "        limit = 50\n"
+        "        while True:\n"
+        "            page = client.list_agents(offset=offset, limit=limit)\n"
+        "            for agent in page.data:\n"
+        "                process(agent)\n"
+        "            if not page.has_more:\n"
+        "                break\n"
+        "            offset += limit\n"
+        "\n"
+        "    Attributes:\n"
+        "        data (list[_ItemT] | Unset): Items on this page only.\n"
+        "        limit (int | Unset):  Default: 50.\n"
+        "        offset (int | Unset):  Default: 0.\n"
+        "        total (int | Unset):  Default: 0.\n"
+        '    """\n'
+    )
+    if old_docstring not in source:
+        raise ValueError(
+            "AET-1598 paginated_response patch could not locate the class docstring; "
+            "openapi-python-client may have changed its output shape."
+        )
+    source = source.replace(old_docstring, new_docstring)
+
+    # ── 1e. Change data field type from list[Any] to list[_ItemT] ────────
+    old_data_field = "    data: list[Any] | Unset = UNSET\n"
+    new_data_field = "    data: list[_ItemT] | Unset = UNSET\n"
+    if old_data_field not in source:
+        raise ValueError(
+            "AET-1598 paginated_response patch could not locate data field; "
+            "openapi-python-client may have changed its output shape."
+        )
+    source = source.replace(old_data_field, new_data_field)
+
+    # ── 1f. Replace the stock string-only __getitem__ with has_more + int indexing ──
+    old_getitem = (
+        "    def __getitem__(self, key: str) -> Any:\n"
+        "        return self.additional_properties[key]\n"
+    )
+    new_getitem = (
+        f"    {_PAGINATED_ERGONOMICS_SENTINEL}: make PaginatedResponse indexable over\n"
+        "    # .data so that agents[0]/calls[0]/conversations[0] work without raising\n"
+        "    # KeyError. String-key access on additional_properties is preserved for\n"
+        "    # backward compatibility. __iter__ and __len__ are intentionally NOT added\n"
+        "    # — they silently operated on a single page. Use .data to iterate items on\n"
+        "    # the current page, and loop while .has_more to consume all pages.\n"
+        "    # Re-applied by scripts/sync_from_prod.py after every regeneration.\n"
+        "\n"
+        "    @property\n"
+        "    def has_more(self) -> bool:\n"
+        '        """``True`` when there are more pages beyond this one.\n'
+        "\n"
+        "        Returns ``False`` when ``offset``, ``total``, or ``data`` are\n"
+        "        ``Unset``/``None`` (treat unknown pagination state as complete).\n"
+        '        """\n'
+        "        if isinstance(self.offset, Unset) or self.offset is None:\n"
+        "            return False\n"
+        "        if isinstance(self.total, Unset) or self.total is None:\n"
+        "            return False\n"
+        "        if isinstance(self.data, Unset) or self.data is None:\n"
+        "            return False\n"
+        "        return self.offset + len(self.data) < self.total\n"
+        "\n"
+        "    def __getitem__(self, key: int | str) -> Any:\n"
+        "        # Integer indexing operates on .data (e.g. agents[0]).\n"
+        "        # String indexing falls through to additional_properties for\n"
+        "        # backward-compatibility with the generated-client pattern.\n"
+        "        if isinstance(key, int):\n"
+        "            if isinstance(self.data, Unset) or self.data is None:\n"
+        "                raise IndexError(key)\n"
+        "            return self.data[key]\n"
+        "        return self.additional_properties[key]\n"
+    )
+    if old_getitem not in source:
+        raise ValueError(
+            "AET-1598 paginated_response patch could not locate __getitem__; "
+            "openapi-python-client may have changed its output shape."
+        )
+    source = source.replace(old_getitem, new_getitem)
+    return source
+
+
 def _apply_paginated_list_ergonomics_patch() -> int:
     """Re-apply AET-1598 patches after codegen overwrites _generated/.
 
-    Two sub-patches:
+    Three sub-patches:
 
-    1. ``PaginatedResponse``: fix ``__getitem__`` to support integer indexing
-       over ``.data`` (while preserving existing string-key behaviour on
-       ``additional_properties``), guard ``data=None`` in both ``__getitem__``
-       and the new ``has_more`` property, and add a clear docstring warning
-       that ``.data`` is a SINGLE page. ``__iter__`` and ``__len__`` are NOT
-       re-added — they silently truncated to a single page.
+    1. ``PaginatedResponse``: (a) swap the ``Generator`` import for ``Generic``
+       and inject ``_ItemT = TypeVar("_ItemT")``, (b) make the class subclass
+       ``Generic[_ItemT]`` and change ``data`` from ``list[Any]`` to
+       ``list[_ItemT]``, (c) replace the minimal codegen docstring with the
+       single-page warning + ``while .has_more`` paging example, (d) replace
+       the stock string-only ``__getitem__`` with the integer-over-``.data``
+       variant plus the ``has_more`` property.  ``__iter__`` and ``__len__``
+       are intentionally NOT re-added — they silently truncated to a single
+       page.
 
     2. Three list-op files (``list_agents``, ``list_calls``,
        ``list_conversations``): parse ``.data`` items into their typed models
        (``AgentResponse``, ``CallResponse``, ``ConversationResponse``) so that
        ``result[0].id`` returns a typed attribute rather than a raw dict key.
 
-    Both patches are idempotent via the ``AETHEX-PATCH (AET-1598)`` sentinel.
+    All patches are idempotent via the ``AETHEX-PATCH (AET-1598)`` sentinel.
     """
     patched_count = 0
 
@@ -641,49 +802,13 @@ def _apply_paginated_list_ergonomics_patch() -> int:
         return 0
 
     pr_source = pr_path.read_text()
-    if _PAGINATED_ERGONOMICS_SENTINEL not in pr_source:
-        # Replace the generated __getitem__, add has_more, and prepend a
-        # docstring warning that .data is a single page.
-        old_getitem = (
-            "    def __getitem__(self, key: str) -> Any:\n"
-            "        return self.additional_properties[key]\n"
-        )
-        new_getitem = (
-            f"    {_PAGINATED_ERGONOMICS_SENTINEL}: make PaginatedResponse indexable over\n"
-            "    # .data so that agents[0]/calls[0]/conversations[0] work without raising\n"
-            "    # KeyError. String-key access on additional_properties is preserved for\n"
-            "    # backward compatibility. __iter__ and __len__ are intentionally NOT added\n"
-            "    # — they silently operated on a single page. Use .data to iterate items on\n"
-            "    # the current page, and loop while .has_more to consume all pages.\n"
-            "    # Re-applied by scripts/sync_from_prod.py after every regeneration.\n"
-            "\n"
-            "    @property\n"
-            "    def has_more(self) -> bool:\n"
-            '        """``True`` when there are more pages beyond this one."""\n'
-            "        if isinstance(self.offset, Unset) or self.offset is None:\n"
-            "            return False\n"
-            "        if isinstance(self.total, Unset) or self.total is None:\n"
-            "            return False\n"
-            "        if isinstance(self.data, Unset) or self.data is None:\n"
-            "            return False\n"
-            "        return self.offset + len(self.data) < self.total\n"
-            "\n"
-            "    def __getitem__(self, key: int | str) -> Any:\n"
-            "        if isinstance(key, int):\n"
-            "            if isinstance(self.data, Unset) or self.data is None:\n"
-            "                raise IndexError(key)\n"
-            "            return self.data[key]\n"
-            "        return self.additional_properties[key]\n"
-        )
-        if old_getitem not in pr_source:
-            print(
-                "warn: AET-1598 paginated_response patch could not locate __getitem__; "
-                "openapi-python-client may have changed its output shape.",
-                file=sys.stderr,
-            )
-            return 2
-        pr_source = pr_source.replace(old_getitem, new_getitem)
-        pr_path.write_text(pr_source)
+    try:
+        new_source = _patch_paginated_response_source(pr_source)
+    except ValueError as exc:
+        print(f"warn: {exc}", file=sys.stderr)
+        return 2
+    if new_source is not None:
+        pr_path.write_text(new_source)
         patched_count += 1
 
     # ── 2. List op files: typed .data parsing ─────────────────────────────────

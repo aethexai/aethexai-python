@@ -31,6 +31,9 @@ from aethexai._exceptions import (
     _map_status_to_exception,
 )
 from aethexai._generated.client import AuthenticatedClient
+from aethexai._generated.models.agent_response import AgentResponse
+from aethexai._generated.models.call_response import CallResponse
+from aethexai._generated.models.conversation_response import ConversationResponse
 from aethexai._generated.models.paginated_response import PaginatedResponse
 from aethexai._generated.types import UNSET, Unset
 
@@ -128,7 +131,9 @@ class AethexAI:
 
     # ─── agents ────────────────────────────────────────────────────────
 
-    def list_agents(self, *, offset: int | Unset = 0, limit: int | Unset = 50) -> PaginatedResponse:
+    def list_agents(
+        self, *, offset: int | Unset = 0, limit: int | Unset = 50
+    ) -> PaginatedResponse[AgentResponse]:
         """List agents. See https://developers.aethexai.com/docs/api-reference/agents.
 
         Returns a single-page ``PaginatedResponse``; ``.data`` items are
@@ -136,7 +141,10 @@ class AethexAI:
         """
         from aethexai._generated.api.agents import list_agents_api_v1_agents_get as _op
 
-        return cast(PaginatedResponse, self._call(_op.sync_detailed, offset=offset, limit=limit))
+        return cast(
+            PaginatedResponse[AgentResponse],
+            self._call(_op.sync_detailed, offset=offset, limit=limit),
+        )
 
     def create_agent(self, **fields: Any) -> Any:
         """Create a new agent. See https://developers.aethexai.com/docs/api-reference/agents."""
@@ -331,7 +339,7 @@ class AethexAI:
         direction: Any | None | Unset = UNSET,
         offset: int | Unset = 0,
         limit: int | Unset = 50,
-    ) -> PaginatedResponse:
+    ) -> PaginatedResponse[CallResponse]:
         """List calls. See https://developers.aethexai.com/docs/api-reference/calls.
 
         Returns a single-page ``PaginatedResponse``; ``.data`` items are
@@ -340,7 +348,7 @@ class AethexAI:
         from aethexai._generated.api.calls import list_calls_api_v1_calls_get as _op
 
         return cast(
-            PaginatedResponse,
+            PaginatedResponse[CallResponse],
             self._call(
                 _op.sync_detailed, status=status, direction=direction, offset=offset, limit=limit
             ),
@@ -449,7 +457,7 @@ class AethexAI:
 
     def list_conversations(
         self, *, offset: int | Unset = 0, limit: int | Unset = 50
-    ) -> PaginatedResponse:
+    ) -> PaginatedResponse[ConversationResponse]:
         """List conversations. See https://developers.aethexai.com/docs/api-reference/conversations.
 
         Returns a single-page ``PaginatedResponse``; ``.data`` items are
@@ -459,7 +467,10 @@ class AethexAI:
             list_conversations_api_v1_conversations_get as _op,
         )
 
-        return cast(PaginatedResponse, self._call(_op.sync_detailed, offset=offset, limit=limit))
+        return cast(
+            PaginatedResponse[ConversationResponse],
+            self._call(_op.sync_detailed, offset=offset, limit=limit),
+        )
 
     def get_conversation(self, conversation_id: str | UUID) -> Any:
         """Retrieve a conversation by id. See https://developers.aethexai.com/docs/api-reference/conversations."""

@@ -98,6 +98,7 @@ from aethexai._generated.api.voices import (
 )
 from aethexai._generated.client import AuthenticatedClient
 from aethexai._generated.models.agent_create import AgentCreate
+from aethexai._generated.models.agent_response import AgentResponse
 from aethexai._generated.models.agent_update import AgentUpdate
 from aethexai._generated.models.body_transcribe_async_api_v1_transcribe_async_post import (
     BodyTranscribeAsyncApiV1TranscribeAsyncPost,
@@ -106,6 +107,8 @@ from aethexai._generated.models.body_transcribe_sync_api_v1_transcribe_post impo
     BodyTranscribeSyncApiV1TranscribePost,
 )
 from aethexai._generated.models.call_create import CallCreate
+from aethexai._generated.models.call_response import CallResponse
+from aethexai._generated.models.conversation_response import ConversationResponse
 from aethexai._generated.models.paginated_response import PaginatedResponse
 from aethexai._generated.models.tts_request import TTSRequest
 from aethexai._generated.models.tts_stream_request import TTSStreamRequest
@@ -260,14 +263,14 @@ class Kora:
         *,
         limit: int | None = None,
         offset: int | None = None,
-    ) -> PaginatedResponse:
+    ) -> PaginatedResponse[AgentResponse]:
         """List agents on the current account.
 
         Returns a single-page ``PaginatedResponse``; ``.data`` items are
         ``AgentResponse`` instances. Use ``.has_more`` to detect additional pages.
         """
         return cast(
-            PaginatedResponse,
+            PaginatedResponse[AgentResponse],
             self._call(
                 _list_agents_op.sync_detailed,
                 limit=limit if limit is not None else UNSET,
@@ -320,14 +323,14 @@ class Kora:
         *,
         limit: int | None = None,
         offset: int | None = None,
-    ) -> PaginatedResponse:
+    ) -> PaginatedResponse[CallResponse]:
         """List recent calls on the current account.
 
         Returns a single-page ``PaginatedResponse``; ``.data`` items are
         ``CallResponse`` instances. Use ``.has_more`` to detect additional pages.
         """
         return cast(
-            PaginatedResponse,
+            PaginatedResponse[CallResponse],
             self._call(
                 _list_calls_op.sync_detailed,
                 limit=limit if limit is not None else UNSET,
@@ -520,7 +523,7 @@ class Kora:
         agent_id: str | UUID | None = None,
         limit: int | None = None,
         offset: int | None = None,
-    ) -> PaginatedResponse:
+    ) -> PaginatedResponse[ConversationResponse]:
         """List conversations on the current account.
 
         Returns a single-page ``PaginatedResponse``; ``.data`` items are
@@ -531,7 +534,7 @@ class Kora:
         client-side to the returned page.
         """
         result = cast(
-            PaginatedResponse,
+            PaginatedResponse[ConversationResponse],
             self._call(
                 _list_conversations_op.sync_detailed,
                 limit=limit if limit is not None else UNSET,

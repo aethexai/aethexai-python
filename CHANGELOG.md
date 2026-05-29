@@ -4,6 +4,8 @@ All notable changes to this project are documented here. Format based on [Keep a
 
 ## [Unreleased]
 
+## [0.3.0]
+
 ### Added
 
 - `AethexAI.list_tag_vocabulary()` / `AsyncAethexAI.list_tag_vocabulary()` — wrapper for `GET /api/v1/voices/tag-vocabulary`. Returns the closed-vocabulary tag set (tone, voice_texture, delivery_style, business_persona) used by voice tagging and accepted by `GET /voices?tag=...`. (AET-1533)
@@ -11,16 +13,11 @@ All notable changes to this project are documented here. Format based on [Keep a
 ### Changed
 
 - `cancel_transcription_job` (sync and async) now returns a typed `CancelTranscriptionJobResponse` (`id`, `status`) instead of a raw `dict`, matching the other transcription wrappers. The on-the-wire shape is unchanged, but code that indexed the old dict result (e.g. `result["id"]`) must now use attribute access (`result.id`). (AET-1538)
-
-## [0.3.0]
-
-### Changed
-
-- **Breaking:** `list_agents`, `list_calls`, and `list_conversations` now return a `PaginatedResponse` whose `.data` items are typed model instances (`AgentResponse`, `CallResponse`, `ConversationResponse` respectively) instead of raw dicts. Code that indexed items as dicts (e.g. `result.data[0]["id"]`) must be updated to use attribute access (`result.data[0].id`). (AET-1598)
+- **Breaking:** `list_agents`, `list_calls`, and `list_conversations` now return a `PaginatedResponse[T]` whose `.data` items are typed model instances (`AgentResponse`, `CallResponse`, `ConversationResponse` respectively) instead of raw dicts. Code that indexed items as dicts (e.g. `result.data[0]["id"]`) must be updated to use attribute access (`result.data[0].id`). (AET-1598)
 - `result[0]` integer indexing on the `PaginatedResponse` returned by these methods now works without raising `KeyError`. Previously only string keys were supported; integer keys now index into `.data` directly. (AET-1598)
 - `PaginatedResponse` now exposes a `has_more` property that returns `True` when `offset + len(data) < total`, making it straightforward to detect and page through multi-page result sets without accidentally treating a single page as the full dataset. (AET-1598)
 - `PaginatedResponse.__iter__` and `__len__` have been removed. They silently operated on a single page, so `for a in client.list_agents()` would drop items beyond the first page and `len()` returned the page count rather than `total`. Use `page.data` to iterate items on the current page, and loop while `page.has_more` to consume all pages. (AET-1598)
-- The three list wrappers in `AethexAI`, `AsyncAethexAI`, and `Kora` now declare `-> PaginatedResponse` return types instead of `-> Any`, so IDEs and mypy see the real return type. (AET-1598)
+- The three list wrappers in `AethexAI`, `AsyncAethexAI`, and `Kora` now declare `-> PaginatedResponse[T]` return types (e.g. `PaginatedResponse[AgentResponse]`) so IDEs and mypy resolve the item type statically. (AET-1598)
 
 ### Fixed
 - Removed the public `get_conversation_diagnostics` wrapper from `AethexAI` / `AsyncAethexAI`. The endpoint moved to an internal-only surface (shared-secret auth) in AET-1532, so the prod-openapi-sync relocated its generated op under `_generated/api/internal/` — leaving the public wrapper importing a path that no longer exists (broke `mypy`). The endpoint is not callable with a public API key, so the wrapper is removed rather than repointed. (AET-1532)

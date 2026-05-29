@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import Any, TypeVar, BinaryIO, TextIO, TYPE_CHECKING, Generic
+from typing import Any, Generic, TypeVar, BinaryIO, TextIO, TYPE_CHECKING
 
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
@@ -19,7 +19,7 @@ _ItemT = TypeVar("_ItemT")
 
 
 @_attrs_define
-class PaginatedResponse:
+class PaginatedResponse(Generic[_ItemT]):
     """Single-page result from a list endpoint.
 
     **Important:** ``.data`` holds ONE page of results (default limit=50).
@@ -37,26 +37,20 @@ class PaginatedResponse:
             offset += limit
 
     Attributes:
-        data (list[Any] | Unset): Items on this page only.
+        data (list[_ItemT] | Unset): Items on this page only.
         limit (int | Unset):  Default: 50.
         offset (int | Unset):  Default: 0.
         total (int | Unset):  Default: 0.
     """
 
-    # AETHEX-PATCH (AET-1598): make PaginatedResponse indexable over .data so
-    # that agents[0]/calls[0]/conversations[0] work without raising KeyError.
-    # String-key access on additional_properties is preserved for backward
-    # compatibility. Re-applied by scripts/sync_from_prod.py after every
-    # regeneration.
-
-    data: list[Any] | Unset = UNSET
+    data: list[_ItemT] | Unset = UNSET
     limit: int | Unset = 50
     offset: int | Unset = 0
     total: int | Unset = 0
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
-        data: list[Any] | Unset = UNSET
+        data: list[_ItemT] | Unset = UNSET
         if not isinstance(self.data, Unset):
             data = self.data
 
@@ -104,6 +98,14 @@ class PaginatedResponse:
     @property
     def additional_keys(self) -> list[str]:
         return list(self.additional_properties.keys())
+
+    # AETHEX-PATCH (AET-1598): make PaginatedResponse indexable over
+    # .data so that agents[0]/calls[0]/conversations[0] work without raising
+    # KeyError. String-key access on additional_properties is preserved for
+    # backward compatibility. __iter__ and __len__ are intentionally NOT added
+    # — they silently operated on a single page. Use .data to iterate items on
+    # the current page, and loop while .has_more to consume all pages.
+    # Re-applied by scripts/sync_from_prod.py after every regeneration.
 
     @property
     def has_more(self) -> bool:

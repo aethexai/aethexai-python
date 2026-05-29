@@ -338,3 +338,37 @@ def test_paginated_response_integer_indexing_returns_correct_item() -> None:
     r = PaginatedResponse(data=["a", "b", "c"], total=3, limit=3, offset=0)
     assert r[0] == "a"
     assert r[2] == "c"
+
+
+# ─── Static typing: PaginatedResponse[T] delivers per-item types ─────────────
+
+
+def test_paginated_response_is_generic_agent() -> None:
+    """B2 static typing: PaginatedResponse[AgentResponse] exposes AgentResponse items."""
+    r: PaginatedResponse[AgentResponse] = PaginatedResponse(
+        data=[AgentResponse(id="ag-1", name="Bot")], total=1, limit=50, offset=0
+    )
+    # Runtime check: item is an AgentResponse, not a raw dict.
+    item = r.data[0]  # type: ignore[index]
+    assert isinstance(item, AgentResponse)
+    assert item.id == "ag-1"
+
+
+def test_paginated_response_is_generic_call() -> None:
+    """B2 static typing: PaginatedResponse[CallResponse] exposes CallResponse items."""
+    r: PaginatedResponse[CallResponse] = PaginatedResponse(
+        data=[CallResponse(id="c-1")], total=1, limit=50, offset=0
+    )
+    item = r.data[0]  # type: ignore[index]
+    assert isinstance(item, CallResponse)
+    assert item.id == "c-1"
+
+
+def test_paginated_response_is_generic_conversation() -> None:
+    """B2 static typing: PaginatedResponse[ConversationResponse] exposes ConversationResponse."""
+    r: PaginatedResponse[ConversationResponse] = PaginatedResponse(
+        data=[ConversationResponse(id="cv-1")], total=1, limit=50, offset=0
+    )
+    item = r.data[0]  # type: ignore[index]
+    assert isinstance(item, ConversationResponse)
+    assert item.id == "cv-1"
