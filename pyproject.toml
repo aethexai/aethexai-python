@@ -42,15 +42,19 @@ Issues = "https://github.com/aethexai/aethexai-python/issues"
 Changelog = "https://github.com/aethexai/aethexai-python/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
-# The realtime extra installs aiortc + aioice + av (PyAV). PyAV requires
-# system libavcodec/libavformat/libavutil/libswscale/libswresample headers
-# at install time. On Debian/Ubuntu: ``apt install libavformat-dev
-# libavfilter-dev libavdevice-dev``. On macOS: ``brew install ffmpeg``.
-# Without those, the wheel build fails.
+# The realtime extra installs aiortc + aioice + av (PyAV).
+#
+# av is capped to <14.2.1 because PyAV 14.2.1/14.3.0/14.4.0 are published
+# sdist-only (no wheels), which forces a from-source build that needs FFmpeg
+# dev headers and only compiles against FFmpeg <=7 (AET-1596). 14.2.0 is the
+# newest 14.x that ships binary wheels (cp310-cp313), so supported Pythons
+# install with no system FFmpeg at all. av cannot move to the FFmpeg-8 line
+# (>=16) without aiortc>=1.14 -> aioice>=0.10.1, which conflicts with the
+# aioice 0.9.x pin required by realtime/_aioice_patches.py (tracked separately).
 realtime = [
     "aiortc>=1.9.0",
     "aioice>=0.9.0,<0.10",
-    "av>=12.0.0",
+    "av>=14.0.0,<14.2.1",
 ]
 dev = [
     "pytest>=8.0",
