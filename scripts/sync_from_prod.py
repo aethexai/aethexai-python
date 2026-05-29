@@ -741,7 +741,9 @@ def _apply_paginated_list_ergonomics_patch() -> int:
         target.write_text(source)
         patched_count += 1
 
-    print(f"post-codegen patch: AET-1598 paginated-list ergonomics applied to {patched_count} file(s)")
+    print(
+        f"post-codegen patch: AET-1598 paginated-list ergonomics applied to {patched_count} file(s)"
+    )
     return 0
 
 
