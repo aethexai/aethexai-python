@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Iterator, Mapping
 from typing import Any, TypeVar, BinaryIO, TextIO, TYPE_CHECKING, Generator
 
 from attrs import define as _attrs_define
@@ -81,7 +81,14 @@ class PaginatedResponse:
     def additional_keys(self) -> list[str]:
         return list(self.additional_properties.keys())
 
-    def __getitem__(self, key: str) -> Any:
+    def __getitem__(self, key: int | str) -> Any:
+        # Integer indexing operates on .data (e.g. agents[0]).
+        # String indexing falls through to additional_properties for
+        # backward-compatibility with the generated-client pattern.
+        if isinstance(key, int):
+            if isinstance(self.data, Unset):
+                raise IndexError(key)
+            return self.data[key]
         return self.additional_properties[key]
 
     def __setitem__(self, key: str, value: Any) -> None:
@@ -92,3 +99,14 @@ class PaginatedResponse:
 
     def __contains__(self, key: str) -> bool:
         return key in self.additional_properties
+
+    def __iter__(self) -> Iterator[Any]:
+        """Iterate over items in .data (e.g. ``for agent in client.list_agents()``)."""
+        if isinstance(self.data, Unset):
+            return iter([])
+        return iter(self.data)
+
+    def __len__(self) -> int:
+        if isinstance(self.data, Unset):
+            return 0
+        return len(self.data)

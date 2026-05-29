@@ -279,6 +279,9 @@ def regenerate_client() -> int:
     created_201_rc = _apply_created_201_patch()
     if created_201_rc != 0:
         return created_201_rc
+    paginated_rc = _apply_paginated_list_ergonomics_patch()
+    if paginated_rc != 0:
+        return paginated_rc
     return result.returncode
 
 
@@ -581,6 +584,164 @@ def _apply_created_201_patch() -> int:
         target.write_text(new_source)
         patched += 1
     print(f"post-codegen patch: applied created-201 handling to {patched} endpoint(s)")
+    return 0
+
+
+_PAGINATED_ERGONOMICS_SENTINEL = "# AETHEX-PATCH (AET-1598)"
+
+# Maps each list op file (relative to GENERATED_DIR/api/) to the typed model
+# it should parse .data items into: (import_line, model_class_name).
+_PAGINATED_LIST_OPS: tuple[tuple[str, str, str], ...] = (
+    (
+        "agents/list_agents_api_v1_agents_get.py",
+        "from ...models.agent_response import AgentResponse",
+        "AgentResponse",
+    ),
+    (
+        "calls/list_calls_api_v1_calls_get.py",
+        "from ...models.call_response import CallResponse",
+        "CallResponse",
+    ),
+    (
+        "conversations/list_conversations_api_v1_conversations_get.py",
+        "from ...models.conversation_response import ConversationResponse",
+        "ConversationResponse",
+    ),
+)
+
+
+def _apply_paginated_list_ergonomics_patch() -> int:
+    """Re-apply AET-1598 patches after codegen overwrites _generated/.
+
+    Two sub-patches:
+
+    1. ``PaginatedResponse``: add ``__iter__``, ``__len__``, and fix
+       ``__getitem__`` to support integer indexing over ``.data`` (while
+       preserving existing string-key behaviour on ``additional_properties``).
+
+    2. Three list-op files (``list_agents``, ``list_calls``,
+       ``list_conversations``): parse ``.data`` items into their typed models
+       (``AgentResponse``, ``CallResponse``, ``ConversationResponse``) so that
+       ``result[0].id`` returns a typed attribute rather than a raw dict key.
+
+    Both patches are idempotent via the ``AETHEX-PATCH (AET-1598)`` sentinel.
+    """
+    patched_count = 0
+
+    # ── 1. PaginatedResponse ─────────────────────────────────────────────────
+    pr_path = GENERATED_DIR / "models" / "paginated_response.py"
+    if not pr_path.exists():
+        print(
+            f"warn: AET-1598 paginated_response patch skipped; {pr_path} not found",
+            file=sys.stderr,
+        )
+        return 0
+
+    pr_source = pr_path.read_text()
+    if _PAGINATED_ERGONOMICS_SENTINEL not in pr_source:
+        # Add Iterator import alongside the existing Mapping import.
+        pr_source = pr_source.replace(
+            "from collections.abc import Mapping",
+            "from collections.abc import Iterator, Mapping",
+        )
+        # Replace the generated __getitem__ and add __iter__ / __len__.
+        old_getitem = (
+            "    def __getitem__(self, key: str) -> Any:\n"
+            "        return self.additional_properties[key]\n"
+        )
+        new_getitem = (
+            f"    {_PAGINATED_ERGONOMICS_SENTINEL}: make PaginatedResponse iterable and\n"
+            "    # indexable over .data so that agents[0]/calls[0]/conversations[0] work\n"
+            "    # and for-loops iterate items. String-key access on additional_properties\n"
+            "    # is preserved for backward compatibility. Re-applied by sync_from_prod.py.\n"
+            "    def __getitem__(self, key: int | str) -> Any:\n"
+            "        if isinstance(key, int):\n"
+            "            if isinstance(self.data, Unset):\n"
+            "                raise IndexError(key)\n"
+            "            return self.data[key]\n"
+            "        return self.additional_properties[key]\n"
+            "\n"
+            "    def __iter__(self) -> Iterator[Any]:\n"
+            '        """Iterate over items in .data."""\n'
+            "        if isinstance(self.data, Unset):\n"
+            "            return iter([])\n"
+            "        return iter(self.data)\n"
+            "\n"
+            "    def __len__(self) -> int:\n"
+            "        if isinstance(self.data, Unset):\n"
+            "            return 0\n"
+            "        return len(self.data)\n"
+        )
+        if old_getitem not in pr_source:
+            print(
+                "warn: AET-1598 paginated_response patch could not locate __getitem__; "
+                "openapi-python-client may have changed its output shape.",
+                file=sys.stderr,
+            )
+            return 2
+        pr_source = pr_source.replace(old_getitem, new_getitem)
+        pr_path.write_text(pr_source)
+        patched_count += 1
+
+    # ── 2. List op files: typed .data parsing ─────────────────────────────────
+    api_dir = GENERATED_DIR / "api"
+    for rel, import_line, model_class in _PAGINATED_LIST_OPS:
+        target = api_dir / rel
+        if not target.exists():
+            print(
+                f"warn: AET-1598 list-op patch could not find {target.relative_to(REPO_ROOT)}; "
+                "the endpoint may have been renamed. Update _PAGINATED_LIST_OPS in "
+                "scripts/sync_from_prod.py.",
+                file=sys.stderr,
+            )
+            return 2
+
+        source = target.read_text()
+        if _PAGINATED_ERGONOMICS_SENTINEL in source:
+            continue
+
+        # Add the typed-model import after the PaginatedResponse import.
+        pr_import = "from ...models.paginated_response import PaginatedResponse"
+        if pr_import not in source:
+            print(
+                f"warn: AET-1598 list-op patch could not find PaginatedResponse import in "
+                f"{target.relative_to(REPO_ROOT)}.",
+                file=sys.stderr,
+            )
+            return 2
+        source = source.replace(pr_import, f"{import_line}\n{pr_import}")
+
+        # Inject the typed parsing block right after PaginatedResponse.from_dict.
+        old_parse = (
+            "        response_200 = PaginatedResponse.from_dict(response.json())\n"
+            "\n"
+            "        return response_200\n"
+        )
+        new_parse = (
+            "        response_200 = PaginatedResponse.from_dict(response.json())\n"
+            f"        {_PAGINATED_ERGONOMICS_SENTINEL}: parse .data into typed models\n"
+            "        # so that indexing and iteration return typed objects, not raw dicts.\n"
+            "        # Re-applied by scripts/sync_from_prod.py after every regeneration.\n"
+            "        if response_200.data is not UNSET and response_200.data is not None:\n"
+            "            response_200.data = [\n"
+            f"                {model_class}.from_dict(item) if isinstance(item, dict) else item\n"
+            "                for item in response_200.data\n"
+            "            ]\n"
+            "        return response_200\n"
+        )
+        if old_parse not in source:
+            print(
+                f"warn: AET-1598 list-op patch could not locate stock parse block in "
+                f"{target.relative_to(REPO_ROOT)}; openapi-python-client may have changed "
+                "its output shape.",
+                file=sys.stderr,
+            )
+            return 2
+        source = source.replace(old_parse, new_parse)
+        target.write_text(source)
+        patched_count += 1
+
+    print(f"post-codegen patch: AET-1598 paginated-list ergonomics applied to {patched_count} file(s)")
     return 0
 
 
