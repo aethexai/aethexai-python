@@ -292,6 +292,80 @@ def test_kora_transcribe_uses_multipart(kora: Kora) -> None:
     assert ctype.startswith("multipart/form-data")
 
 
+# ─── transcription — audio-format autodetection (AET-1588) ─────────────────
+
+_DETECTION_CASES = [
+    (b"RIFF\x24\x00\x00\x00WAVEfmt ", "audio.wav", "audio/wav"),
+    (b"fLaC\x00\x00\x00\x22stream", "audio.flac", "audio/flac"),
+    (b"OggS\x00\x02\x00\x00\x00\x00\x00", "audio.ogg", "audio/ogg"),
+    (b"unrecognised-bytes", "audio.wav", "audio/wav"),
+]
+
+_TRANSCRIBE_SUCCESS = {"id": "t1", "text": "hello", "language": "english"}
+_TRANSCRIBE_ASYNC_SUCCESS = {"id": "j1", "status": "queued"}
+
+
+@respx.mock
+@pytest.mark.parametrize("audio,expected_name,expected_mime", _DETECTION_CASES)
+def test_kora_transcribe_autodetects_format_from_bytes(
+    kora: Kora,
+    audio: bytes,
+    expected_name: str,
+    expected_mime: str,
+) -> None:
+    route = respx.post(f"{BASE_URL}/api/v1/transcribe").mock(
+        return_value=httpx.Response(200, json=_TRANSCRIBE_SUCCESS)
+    )
+
+    kora.transcribe(audio)
+
+    assert route.called
+    body = route.calls.last.request.content.decode("latin-1")
+    assert expected_name in body
+    assert expected_mime in body
+
+
+@respx.mock
+@pytest.mark.parametrize("audio,expected_name,expected_mime", _DETECTION_CASES)
+def test_kora_transcribe_async_autodetects_format_from_bytes(
+    kora: Kora,
+    audio: bytes,
+    expected_name: str,
+    expected_mime: str,
+) -> None:
+    route = respx.post(f"{BASE_URL}/api/v1/transcribe/async").mock(
+        return_value=httpx.Response(200, json=_TRANSCRIBE_ASYNC_SUCCESS)
+    )
+
+    kora.transcribe_async(audio)
+
+    assert route.called
+    body = route.calls.last.request.content.decode("latin-1")
+    assert expected_name in body
+    assert expected_mime in body
+
+
+@respx.mock
+def test_kora_transcribe_explicit_file_name_overrides_detection(kora: Kora) -> None:
+    route = respx.post(f"{BASE_URL}/api/v1/transcribe").mock(
+        return_value=httpx.Response(200, json=_TRANSCRIBE_SUCCESS)
+    )
+
+    # OGG magic bytes, but caller supplies WAV name/type explicitly.
+    kora.transcribe(
+        b"OggS\x00\x02\x00\x00",
+        file_name="recording.wav",
+        mime_type="audio/wav",
+    )
+
+    assert route.called
+    body = route.calls.last.request.content.decode("latin-1")
+    assert "recording.wav" in body
+    assert "audio/wav" in body
+    assert "audio.ogg" not in body
+    assert "audio/ogg" not in body
+
+
 # ─── conversations ──────────────────────────────────────────────────────────
 
 
