@@ -264,6 +264,31 @@ client = AethexAI(
 | `max_retries` | `2` | HTTP transport retries for retryable failures. |
 | `httpx_client` | `None` | Optional custom `httpx.Client` or `httpx.AsyncClient`. |
 
+### Environment variables
+
+Copy the template and fill in your key:
+
+```bash
+cp .env.example .env
+```
+
+The SDK reads the following from the environment (it does **not** auto-load
+`.env`):
+
+| Variable | Used by | Notes |
+|---|---|---|
+| `AETHEX_API_KEY` | `AethexAI`, `Kora` | Required unless you pass `api_key=`. |
+| `AETHEX_BASE_URL` | example scripts | Optional base-URL override. |
+| `AETHEX_DEVELOPER_ACCESS_TOKEN` | `DeveloperClient` | JWT for account/billing. |
+| `AETHEX_DEVELOPER_REFRESH_TOKEN` | `DeveloperClient` | Optional; enables token refresh. |
+
+Load `.env` with uv's native flag — no extra dependency:
+
+```bash
+uv run --env-file .env python your_script.py
+uv run --env-file .env pytest -m integration
+```
+
 ## Errors
 
 Non-2xx responses raise typed exceptions. Transport failures are mapped to SDK
