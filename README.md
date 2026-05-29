@@ -266,14 +266,12 @@ client = AethexAI(
 
 ### Environment variables
 
-Copy the template and fill in your key:
+The SDK reads configuration from environment variables — export them in your
+shell (or pass the values directly to the client):
 
 ```bash
-cp .env.example .env
+export AETHEX_API_KEY=ae_live_...   # or ae_test_...
 ```
-
-The SDK reads the following from the environment (it does **not** auto-load
-`.env`):
 
 | Variable | Used by | Notes |
 |---|---|---|
@@ -282,12 +280,8 @@ The SDK reads the following from the environment (it does **not** auto-load
 | `AETHEX_DEVELOPER_ACCESS_TOKEN` | `DeveloperClient` | JWT for account/billing. |
 | `AETHEX_DEVELOPER_REFRESH_TOKEN` | `DeveloperClient` | Optional; enables token refresh. |
 
-Load `.env` with uv's native flag — no extra dependency:
-
-```bash
-uv run --env-file .env python your_script.py
-uv run --env-file .env pytest -m integration
-```
+See [`examples/README.md`](examples/README.md) for the variables used by the
+example scripts.
 
 ## Errors
 
