@@ -8,20 +8,20 @@ the ``Generic[_ItemT]`` scaffolding, or the ``has_more`` / integer-``__getitem__
 ergonomics.
 
 The tests use the stock pre-AET-1598 file contents (captured from git commit
-2e2dbdb) as the "freshly regenerated" input so they do not depend on an
-openapi-python-client installation.
+2e2dbdb into a committed fixture) as the "freshly regenerated" input so they do
+not depend on an openapi-python-client installation OR on git history being
+present at test time (CI uses a shallow checkout, so `git show <sha>` is not
+available — the baseline is vendored as a fixture instead).
 """
 
 from __future__ import annotations
 
-import subprocess
 import sys
 from pathlib import Path
 
 import pytest
 
 SCRIPTS_DIR = Path(__file__).resolve().parent.parent / "scripts"
-REPO_ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(SCRIPTS_DIR))
 
 from sync_from_prod import (  # noqa: E402
@@ -30,18 +30,14 @@ from sync_from_prod import (  # noqa: E402
 )
 
 # ---------------------------------------------------------------------------
-# Fixture: stock pre-AET-1598 paginated_response.py (from git commit 2e2dbdb)
+# Fixture: stock pre-AET-1598 paginated_response.py (vendored from git commit
+# 2e2dbdb — see tests/fixtures/). Read from disk rather than `git show` so the
+# test is hermetic and works under a shallow CI checkout.
 # ---------------------------------------------------------------------------
 
-_STOCK_PRE_1598 = subprocess.check_output(
-    [
-        "git",
-        "show",
-        "2e2dbdb:src/aethexai/_generated/models/paginated_response.py",
-    ],
-    cwd=str(REPO_ROOT),
-    text=True,
-)
+_STOCK_PRE_1598 = (
+    Path(__file__).resolve().parent / "fixtures" / "stock_paginated_response_pre_aet1598.py.txt"
+).read_text()
 
 
 # ---------------------------------------------------------------------------
