@@ -31,10 +31,15 @@ Optional extras:
 pip install "aethexai[realtime]"   # WebRTC conversations (Conversation class)
 ```
 
-The `[realtime]` extra installs `aiortc` and `av` (PyAV). PyAV needs system
-FFmpeg headers at wheel-build time — on Debian/Ubuntu install
-`libavformat-dev libavfilter-dev libavdevice-dev` first; on macOS,
-`brew install ffmpeg`.
+The `[realtime]` extra installs `aiortc` and `av` (PyAV). PyAV ships prebuilt
+binary wheels (with FFmpeg bundled) for **manylinux** (glibc) Linux, macOS, and
+Windows on Python 3.10–3.13, so a normal install needs **no** system FFmpeg. You
+only need system FFmpeg if PyAV has to build from source (e.g. an unusual
+platform/arch, or **Alpine/musl** — the pinned PyAV 14.x has no musllinux wheel):
+on Debian/Ubuntu `apt install libavformat-dev libavfilter-dev libavdevice-dev`;
+on macOS the pinned PyAV (14.x) targets FFmpeg 7, so install `brew install
+ffmpeg@7` (plain `brew install ffmpeg` now gives FFmpeg 8, which this PyAV
+release does not compile against).
 
 Requires Python 3.10+.
 
