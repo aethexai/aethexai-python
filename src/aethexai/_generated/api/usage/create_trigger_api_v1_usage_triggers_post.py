@@ -36,7 +36,9 @@ def _get_kwargs(
 def _parse_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
 ) -> HTTPValidationError | UsageTriggerResponse | None:
-    if response.status_code == 201:
+    if 200 <= response.status_code < 300:
+        if not response.content:
+            return None
         response_201 = UsageTriggerResponse.from_dict(response.json())
 
         return response_201

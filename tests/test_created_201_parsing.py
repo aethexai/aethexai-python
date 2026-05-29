@@ -1,13 +1,15 @@
-"""Regression tests: resource-creation POSTs must return the created body.
+"""Regression tests for AET-1580: HTTP 201 Created responses must be parsed.
 
-Resource-creation POSTs may answer with ``200`` or ``201``. ``_call`` decodes
-the raw 2xx body via ``parse_success_body`` and does not depend on the
-generated per-status ``response.parsed``, so the wrapper returns the created
-resource as a plain ``dict`` regardless of which 2xx status the backend uses —
-never ``None``.
+The aethex backend (PR #955 / AET-1566) now returns ``201 Created`` from
+resource-creation POSTs instead of ``200 OK``. The generated
+``_parse_response`` functions only branched on ``200`` and fell through to
+``return None`` on ``201``; ``_call`` returns ``response.parsed`` for any 2xx,
+so callers silently lost the created resource. A post-codegen patch in
+``scripts/sync_from_prod.py`` adds a ``201`` branch mirroring the ``200`` one.
 
-These tests mock both ``200``- and ``201``-with-body responses and assert the
-wrapper returns the decoded JSON body rather than ``None``.
+These tests mock a ``201``-with-body and assert the wrapper returns the parsed
+value (a dict for untyped routes, a typed model for typed routes) rather than
+``None``. Reverting the patch re-breaks them.
 """
 
 from __future__ import annotations
@@ -58,8 +60,8 @@ def test_conversation_connect_parses_201_body(client: AethexAI) -> None:
 
 
 @respx.mock
-def test_batch_synthesize_parses_201_body(client: AethexAI) -> None:
-    """Success route: 201 must yield the decoded JSON body, not None."""
+def test_batch_synthesize_parses_201_typed_model(client: AethexAI) -> None:
+    """Typed success route: 201 must parse into the model, not return None."""
     respx.post(f"{BASE_URL}/api/v1/tts/batch").mock(
         return_value=httpx.Response(
             201,
@@ -76,8 +78,8 @@ def test_batch_synthesize_parses_201_body(client: AethexAI) -> None:
     result = client.batch_synthesize(items=[{"text": "hello", "voice_id": "fatima"}])
 
     assert result is not None
-    # decoded JSON body carries the batch_id through
-    assert result["batch_id"] == "batch-1"
+    # typed model carries the batch_id through
+    assert result.batch_id == "batch-1"
 
 
 @respx.mock

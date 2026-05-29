@@ -81,8 +81,8 @@ def test_kora_list_voices(kora: Kora) -> None:
     assert req.headers.get("x-api-key") == "ae_live_kora_test"
     assert isinstance(voices, list)
     assert len(voices) == 2
-    assert voices[0]["id"] == "fatima"
-    assert voices[1]["id"] == "amir"
+    assert voices[0].id == "fatima"
+    assert voices[1].id == "amir"
 
 
 @respx.mock
@@ -124,7 +124,7 @@ def test_kora_get_voice_path_param(kora: Kora) -> None:
 
     assert route.called
     assert route.calls.last.request.url.path == "/api/v1/voices/fatima"
-    assert voice["id"] == "fatima"
+    assert voice.id == "fatima"
 
 
 # ─── agents ─────────────────────────────────────────────────────────────────
@@ -316,9 +316,9 @@ def test_kora_list_conversations(kora: Kora) -> None:
     assert req.url.path == "/api/v1/conversations"
     qs = dict(req.url.params)
     assert qs.get("limit") == "25"
-    # Decoded JSON body exposes "data"
-    assert "data" in result
-    assert len(result["data"]) == 2
+    # PaginatedResponse exposes .data
+    assert hasattr(result, "data")
+    assert len(result.data) == 2
 
 
 @respx.mock
@@ -341,8 +341,8 @@ def test_kora_list_conversations_filters_by_agent_client_side(kora: Kora) -> Non
     result = kora.list_conversations(agent_id="a1")
 
     assert route.called
-    assert len(result["data"]) == 1
-    assert result["data"][0]["agent_id"] == "a1"
+    assert len(result.data) == 1
+    assert result.data[0]["agent_id"] == "a1"
 
 
 @respx.mock

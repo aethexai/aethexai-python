@@ -39,7 +39,6 @@ from aethexai._exceptions import (
     APITimeoutError,
     AuthenticationError,
     _map_status_to_exception,
-    parse_success_body,
 )
 from aethexai._generated.client import AuthenticatedClient
 from aethexai._generated.types import UNSET, Unset
@@ -82,9 +81,10 @@ class DeveloperClient:
                 status_code=401,
             )
         # NOTE: access/refresh tokens are intentionally NOT stored as instance
-        # attributes — see ``AethexAI.__init__`` for the rationale. The access
-        # token lives in ``self._client.token`` (suppressed from repr); the
-        # refresh token lives in the closure of ``_refresh_access_token``.
+        # attributes — see ``AethexAI.__init__`` for the rationale.
+        # The access token lives in ``self._client.token`` (with repr=False
+        # applied via the post-codegen patch in ``scripts/sync_from_prod.py``);
+        # the refresh token lives in the closure of ``_refresh_access_token``.
         self._base_url = base_url.rstrip("/")
         self._timeout = timeout
         self._max_retries = max_retries
@@ -156,8 +156,8 @@ class DeveloperClient:
             return False
         if not 200 <= int(response.status_code) < 300:
             return False
-        tokens = parse_success_body(response.content)
-        access_token = tokens.get("access_token", "") if isinstance(tokens, dict) else ""
+        tokens = response.parsed
+        access_token = getattr(tokens, "access_token", "") if tokens is not None else ""
         if not access_token:
             return False
         # Rotate: install the new access token onto the generated client
@@ -167,7 +167,7 @@ class DeveloperClient:
         # flush it so the next request picks up the new token.
         if self._client._client is not None:
             self._client._client.headers["Authorization"] = f"Bearer {access_token}"
-        new_refresh = tokens.get("refresh_token", "") if isinstance(tokens, dict) else ""
+        new_refresh = getattr(tokens, "refresh_token", "") if tokens is not None else ""
         if new_refresh:
             self._refresh_token_box[0] = new_refresh
         return True
@@ -189,7 +189,7 @@ class DeveloperClient:
             raise APIConnectionError(cause=exc) from exc
         status = int(response.status_code)
         if 200 <= status < 300:
-            return parse_success_body(response.content)
+            return response.parsed
         if status == 401 and self._refresh_access_token():
             try:
                 response = op_func(*args, client=self._client, **kwargs)
@@ -199,7 +199,7 @@ class DeveloperClient:
                 raise APIConnectionError(cause=exc) from exc
             status = int(response.status_code)
             if 200 <= status < 300:
-                return parse_success_body(response.content)
+                return response.parsed
         raise _map_status_to_exception(status, response.content, response.headers)
 
     # ── auth/me ────────────────────────────────────────────────────────

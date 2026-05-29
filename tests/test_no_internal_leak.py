@@ -54,7 +54,12 @@ def test_openapi_has_no_internal_or_operational_paths() -> None:
 
 
 def test_no_internal_references_in_shipped_files() -> None:
-    targets = [*_shipped_python_files(), OPENAPI]
+    targets = [
+        *_shipped_python_files(),
+        OPENAPI,
+        REPO_ROOT / "README.md",
+        REPO_ROOT / "CHANGELOG.md",
+    ]
     violations: list[str] = []
     for path in targets:
         text = path.read_text(encoding="utf-8", errors="replace")

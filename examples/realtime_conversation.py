@@ -41,7 +41,6 @@ Optional:
 from __future__ import annotations
 
 import asyncio
-import json
 import os
 import sys
 
@@ -93,17 +92,24 @@ async def run_conversation(
         await conv.start()
         print(f"session_id: {conv.session_id}")
 
-        # Give the connection a moment to settle.
+        # Give the connection a moment to settle before we start poking
+        # the live session with text and context updates.
         await asyncio.sleep(2.0)
 
-        # The server has no send-text / inject-context REST routes; to push
-        # text into a live session, send it on the open WebRTC data channel
-        # (the message schema is whatever your agent expects).
         if conv.is_connected:
-            print("Sending greeting over the data channel ...")
-            conv._dc.send(json.dumps({"type": "agent_text_input", "text": greeting}))
+            print("Sending text message into the live session ...")
+            await conv.send_text(greeting)
+
+            print("Injecting context variables ...")
+            await conv.inject_context(
+                {
+                    "customer_name": "Aminata",
+                    "account_tier": "premium",
+                    "preferred_language": "english",
+                }
+            )
         else:
-            print("warning: data channel not open yet; skipping greeting push")
+            print("warning: data channel not open yet; skipping text/context push")
 
         # Stay in the call for the configured duration.
         remaining = max(0.0, duration_seconds - 2.0)

@@ -30,7 +30,9 @@ def _parse_response(
     ListTagVocabularyApiV1VoicesTagVocabularyGetResponseListTagVocabularyApiV1VoicesTagVocabularyGet
     | None
 ):
-    if response.status_code == 200:
+    if 200 <= response.status_code < 300:
+        if not response.content:
+            return None
         response_200 = ListTagVocabularyApiV1VoicesTagVocabularyGetResponseListTagVocabularyApiV1VoicesTagVocabularyGet.from_dict(
             response.json()
         )

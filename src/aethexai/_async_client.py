@@ -26,7 +26,6 @@ from aethexai._exceptions import (
     APITimeoutError,
     AuthenticationError,
     _map_status_to_exception,
-    parse_success_body,
 )
 from aethexai._generated.client import AuthenticatedClient
 from aethexai._generated.types import UNSET, Unset
@@ -109,7 +108,7 @@ class AsyncAethexAI:
             raise APIConnectionError(cause=exc) from exc
         status = int(response.status_code)
         if 200 <= status < 300:
-            return parse_success_body(response.content)
+            return response.parsed
         raise _map_status_to_exception(status, response.content, response.headers)
 
     # ─── agents ────────────────────────────────────────────────────────

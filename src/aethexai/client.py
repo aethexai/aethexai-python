@@ -29,7 +29,6 @@ from aethexai._exceptions import (
     APITimeoutError,
     AuthenticationError,
     _map_status_to_exception,
-    parse_success_body,
 )
 from aethexai._generated.client import AuthenticatedClient
 from aethexai._generated.types import UNSET, Unset
@@ -67,6 +66,7 @@ class AethexAI:
         # It lives only inside ``self._client`` (the generated ``AuthenticatedClient``),
         # which suppresses it from ``repr()``. Anything that stores the raw key
         # on ``self`` would leak via ``vars(client)`` / ``client.__dict__``.
+        #
         self._base_url = base_url.rstrip("/")
         self._timeout = timeout
         self._max_retries = max_retries
@@ -122,7 +122,7 @@ class AethexAI:
             raise APIConnectionError(cause=exc) from exc
         status = int(response.status_code)
         if 200 <= status < 300:
-            return parse_success_body(response.content)
+            return response.parsed
         raise _map_status_to_exception(status, response.content, response.headers)
 
     # ─── agents ────────────────────────────────────────────────────────

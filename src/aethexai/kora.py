@@ -22,7 +22,7 @@ Example::
         language="french",
         dialect_style="local",
     )
-    client.trigger_call(agent["id"], to_number="+221...")
+    client.trigger_call(agent.id, to_number="+221...")
 """
 
 from __future__ import annotations
@@ -38,7 +38,6 @@ from aethexai._exceptions import (
     APIConnectionError,
     APITimeoutError,
     _map_status_to_exception,
-    parse_success_body,
 )
 from aethexai._generated.api.agents import (
     create_agent_api_v1_agents_post as _create_agent_op,
@@ -169,9 +168,9 @@ class Kora:
             raise ValueError("api_key is required. Pass it positionally: Kora(base_url, api_key).")
         self._base_url = base_url
         # NOTE: api_key is intentionally NOT stored as an instance attribute.
-        # See ``AethexAI.__init__`` for the rationale: storing the key on
-        # ``self`` would leak it via ``vars(client)`` / ``client.__dict__``.
-        # It lives only inside ``self._client.token`` (suppressed from repr).
+        # See ``AethexAI.__init__`` for the rationale. Kora was the easiest leak vector
+        # because both ``Kora._api_key`` and ``AuthenticatedClient.token``
+        # carried the same secret.
         timeout_arg: httpx.Timeout | None = httpx.Timeout(timeout) if timeout is not None else None
         self._client = AuthenticatedClient(
             base_url=base_url,
@@ -210,7 +209,7 @@ class Kora:
         response = op_func(*args, client=self._client, **kwargs)
         status = int(response.status_code)
         if 200 <= status < 300:
-            return parse_success_body(response.content)
+            return response.parsed
         raise _map_status_to_exception(status, response.content, response.headers)
 
     # ── Agents ────────────────────────────────────────────────────────────
@@ -517,15 +516,20 @@ class Kora:
             limit=limit if limit is not None else UNSET,
             offset=offset if offset is not None else UNSET,
         )
-        if agent_id is None or not isinstance(result, dict):
+        if agent_id is None or result is None:
             return result
         wanted = str(agent_id)
-        data = result.get("data")
+        data = getattr(result, "data", None)
         if isinstance(data, list):
-            result["data"] = [
+            result.data = [
                 item
                 for item in data
-                if isinstance(item, dict) and str(item.get("agent_id")) == wanted
+                if str(
+                    getattr(
+                        item, "agent_id", item.get("agent_id") if isinstance(item, dict) else None
+                    )
+                )
+                == wanted
             ]
         return result
 

@@ -276,7 +276,53 @@ def regenerate_client() -> int:
     http_patch_rc = _apply_http_validation_error_patch()
     if http_patch_rc != 0:
         return http_patch_rc
+    any_2xx_rc = _apply_any_2xx_success_patch()
+    if any_2xx_rc != 0:
+        return any_2xx_rc
     return result.returncode
+
+
+def _apply_any_2xx_success_patch() -> int:
+    """Broaden each generated ``_parse_response`` success branch to accept any
+    2xx status.
+
+    openapi-python-client emits a single success branch keyed on the one status
+    code the spec documents (``if response.status_code == 200:`` or ``201``).
+    Resource-creation POSTs answer ``201`` on the current backend but ``200`` on
+    a backend that predates that change, so a wrapper hitting the undocumented
+    status would get ``response.parsed is None`` and silently drop the created
+    resource. Broadening the success check to ``200 <= response.status_code <
+    300`` returns the parsed body (typed model or raw dict, exactly as the spec
+    declares it) for either status — no per-endpoint list, and it composes with
+    typed response models. Idempotent via the range-check sentinel; the ``422``
+    and unexpected-status branches are untouched.
+    """
+    api_dir = GENERATED_DIR / "api"
+    if not api_dir.is_dir():
+        return 0
+    success_re = re.compile(r"^( {4})if response\.status_code == 2\d\d:", re.MULTILINE)
+    patched = 0
+    for path in sorted(api_dir.rglob("*.py")):
+        source = path.read_text()
+        if "200 <= response.status_code < 300" in source:
+            continue  # already broadened
+        match = success_re.search(source)
+        if match is None:
+            continue  # no success branch (e.g. a no-content op)
+        indent = match.group(1)
+        # Broaden the condition AND guard the body parse: a 2xx with no content
+        # (e.g. a 204 from DELETE) must return None, not crash in response.json().
+        new_source = (
+            source[: match.start()]
+            + f"{indent}if 200 <= response.status_code < 300:\n"
+            + f"{indent}    if not response.content:\n"
+            + f"{indent}        return None"
+            + source[match.end() :]
+        )
+        path.write_text(new_source)
+        patched += 1
+    print(f"post-codegen patch: broadened success branch to any-2xx in {patched} op(s)")
+    return 0
 
 
 def _apply_post_codegen_patches() -> int:

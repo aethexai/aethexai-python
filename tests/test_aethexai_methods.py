@@ -60,8 +60,8 @@ def test_list_voices_get_voices(client: AethexAI) -> None:
 
     assert isinstance(voices, list)
     assert len(voices) == 2
-    assert voices[0]["id"] == "fatima"
-    assert voices[1]["id"] == "amir"
+    assert voices[0].id == "fatima"
+    assert voices[1].id == "amir"
 
 
 @respx.mock
@@ -93,7 +93,7 @@ def test_get_voice_uses_path_param(client: AethexAI) -> None:
     req = route.calls.last.request
     assert req.method == "GET"
     assert req.url.path == "/api/v1/voices/fatima"
-    assert voice["id"] == "fatima"
+    assert voice.id == "fatima"
 
 
 # AET-1522: preview_voice and stream_audio return ``audio/wav`` bytes even
@@ -150,7 +150,7 @@ def test_stream_audio_returns_audio_bytes(client: AethexAI) -> None:
 
 
 @respx.mock
-def test_list_tag_vocabulary_returns_body(client: AethexAI) -> None:
+def test_list_tag_vocabulary_returns_typed_model(client: AethexAI) -> None:
     payload = {
         "tone": ["warm", "calm"],
         "voice_texture": ["smooth", "deep"],
@@ -168,9 +168,10 @@ def test_list_tag_vocabulary_returns_body(client: AethexAI) -> None:
     assert req.method == "GET"
     assert req.url.path == "/api/v1/voices/tag-vocabulary"
 
-    # Returns the decoded JSON body as a plain dict.
-    assert isinstance(vocab, dict)
-    assert vocab == payload
+    # Returns a typed model (not a raw dict) — exercise its to_dict round-trip.
+    assert not isinstance(vocab, dict)
+    assert hasattr(vocab, "to_dict")
+    assert vocab.to_dict() == payload
 
 
 # ─── agents ─────────────────────────────────────────────────────────────────
@@ -236,7 +237,7 @@ def test_get_agent_quotes_uuid_in_path(client: AethexAI) -> None:
     assert route.called
     req = route.calls.last.request
     assert req.url.path == f"/api/v1/agents/{agent_uuid}"
-    assert agent["id"] == str(agent_uuid)
+    assert agent.id == str(agent_uuid)
 
 
 @respx.mock
@@ -289,12 +290,18 @@ def test_delete_agent_uses_delete(client: AethexAI) -> None:
 
 
 @respx.mock
-def test_cancel_transcription_job_returns_body(client: AethexAI) -> None:
-    """AET-1538: DELETE /transcribe/{job_id} returns the decoded JSON body.
+def test_cancel_transcription_job_returns_typed_model(client: AethexAI) -> None:
+    """AET-1538: DELETE /transcribe/{job_id} parses to ``CancelTranscriptionJobResponse``.
 
-    The route carries a non-empty 200 response. The wrapper returns the
-    decoded JSON body as a plain dict (parity with ``get_transcription_job``).
+    Previously the route had an empty 200 response schema, so the generated
+    parser returned a raw dict and the SDK wrapper exposed ``Any``. The
+    backend now declares ``CancelTranscriptionJobResponse``; this pins that
+    the wrapper returns the typed model (parity with ``get_transcription_job``).
     """
+    from aethexai._generated.models.cancel_transcription_job_response import (
+        CancelTranscriptionJobResponse,
+    )
+
     job_uuid = uuid4()
     route = respx.delete(f"{BASE_URL}/api/v1/transcribe/{job_uuid}").mock(
         return_value=httpx.Response(200, json={"id": str(job_uuid), "status": "cancelled"})
@@ -306,8 +313,9 @@ def test_cancel_transcription_job_returns_body(client: AethexAI) -> None:
     req = route.calls.last.request
     assert req.method == "DELETE"
     assert req.url.path == f"/api/v1/transcribe/{job_uuid}"
-    assert result["id"] == str(job_uuid)
-    assert result["status"] == "cancelled"
+    assert isinstance(result, CancelTranscriptionJobResponse)
+    assert result.id == str(job_uuid)
+    assert result.status == "cancelled"
 
 
 # ─── calls ──────────────────────────────────────────────────────────────────
@@ -455,7 +463,7 @@ def test_register_twilio_account(client: AethexAI) -> None:
     body = json.loads(req.content.decode())
     assert body["account_sid"] == "AC0123456789abcdef0123456789abcdef"
     assert body["auth_token"] == "secret"
-    assert account["status"] == "active"
+    assert account.status == "active"
 
 
 # ─── api keys ───────────────────────────────────────────────────────────────

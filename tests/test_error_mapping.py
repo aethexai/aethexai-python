@@ -103,7 +103,7 @@ def _stub_op(status: int, body: bytes = b"{}"):
 
 def test_aethex_call_returns_parsed_on_2xx():
     client = AethexAI(api_key="ae_live_dummy", base_url="https://example.com")
-    result = client._call(_stub_op(200, b'{"ok": true}'))
+    result = client._call(_stub_op(200))
     assert result == {"ok": True}
     client.close()
 
