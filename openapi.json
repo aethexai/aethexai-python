@@ -5734,7 +5734,9 @@
           "201": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/AgentResponse"
+                }
               }
             },
             "description": "Successful Response"
@@ -5880,7 +5882,9 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/AgentResponse"
+                }
               }
             },
             "description": "Successful Response"
@@ -5927,7 +5931,9 @@
           "201": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/AgentResponse"
+                }
               }
             },
             "description": "Successful Response"

@@ -8,6 +8,7 @@ from ...client import AuthenticatedClient, Client
 from ...types import Response, UNSET
 from ... import errors
 
+from ...models.agent_response import AgentResponse
 from ...models.http_validation_error import HTTPValidationError
 from typing import cast
 from uuid import UUID
@@ -29,11 +30,12 @@ def _get_kwargs(
 
 def _parse_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
-) -> Any | HTTPValidationError | None:
+) -> AgentResponse | HTTPValidationError | None:
     if 200 <= response.status_code < 300:
         if not response.content:
             return None
-        response_201 = response.json()
+        response_201 = AgentResponse.from_dict(response.json())
+
         return response_201
 
     if response.status_code == 422:
@@ -49,7 +51,7 @@ def _parse_response(
 
 def _build_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
-) -> Response[Any | HTTPValidationError]:
+) -> Response[AgentResponse | HTTPValidationError]:
     return Response(
         status_code=HTTPStatus(response.status_code),
         content=response.content,
@@ -62,7 +64,7 @@ def sync_detailed(
     agent_id: UUID,
     *,
     client: AuthenticatedClient,
-) -> Response[Any | HTTPValidationError]:
+) -> Response[AgentResponse | HTTPValidationError]:
     """Duplicate Agent
 
      Deep-copy an agent including tools, knowledge docs, and chunks.
@@ -75,7 +77,7 @@ def sync_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Any | HTTPValidationError]
+        Response[AgentResponse | HTTPValidationError]
     """
 
     kwargs = _get_kwargs(
@@ -93,7 +95,7 @@ def sync(
     agent_id: UUID,
     *,
     client: AuthenticatedClient,
-) -> Any | HTTPValidationError | None:
+) -> AgentResponse | HTTPValidationError | None:
     """Duplicate Agent
 
      Deep-copy an agent including tools, knowledge docs, and chunks.
@@ -106,7 +108,7 @@ def sync(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Any | HTTPValidationError
+        AgentResponse | HTTPValidationError
     """
 
     return sync_detailed(
@@ -119,7 +121,7 @@ async def asyncio_detailed(
     agent_id: UUID,
     *,
     client: AuthenticatedClient,
-) -> Response[Any | HTTPValidationError]:
+) -> Response[AgentResponse | HTTPValidationError]:
     """Duplicate Agent
 
      Deep-copy an agent including tools, knowledge docs, and chunks.
@@ -132,7 +134,7 @@ async def asyncio_detailed(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Response[Any | HTTPValidationError]
+        Response[AgentResponse | HTTPValidationError]
     """
 
     kwargs = _get_kwargs(
@@ -148,7 +150,7 @@ async def asyncio(
     agent_id: UUID,
     *,
     client: AuthenticatedClient,
-) -> Any | HTTPValidationError | None:
+) -> AgentResponse | HTTPValidationError | None:
     """Duplicate Agent
 
      Deep-copy an agent including tools, knowledge docs, and chunks.
@@ -161,7 +163,7 @@ async def asyncio(
         httpx.TimeoutException: If the request takes longer than Client.timeout.
 
     Returns:
-        Any | HTTPValidationError
+        AgentResponse | HTTPValidationError
     """
 
     return (

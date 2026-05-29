@@ -218,76 +218,6 @@ def git_diff(old: Path, new: Path) -> str | None:
     return output.strip() or None
 
 
-def regenerate_client() -> int:
-    """Re-run the OpenAPI client generator against the freshly-written spec.
-
-    The SDK's ``_generated/`` directory was produced by ``openapi-python-client``
-    (detectable from the ``AuthenticatedClient``/``Client`` layout). We invoke
-    the tool via ``uv tool run`` so it doesn't need to be a project dep.
-    If the tool isn't available, we warn and continue rather than failing --
-    drift is still reported to the caller, who can decide what to do.
-
-    Returns the generator's exit code, or 0 if we deliberately skipped.
-    """
-    uv = shutil.which("uv")
-    if uv is None:
-        print(
-            "warn: uv not on PATH; skipping client regeneration. "
-            "Install uv (https://docs.astral.sh/uv/) and rerun with --apply, "
-            "or run the generator manually.",
-            file=sys.stderr,
-        )
-        return 0
-
-    # ``--meta none`` keeps the generator from rewriting pyproject.toml /
-    # README; we own those files. ``--overwrite`` lets it replace the
-    # existing _generated/ tree without complaining.
-    # TODO(codegen-agent): if the parallel codegen agent settles on a
-    # different invocation (e.g. a config file, a different tool), swap
-    # this call out. The contract is: regenerate ``src/aethexai/_generated/``
-    # in place from ``openapi.json``.
-    cmd = [
-        uv,
-        "tool",
-        "run",
-        "--from",
-        "openapi-python-client==0.28.4",
-        "openapi-python-client",
-        "generate",
-        "--path",
-        str(SPEC_PATH),
-        "--meta",
-        "none",
-        "--overwrite",
-        "--output-path",
-        str(GENERATED_DIR),
-    ]
-    print(f"running: {' '.join(cmd)}")
-    result = subprocess.run(cmd, check=False)
-    if result.returncode != 0:
-        print(
-            f"warn: client generator exited {result.returncode}. "
-            "openapi.json has still been updated; regenerate manually.",
-            file=sys.stderr,
-        )
-        return result.returncode
-
-    patch_rc = _apply_post_codegen_patches()
-    if patch_rc != 0:
-        return patch_rc
-    http_patch_rc = _apply_http_validation_error_patch()
-    if http_patch_rc != 0:
-        return http_patch_rc
-    any_2xx_rc = _apply_any_2xx_success_patch()
-    if any_2xx_rc != 0:
-        return any_2xx_rc
-    paginated_rc = _apply_paginated_list_ergonomics_patch()
-    if paginated_rc != 0:
-        return paginated_rc
-    _strip_generated_comments()
-    return result.returncode
-
-
 _KEEP_COMMENT_RE = re.compile(r"#\s*(type:\s*ignore|noqa|pragma|coding[:=]|!)")
 
 
@@ -339,245 +269,6 @@ def _strip_generated_comments() -> int:
     return 0
 
 
-def _apply_any_2xx_success_patch() -> int:
-    """Broaden each generated ``_parse_response`` success branch to accept any
-    2xx status.
-
-    openapi-python-client emits a single success branch keyed on the one status
-    code the spec documents (``if response.status_code == 200:`` or ``201``).
-    Resource-creation POSTs answer ``201`` on the current backend but ``200`` on
-    a backend that predates that change, so a wrapper hitting the undocumented
-    status would get ``response.parsed is None`` and silently drop the created
-    resource. Broadening the success check to ``200 <= response.status_code <
-    300`` returns the parsed body (typed model or raw dict, exactly as the spec
-    declares it) for either status — no per-endpoint list, and it composes with
-    typed response models. Idempotent via the range-check sentinel; the ``422``
-    and unexpected-status branches are untouched.
-    """
-    api_dir = GENERATED_DIR / "api"
-    if not api_dir.is_dir():
-        return 0
-    success_re = re.compile(r"^( {4})if response\.status_code == 2\d\d:", re.MULTILINE)
-    patched = 0
-    for path in sorted(api_dir.rglob("*.py")):
-        source = path.read_text()
-        if "200 <= response.status_code < 300" in source:
-            continue  # already broadened
-        match = success_re.search(source)
-        if match is None:
-            continue  # no success branch (e.g. a no-content op)
-        indent = match.group(1)
-        # Broaden the condition AND guard the body parse: a 2xx with no content
-        # (e.g. a 204 from DELETE) must return None, not crash in response.json().
-        new_source = (
-            source[: match.start()]
-            + f"{indent}if 200 <= response.status_code < 300:\n"
-            + f"{indent}    if not response.content:\n"
-            + f"{indent}        return None"
-            + source[match.end() :]
-        )
-        path.write_text(new_source)
-        patched += 1
-    print(f"post-codegen patch: broadened success branch to any-2xx in {patched} op(s)")
-    return 0
-
-
-def _apply_post_codegen_patches() -> int:
-    """Re-apply hand-maintained patches after openapi-python-client overwrites _generated/.
-
-    Today there is exactly one patch: mark ``AuthenticatedClient.token`` and
-    both ``Client._headers`` / ``AuthenticatedClient._headers`` as
-    ``repr=False`` so the API key never appears in ``repr(client)`` /
-    ``str(vars(client._client))`` / sentry breadcrumbs / pytest assertion
-    failure messages. The patch is idempotent: it checks for the
-    ``_SECRET_FIELDS_PATCHED`` sentinel at the top of ``_generated/client.py``
-    before editing, and re-adds the sentinel + ``repr=False`` flags if missing.
-
-    See finding A.5 in ``docs/audits/pre-launch-2026-05-17.md``.
-    """
-    client_py = GENERATED_DIR / "client.py"
-    if not client_py.exists():
-        print(f"warn: post-codegen patch skipped; {client_py} not found", file=sys.stderr)
-        return 0
-
-    source = client_py.read_text()
-
-    if "_SECRET_FIELDS_PATCHED" in source:
-        print("post-codegen patch: already applied (sentinel present)")
-        return 0
-
-    # 1. Add ``repr=False`` to the two ``_headers`` field declarations and the
-    #    ``token`` field on AuthenticatedClient. Use literal string replacement
-    #    with the exact codegen-shape lines — if the codegen output changes
-    #    those line shapes, this will surface as a no-op-and-warn rather than
-    #    a silent miss.
-    replacements = [
-        (
-            '    _headers: dict[str, str] = field(factory=dict, kw_only=True, alias="headers")\n',
-            '    _headers: dict[str, str] = field(factory=dict, kw_only=True, alias="headers", repr=False)\n',
-        ),
-        (
-            "\n    token: str\n",
-            "\n    token: str = field(repr=False)\n",
-        ),
-    ]
-    patched = source
-    misses: list[str] = []
-    for needle, replacement in replacements:
-        if needle not in patched:
-            misses.append(needle.strip())
-            continue
-        # ``_headers`` appears on both Client and AuthenticatedClient, both need it.
-        patched = patched.replace(needle, replacement)
-
-    if misses:
-        print(
-            "warn: post-codegen patch could not locate the following lines "
-            "in _generated/client.py — openapi-python-client may have changed "
-            "its output shape. The API key is at risk of leaking in repr().\n"
-            "Missing patterns:\n  - " + "\n  - ".join(misses),
-            file=sys.stderr,
-        )
-        return 2
-
-    # 2. Add the sentinel right after the imports.
-    sentinel = (
-        "\n# Sentinel: confirms the secret-fields-repr-suppression patch has been applied\n"
-        "# to this codegen file. The SDK-sync tooling re-applies the patch\n"
-        "# after every ``openapi-python-client generate`` and uses this sentinel to\n"
-        "# detect already-patched files. DO NOT remove without auditing every call\n"
-        "# site that depends on ``token`` and the auth-header value not appearing in\n"
-        "# ``repr(client)`` / structured-log output.\n"
-        "_SECRET_FIELDS_PATCHED = True\n"
-    )
-    # Anchor on any ``from attrs import ...`` line. openapi-python-client has
-    # reordered the imports between releases (e.g. ``define, evolve, field`` vs
-    # ``define, field, evolve``); matching the line by prefix avoids a brittle
-    # exact-string check.
-    anchor_match = re.search(r"^from attrs import [^\n]*\n", patched, flags=re.MULTILINE)
-    if anchor_match is None:
-        print(
-            "warn: post-codegen patch could not find a 'from attrs import ...' "
-            "anchor; sentinel not inserted. Patch may have already partially applied.",
-            file=sys.stderr,
-        )
-        return 2
-    insert_at = anchor_match.end()
-    patched = patched[:insert_at] + sentinel + patched[insert_at:]
-
-    client_py.write_text(patched)
-    print(
-        "post-codegen patch: applied secret-fields-repr-suppression to "
-        f"{client_py.relative_to(REPO_ROOT)}"
-    )
-    return 0
-
-
-def _apply_http_validation_error_patch() -> int:
-    """Re-apply the AET-1523 patch to ``_generated/models/http_validation_error.py``.
-
-    The OpenAPI spec types every 422 response as FastAPI's
-    ``HTTPValidationError`` (``detail: list[ValidationError]``), but the real
-    aethex API returns ``{error, code, detail: <string>, request_id}``. The
-    stock codegen ``from_dict`` iterates ``detail`` and calls
-    ``ValidationError.from_dict(<string>)`` -> ``dict(<string>)`` -> ``ValueError``.
-    That escapes ``_call`` and customers see a stdlib crash instead of
-    ``aethexai.ValidationError``.
-
-    This patch rewrites ``from_dict`` to leave ``detail`` as ``UNSET`` when it
-    isn't list-of-dicts shaped and stashes the raw envelope in
-    ``additional_properties``. ``_call`` then reaches
-    ``_map_status_to_exception`` and raises the documented typed exception.
-
-    The patch is idempotent: it bails out when the ``AETHEX-PATCH (AET-1523)``
-    sentinel is already present.
-    """
-    target = GENERATED_DIR / "models" / "http_validation_error.py"
-    if not target.exists():
-        print(f"warn: http-validation-error patch skipped; {target} not found", file=sys.stderr)
-        return 0
-
-    source = target.read_text()
-    if "aethexai-error-envelope-tolerant" in source:
-        print("post-codegen patch: http-validation-error already applied (sentinel present)")
-        return 0
-
-    needle = (
-        "        d = dict(src_dict)\n"
-        '        _detail = d.pop("detail", UNSET)\n'
-        "        detail: list[ValidationError] | Unset = UNSET\n"
-        "        if _detail is not UNSET:\n"
-        "            detail = []\n"
-        "            for detail_item_data in _detail:\n"
-        "                detail_item = ValidationError.from_dict(detail_item_data)\n"
-        "\n"
-        "                detail.append(detail_item)\n"
-    )
-    replacement = (
-        "        # aethexai-error-envelope-tolerant: accept the unified error envelope on 422.\n"
-        "        # The OpenAPI spec types 422 as FastAPI's ``HTTPValidationError``\n"
-        "        # (``detail: list[ValidationError]``), but the real API returns\n"
-        "        # ``{error, code, detail: <string>, request_id}``. Without this guard,\n"
-        "        # ``ValidationError.from_dict(<string>)`` crashes with a ``ValueError``\n"
-        "        # from ``dict(src_dict)``. The generated ``_parse_response`` then\n"
-        "        # propagates the crash to ``_call``, which never reaches\n"
-        "        # ``_map_status_to_exception`` and never raises the documented\n"
-        "        # ``aethexai.ValidationError``. By leaving ``detail`` as ``UNSET`` when\n"
-        "        # it isn't list-of-dicts shaped, and stashing the envelope in\n"
-        "        # ``additional_properties``, ``_parse_response`` stays total: the\n"
-        "        # wrapper layer sees ``response.status_code == 422`` and raises the\n"
-        "        # typed exception via ``_map_status_to_exception(status, response.content, ...)``,\n"
-        "        # which parses the envelope directly. This patch is re-applied by\n"
-        "        # the SDK-sync tooling after every regeneration.\n"
-        "        d = dict(src_dict)\n"
-        '        _detail = d.pop("detail", UNSET)\n'
-        "        detail: list[ValidationError] | Unset = UNSET\n"
-        "        if _detail is not UNSET and isinstance(_detail, list):\n"
-        "            try:\n"
-        "                detail = [ValidationError.from_dict(item) for item in _detail]\n"
-        "            except (ValueError, TypeError, KeyError):\n"
-        "                # Items don't match the FastAPI shape — stash the raw value\n"
-        "                # and let the wrapper layer raise via the envelope parser.\n"
-        "                detail = UNSET\n"
-        '                d["detail"] = _detail\n'
-        "        elif _detail is not UNSET:\n"
-        "            # ``detail`` is a string / non-list — aethex envelope. Preserve\n"
-        "            # the raw value in additional_properties for any caller that\n"
-        '            # introspects ``http_validation_error["detail"]``.\n'
-        '            d["detail"] = _detail\n'
-    )
-    if needle not in source:
-        print(
-            "warn: http-validation-error patch could not locate the stock "
-            "``from_dict`` body in _generated/models/http_validation_error.py. "
-            "openapi-python-client may have changed its output shape — the "
-            "AET-1523 422 crash is at risk of regressing.",
-            file=sys.stderr,
-        )
-        return 2
-    target.write_text(source.replace(needle, replacement))
-    print(
-        "post-codegen patch: applied http-validation-error envelope tolerance to "
-        f"{target.relative_to(REPO_ROOT)}"
-    )
-    return 0
-
-
-# ── Spec sanitization ──────────────────────────────────────────────────────
-#
-# The committed ``openapi.json`` (and every file generated from it) ships to
-# customers. The raw spec dumped from the backend's ``create_app().openapi()``
-# exposes the FULL internal app: operational probes, internal/admin routes, and
-# descriptions that narrate infrastructure, ticket numbers, and internal table
-# names. ``_sanitize_spec`` strips that surface so the published SDK is purely
-# customer-facing while staying functional for every public endpoint. It runs on
-# every sync, so future dumps stay clean without manual intervention.
-
-# Operations carrying any of these OpenAPI tags are internal/operational and
-# never belong in a customer SDK. ``dashboard`` is the developer-portal web-UI
-# surface (not API-key callable, no curated client method). ``developer-auth``
-# is intentionally NOT dropped — ``DeveloperClient`` legitimately uses its
-# refresh / me / logout routes, so stripping the whole tag would break it.
 _NON_PUBLIC_TAGS = frozenset({"internal", "internal-admin", "health", "metrics", "dashboard"})
 
 # Path prefixes that are internal regardless of tagging (belt-and-suspenders).
@@ -744,6 +435,454 @@ def _sanitize_spec(spec: dict[str, Any]) -> dict[str, Any]:
         f"and {dropped_schemas} orphaned schema(s)"
     )
     return spec
+
+
+def _apply_any_2xx_success_patch() -> int:
+    """Broaden each generated ``_parse_response`` success branch to accept any
+    2xx status.
+
+    openapi-python-client emits a single success branch keyed on the one status
+    code the spec documents (``if response.status_code == 200:`` or ``201``).
+    Resource-creation POSTs answer ``201`` on the current backend but ``200`` on
+    a backend that predates that change, so a wrapper hitting the undocumented
+    status would get ``response.parsed is None`` and silently drop the created
+    resource. Broadening the success check to ``200 <= response.status_code <
+    300`` returns the parsed body (typed model or raw dict, exactly as the spec
+    declares it) for either status — no per-endpoint list, and it composes with
+    typed response models. Idempotent via the range-check sentinel; the ``422``
+    and unexpected-status branches are untouched.
+    """
+    api_dir = GENERATED_DIR / "api"
+    if not api_dir.is_dir():
+        return 0
+    success_re = re.compile(r"^( {4})if response\.status_code == 2\d\d:", re.MULTILINE)
+    patched = 0
+    for path in sorted(api_dir.rglob("*.py")):
+        source = path.read_text()
+        if "200 <= response.status_code < 300" in source:
+            continue  # already broadened
+        match = success_re.search(source)
+        if match is None:
+            continue  # no success branch (e.g. a no-content op)
+        indent = match.group(1)
+        # Broaden the condition AND guard the body parse: a 2xx with no content
+        # (e.g. a 204 from DELETE) must return None, not crash in response.json().
+        new_source = (
+            source[: match.start()]
+            + f"{indent}if 200 <= response.status_code < 300:\n"
+            + f"{indent}    if not response.content:\n"
+            + f"{indent}        return None"
+            + source[match.end() :]
+        )
+        path.write_text(new_source)
+        patched += 1
+    print(f"post-codegen patch: broadened success branch to any-2xx in {patched} op(s)")
+    return 0
+
+
+def regenerate_client() -> int:
+    """Re-run the OpenAPI client generator against the freshly-written spec.
+
+    The SDK's ``_generated/`` directory was produced by ``openapi-python-client``
+    (detectable from the ``AuthenticatedClient``/``Client`` layout). We invoke
+    the tool via ``uv tool run`` so it doesn't need to be a project dep.
+    If the tool isn't available, we warn and continue rather than failing --
+    drift is still reported to the caller, who can decide what to do.
+
+    Returns the generator's exit code, or 0 if we deliberately skipped.
+    """
+    uv = shutil.which("uv")
+    if uv is None:
+        print(
+            "warn: uv not on PATH; skipping client regeneration. "
+            "Install uv (https://docs.astral.sh/uv/) and rerun with --apply, "
+            "or run the generator manually.",
+            file=sys.stderr,
+        )
+        return 0
+
+    # ``--meta none`` keeps the generator from rewriting pyproject.toml /
+    # README; we own those files. ``--overwrite`` lets it replace the
+    # existing _generated/ tree without complaining.
+    # TODO(codegen-agent): if the parallel codegen agent settles on a
+    # different invocation (e.g. a config file, a different tool), swap
+    # this call out. The contract is: regenerate ``src/aethexai/_generated/``
+    # in place from ``openapi.json``.
+    cmd = [
+        uv,
+        "tool",
+        "run",
+        "--from",
+        "openapi-python-client==0.28.4",
+        "openapi-python-client",
+        "generate",
+        "--path",
+        str(SPEC_PATH),
+        "--meta",
+        "none",
+        "--overwrite",
+        "--output-path",
+        str(GENERATED_DIR),
+    ]
+    print(f"running: {' '.join(cmd)}")
+    result = subprocess.run(cmd, check=False)
+    if result.returncode != 0:
+        print(
+            f"warn: client generator exited {result.returncode}. "
+            "openapi.json has still been updated; regenerate manually.",
+            file=sys.stderr,
+        )
+        return result.returncode
+
+    patch_rc = _apply_post_codegen_patches()
+    if patch_rc != 0:
+        return patch_rc
+    http_patch_rc = _apply_http_validation_error_patch()
+    if http_patch_rc != 0:
+        return http_patch_rc
+    created_201_rc = _apply_created_201_patch()
+    if created_201_rc != 0:
+        return created_201_rc
+    paginated_rc = _apply_paginated_list_ergonomics_patch()
+    if paginated_rc != 0:
+        return paginated_rc
+    # AET-1597: must run AFTER created_201 so the 201 branches already exist
+    # before we rewrite them to AgentResponse.from_dict().
+    typed_agent_rc = _apply_typed_agent_response_patch()
+    if typed_agent_rc != 0:
+        return typed_agent_rc
+    any_2xx_rc = _apply_any_2xx_success_patch()
+    if any_2xx_rc != 0:
+        return any_2xx_rc
+    _strip_generated_comments()
+    return result.returncode
+
+
+def _apply_post_codegen_patches() -> int:
+    """Re-apply hand-maintained patches after openapi-python-client overwrites _generated/.
+
+    Today there is exactly one patch: mark ``AuthenticatedClient.token`` and
+    both ``Client._headers`` / ``AuthenticatedClient._headers`` as
+    ``repr=False`` so the API key never appears in ``repr(client)`` /
+    ``str(vars(client._client))`` / sentry breadcrumbs / pytest assertion
+    failure messages. The patch is idempotent: it checks for the
+    ``_SECRET_FIELDS_PATCHED`` sentinel at the top of ``_generated/client.py``
+    before editing, and re-adds the sentinel + ``repr=False`` flags if missing.
+
+    See finding A.5 in ``docs/audits/pre-launch-2026-05-17.md``.
+    """
+    client_py = GENERATED_DIR / "client.py"
+    if not client_py.exists():
+        print(f"warn: post-codegen patch skipped; {client_py} not found", file=sys.stderr)
+        return 0
+
+    source = client_py.read_text()
+
+    if "_SECRET_FIELDS_PATCHED" in source:
+        print("post-codegen patch: already applied (sentinel present)")
+        return 0
+
+    # 1. Add ``repr=False`` to the two ``_headers`` field declarations and the
+    #    ``token`` field on AuthenticatedClient. Use literal string replacement
+    #    with the exact codegen-shape lines — if the codegen output changes
+    #    those line shapes, this will surface as a no-op-and-warn rather than
+    #    a silent miss.
+    replacements = [
+        (
+            '    _headers: dict[str, str] = field(factory=dict, kw_only=True, alias="headers")\n',
+            '    _headers: dict[str, str] = field(factory=dict, kw_only=True, alias="headers", repr=False)\n',
+        ),
+        (
+            "\n    token: str\n",
+            "\n    token: str = field(repr=False)\n",
+        ),
+    ]
+    patched = source
+    misses: list[str] = []
+    for needle, replacement in replacements:
+        if needle not in patched:
+            misses.append(needle.strip())
+            continue
+        # ``_headers`` appears on both Client and AuthenticatedClient, both need it.
+        patched = patched.replace(needle, replacement)
+
+    if misses:
+        print(
+            "warn: post-codegen patch could not locate the following lines "
+            "in _generated/client.py — openapi-python-client may have changed "
+            "its output shape. The API key is at risk of leaking in repr().\n"
+            "Missing patterns:\n  - " + "\n  - ".join(misses),
+            file=sys.stderr,
+        )
+        return 2
+
+    # 2. Add the sentinel right after the imports.
+    sentinel = (
+        "\n# Sentinel: confirms the secret-fields-repr-suppression patch has been applied\n"
+        "# to this codegen file. ``scripts/sync_from_prod.py`` re-applies the patch\n"
+        "# after every ``openapi-python-client generate`` and uses this sentinel to\n"
+        "# detect already-patched files. DO NOT remove without auditing every call\n"
+        "# site that depends on ``token`` and the auth-header value not appearing in\n"
+        "# ``repr(client)`` / structured-log output. See"
+        " ``docs/audits/pre-launch-2026-05-17.md`` finding A.5.\n"
+        "_SECRET_FIELDS_PATCHED = True\n"
+    )
+    # Anchor on any ``from attrs import ...`` line. openapi-python-client has
+    # reordered the imports between releases (e.g. ``define, evolve, field`` vs
+    # ``define, field, evolve``); matching the line by prefix avoids a brittle
+    # exact-string check.
+    anchor_match = re.search(r"^from attrs import [^\n]*\n", patched, flags=re.MULTILINE)
+    if anchor_match is None:
+        print(
+            "warn: post-codegen patch could not find a 'from attrs import ...' "
+            "anchor; sentinel not inserted. Patch may have already partially applied.",
+            file=sys.stderr,
+        )
+        return 2
+    insert_at = anchor_match.end()
+    patched = patched[:insert_at] + sentinel + patched[insert_at:]
+
+    client_py.write_text(patched)
+    print(
+        "post-codegen patch: applied secret-fields-repr-suppression to "
+        f"{client_py.relative_to(REPO_ROOT)}"
+    )
+    return 0
+
+
+def _apply_http_validation_error_patch() -> int:
+    """Re-apply the AET-1523 patch to ``_generated/models/http_validation_error.py``.
+
+    The OpenAPI spec types every 422 response as FastAPI's
+    ``HTTPValidationError`` (``detail: list[ValidationError]``), but the real
+    aethex API returns ``{error, code, detail: <string>, request_id}``. The
+    stock codegen ``from_dict`` iterates ``detail`` and calls
+    ``ValidationError.from_dict(<string>)`` -> ``dict(<string>)`` -> ``ValueError``.
+    That escapes ``_call`` and customers see a stdlib crash instead of
+    ``aethexai.ValidationError``.
+
+    This patch rewrites ``from_dict`` to leave ``detail`` as ``UNSET`` when it
+    isn't list-of-dicts shaped and stashes the raw envelope in
+    ``additional_properties``. ``_call`` then reaches
+    ``_map_status_to_exception`` and raises the documented typed exception.
+
+    The patch is idempotent: it bails out when the ``AETHEX-PATCH (AET-1523)``
+    sentinel is already present.
+    """
+    target = GENERATED_DIR / "models" / "http_validation_error.py"
+    if not target.exists():
+        print(f"warn: http-validation-error patch skipped; {target} not found", file=sys.stderr)
+        return 0
+
+    source = target.read_text()
+    if "AETHEX-PATCH (AET-1523)" in source:
+        print("post-codegen patch: http-validation-error already applied (sentinel present)")
+        return 0
+
+    needle = (
+        "        d = dict(src_dict)\n"
+        '        _detail = d.pop("detail", UNSET)\n'
+        "        detail: list[ValidationError] | Unset = UNSET\n"
+        "        if _detail is not UNSET:\n"
+        "            detail = []\n"
+        "            for detail_item_data in _detail:\n"
+        "                detail_item = ValidationError.from_dict(detail_item_data)\n"
+        "\n"
+        "                detail.append(detail_item)\n"
+    )
+    replacement = (
+        "        # AETHEX-PATCH (AET-1523): tolerate the aethex unified error envelope.\n"
+        "        # The OpenAPI spec types 422 as FastAPI's ``HTTPValidationError``\n"
+        "        # (``detail: list[ValidationError]``), but the real API returns\n"
+        "        # ``{error, code, detail: <string>, request_id}``. Without this guard,\n"
+        "        # ``ValidationError.from_dict(<string>)`` crashes with a ``ValueError``\n"
+        "        # from ``dict(src_dict)``. The generated ``_parse_response`` then\n"
+        "        # propagates the crash to ``_call``, which never reaches\n"
+        "        # ``_map_status_to_exception`` and never raises the documented\n"
+        "        # ``aethexai.ValidationError``. By leaving ``detail`` as ``UNSET`` when\n"
+        "        # it isn't list-of-dicts shaped, and stashing the envelope in\n"
+        "        # ``additional_properties``, ``_parse_response`` stays total: the\n"
+        "        # wrapper layer sees ``response.status_code == 422`` and raises the\n"
+        "        # typed exception via ``_map_status_to_exception(status, response.content, ...)``,\n"
+        "        # which parses the envelope directly. This patch is re-applied by\n"
+        "        # ``scripts/sync_from_prod.py`` after every regeneration.\n"
+        "        d = dict(src_dict)\n"
+        '        _detail = d.pop("detail", UNSET)\n'
+        "        detail: list[ValidationError] | Unset = UNSET\n"
+        "        if _detail is not UNSET and isinstance(_detail, list):\n"
+        "            try:\n"
+        "                detail = [ValidationError.from_dict(item) for item in _detail]\n"
+        "            except (ValueError, TypeError, KeyError):\n"
+        "                # Items don't match the FastAPI shape — stash the raw value\n"
+        "                # and let the wrapper layer raise via the envelope parser.\n"
+        "                detail = UNSET\n"
+        '                d["detail"] = _detail\n'
+        "        elif _detail is not UNSET:\n"
+        "            # ``detail`` is a string / non-list — aethex envelope. Preserve\n"
+        "            # the raw value in additional_properties for any caller that\n"
+        '            # introspects ``http_validation_error["detail"]``.\n'
+        '            d["detail"] = _detail\n'
+    )
+    if needle not in source:
+        print(
+            "warn: http-validation-error patch could not locate the stock "
+            "``from_dict`` body in _generated/models/http_validation_error.py. "
+            "openapi-python-client may have changed its output shape — the "
+            "AET-1523 422 crash is at risk of regressing.",
+            file=sys.stderr,
+        )
+        return 2
+    target.write_text(source.replace(needle, replacement))
+    print(
+        "post-codegen patch: applied http-validation-error envelope tolerance to "
+        f"{target.relative_to(REPO_ROOT)}"
+    )
+    return 0
+
+
+# AET-1580: resource-creation endpoints whose backend returns HTTP 201 Created
+# (aethex PR #955 / AET-1566). Once ``openapi.json`` declares ``201`` for these
+# routes, openapi-python-client emits a native ``201`` branch and the patch is
+# a no-op skip. The list and patch remain as a defensive net: if a future spec
+# dump regresses to ``200``-only, or codegen reverts to a 200-only shape, the
+# patch re-applies the ``201`` branch so create wrappers don't silently return
+# ``None``. Each path is relative to ``src/aethexai/_generated/api/``; keep it
+# in sync with the ``status_code=201`` resource-creation routes in the backend.
+_CREATED_201_ENDPOINTS = (
+    # Public resource-creation POSTs only; internal surfaces (e.g. the developer
+    # dashboard) are dropped by _sanitize_spec and intentionally absent here.
+    "agents/create_agent_api_v1_agents_post.py",
+    "agents/duplicate_agent_api_v1_agents_agent_id_duplicate_post.py",
+    "agents/add_tool_api_v1_agents_agent_id_tools_post.py",
+    "agents/upload_knowledge_doc_api_v1_agents_agent_id_knowledge_base_post.py",
+    "agents/upload_knowledge_doc_by_upload_api_v1_agents_agent_id_knowledge_base_by_upload_post.py",
+    "api_keys/create_api_key_api_v1_api_keys_post.py",
+    "calls/create_call_record_api_v1_calls_post.py",
+    "calls/batch_calls_api_v1_calls_batch_post.py",
+    "conversation/connect_api_v1_conversation_connect_post.py",
+    "phone_numbers/register_twilio_api_v1_phone_numbers_twilio_register_post.py",
+    "phone_numbers/register_sip_api_v1_phone_numbers_sip_register_post.py",
+    "tts/batch_synthesize_api_v1_tts_batch_post.py",
+)
+
+_CREATED_201_SENTINEL = "# AETHEX-PATCH (AET-1580)"
+# AET-1597 upgraded the agent endpoints to typed AgentResponse.from_dict() parsing.
+# Recognise both sentinel forms so idempotency checks don't re-patch already-fixed files.
+_CREATED_201_SENTINELS = (_CREATED_201_SENTINEL, "# AETHEX-PATCH (AET-1597)")
+
+# AET-1597: agent endpoints that must return a typed ``AgentResponse`` instead of
+# a raw dict / None.  Three distinct shapes:
+#   - create_agent  (POST → 201, also handle 200 for compatibility)
+#   - update_agent  (PATCH → 200 only)
+#   - duplicate_agent (POST → 201, also handle 200 for compatibility)
+# Maps relative-to-api-dir path → tuple of success status codes (primary first).
+_TYPED_AGENT_RESPONSE_ENDPOINTS: dict[str, tuple[int, ...]] = {
+    "agents/create_agent_api_v1_agents_post.py": (201, 200),
+    "agents/update_agent_api_v1_agents_agent_id_patch.py": (200,),
+    "agents/duplicate_agent_api_v1_agents_agent_id_duplicate_post.py": (201, 200),
+}
+
+_TYPED_AGENT_RESPONSE_SENTINEL = "# AETHEX-PATCH (AET-1597)"
+
+
+def _patch_created_201_source(source: str) -> str | None:
+    """Add a ``201`` branch mirroring the ``200`` branch in a ``_parse_response``.
+
+    Returns the patched source, ``None`` if no patch is needed (file already
+    patched, or codegen already produced a native ``201`` branch from a
+    spec that declares ``201``), or raises ``ValueError`` if neither a ``200``
+    nor a ``201`` branch can be located -- indicating openapi-python-client's
+    output shape changed in an unexpected way.
+
+    openapi-python-client emits the success branch as either an untyped
+    pass-through::
+
+        if response.status_code == 200:
+            response_200 = response.json()
+            return response_200
+
+    or a typed model parse::
+
+        if response.status_code == 200:
+            response_200 = SomeModel.from_dict(response.json())
+
+            return response_200
+
+    Both forms are duplicated verbatim with ``200`` -> ``201`` so a 201 Created
+    response is parsed into the same model (or raw body) instead of falling
+    through to ``return None``.
+
+    Note: For agent endpoints (create_agent, duplicate_agent) the 200 branch now
+    calls ``AgentResponse.from_dict(response.json())`` following AET-1597. When
+    the spec is in sync (openapi.json references AgentResponse for 201/200),
+    openapi-python-client will generate typed branches natively and this patch
+    is a no-op (the native 201 check below skips it). The patch acts as a
+    defensive net for any spec regression. Re-applied by sync_from_prod.py.
+    """
+    if any(sentinel in source for sentinel in _CREATED_201_SENTINELS):
+        return None
+    if re.search(r"^ {4}if response\.status_code == 201:", source, re.MULTILINE):
+        # Codegen produced a native 201 branch directly (the spec declares 201
+        # for this route). Nothing to patch -- this is the expected steady
+        # state after openapi.json is in sync with the backend.
+        return None
+
+    match = re.search(
+        r"( {4}if response\.status_code == 200:\n(?: {8}.*\n|\n)*? {8}return response_200\n)",
+        source,
+    )
+    if match is None:
+        raise ValueError("could not locate the stock 200 branch in _parse_response")
+
+    block_200 = match.group(1)
+    block_201 = (
+        f"    {_CREATED_201_SENTINEL}: backend returns 201 Created on this resource POST\n"
+        "    # (aethex PR #955). Parse it exactly like 200 so the wrapper layer returns\n"
+        "    # the created resource instead of None. Re-applied by sync_from_prod.py.\n"
+        + block_200.replace("status_code == 200", "status_code == 201").replace(
+            "response_200", "response_201"
+        )
+    )
+    insert_at = match.start()
+    return source[:insert_at] + block_201 + "\n" + source[insert_at:]
+
+
+def _apply_created_201_patch() -> int:
+    """Re-apply the AET-1580 patch: parse HTTP 201 create responses like 200.
+
+    Idempotent via the ``AETHEX-PATCH (AET-1580)`` sentinel. Each target file is
+    patched independently; a single miss is fatal (return 2) so the regression
+    surfaces loudly rather than silently letting create wrappers return ``None``.
+    """
+    api_dir = GENERATED_DIR / "api"
+    patched = 0
+    for rel in _CREATED_201_ENDPOINTS:
+        target = api_dir / rel
+        if not target.exists():
+            print(
+                f"warn: created-201 patch could not find {target.relative_to(REPO_ROOT)}; "
+                "the endpoint may have been renamed or removed. Update "
+                "_CREATED_201_ENDPOINTS in scripts/sync_from_prod.py.",
+                file=sys.stderr,
+            )
+            return 2
+        source = target.read_text()
+        try:
+            new_source = _patch_created_201_source(source)
+        except ValueError as exc:
+            print(
+                f"warn: created-201 patch failed for {target.relative_to(REPO_ROOT)}: {exc}. "
+                "openapi-python-client may have changed its output shape — the AET-1580 "
+                "201 fix is at risk of regressing.",
+                file=sys.stderr,
+            )
+            return 2
+        if new_source is None:
+            continue  # already patched
+        target.write_text(new_source)
+        patched += 1
+    print(f"post-codegen patch: applied created-201 handling to {patched} endpoint(s)")
+    return 0
 
 
 _PAGINATED_ERGONOMICS_SENTINEL = "# AETHEX-PATCH (AET-1598)"
@@ -1031,6 +1170,169 @@ def _apply_paginated_list_ergonomics_patch() -> int:
     print(
         f"post-codegen patch: AET-1598 paginated-list ergonomics applied to {patched_count} file(s)"
     )
+    return 0
+
+
+def _patch_agent_response_source(source: str, success_codes: tuple[int, ...]) -> str | None:
+    """Rewrite success branches in a ``_parse_response`` to use ``AgentResponse.from_dict``.
+
+    This is the AET-1597 durable-typing patch. It guarantees that even when
+    ``openapi.json`` declares ``{}`` (untyped) for an agent endpoint — e.g. while
+    the backend PR adding ``response_model`` is in flight — the generated
+    ``_parse_response`` still returns a typed ``AgentResponse`` instead of a raw
+    ``dict`` or ``None``.
+
+    ``success_codes`` is an ordered tuple of the HTTP status codes to rewrite,
+    primary first (e.g. ``(201, 200)`` for create/duplicate, ``(200,)`` for update).
+
+    The function handles four codegen shapes for each success branch:
+
+    1. Untyped pass-through (spec: ``{}``)::
+
+           if response.status_code == 200:
+               response_200 = response.json()
+               return response_200
+
+    2. ``cast`` pass-through (spec: ``{}``, typed codegen variant)::
+
+           if response.status_code == 200:
+               response_200 = cast(Any, response.json())
+               return response_200
+
+    3. Already-typed with a *different* model (spec has a schema, wrong model)::
+
+           if response.status_code == 200:
+               response_200 = SomeOtherModel.from_dict(response.json())
+
+               return response_200
+
+    4. Already correct — ``AgentResponse.from_dict`` present (patch is a no-op).
+
+    Returns the patched source string, or ``None`` if the patch was not needed
+    (sentinel already present, or all branches already call ``AgentResponse.from_dict``).
+    Raises ``ValueError`` if a required success branch cannot be located.
+    """
+    if _TYPED_AGENT_RESPONSE_SENTINEL in source:
+        return None
+
+    # Check if ALL required success branches already call AgentResponse.from_dict —
+    # that means a prior patch pass (or perfect codegen from a synced spec) has already
+    # typed the file correctly. Skip rather than double-patch.
+    all_already_typed = all(
+        re.search(
+            rf"^ {{4}}if response\.status_code == {code}:\n"
+            rf" {{8}}response_{code} = AgentResponse\.from_dict\(response\.json\(\)\)",
+            source,
+            re.MULTILINE,
+        )
+        for code in success_codes
+    )
+    if all_already_typed:
+        return None
+
+    patched = source
+    for code in success_codes:
+        # Match each success branch regardless of whether it's untyped, cast, or
+        # typed with a different model. The branch always ends with ``return response_NNN``.
+        branch_re = re.compile(
+            rf"( {{4}}if response\.status_code == {code}:\n"
+            rf"(?: {{8}}.*\n|\n)*? {{8}}return response_{code}\n)",
+            re.MULTILINE,
+        )
+        match = branch_re.search(patched)
+        if match is None:
+            # Branch is absent — only raise if this is the primary code; secondary
+            # codes (e.g. 200 on a POST that the spec only declares 201) may
+            # legitimately be missing from fresh codegen.
+            if code == success_codes[0]:
+                raise ValueError(
+                    f"could not locate the status_code == {code} branch in _parse_response"
+                )
+            continue  # secondary branch missing — skip
+
+        typed_block = (
+            f"    {_TYPED_AGENT_RESPONSE_SENTINEL}: return typed AgentResponse instead of raw dict.\n"
+            f"    # Durable across regen: even if openapi.json declares {{}} for this response\n"
+            f"    # (e.g. duplicate_agent before its backend response_model ships), this patch\n"
+            f"    # re-applies AgentResponse.from_dict() on every sync. Re-applied by sync_from_prod.py.\n"
+            f"    if response.status_code == {code}:\n"
+            f"        response_{code} = AgentResponse.from_dict(response.json())\n"
+            f"\n"
+            f"        return response_{code}\n"
+        )
+        patched = patched[: match.start()] + typed_block + patched[match.end() :]
+
+    # Ensure AgentResponse is imported; openapi-python-client may not emit the import
+    # when the spec schema is ``{}``.
+    agent_response_import = "from ...models.agent_response import AgentResponse\n"
+    if agent_response_import not in patched:
+        # Insert after the last ``from ...models.`` import line, or after the last
+        # top-level ``from`` import if no models imports exist.
+        insert_match = re.search(
+            r"((?:from \.\.\.models\.[^\n]+\n)+)",
+            patched,
+        )
+        if insert_match:
+            insert_pos = insert_match.end()
+            patched = patched[:insert_pos] + agent_response_import + patched[insert_pos:]
+        else:
+            # Fallback: insert after the last ``from`` import block.
+            last_import = None
+            for m in re.finditer(r"^from [^\n]+\n", patched, re.MULTILINE):
+                last_import = m
+            if last_import:
+                insert_pos = last_import.end()
+                patched = patched[:insert_pos] + agent_response_import + patched[insert_pos:]
+
+    return patched
+
+
+def _apply_typed_agent_response_patch() -> int:
+    """Re-apply the AET-1597 patch: ensure agent ops return typed ``AgentResponse``.
+
+    Covers all three agent mutation endpoints:
+    - ``create_agent``    (POST 201, also 200 for compatibility)
+    - ``update_agent``    (PATCH 200)
+    - ``duplicate_agent`` (POST 201, also 200 for compatibility)
+
+    This patch is *durable*: it guarantees ``AgentResponse.from_dict()`` parsing
+    even when ``openapi.json`` declares ``{}`` for the response (e.g. while the
+    ``duplicate_agent`` backend ``response_model`` PR is still in flight, or if a
+    future spec dump regresses). It runs after ``_apply_created_201_patch`` so
+    the 201 branches already exist when we rewrite them.
+
+    Idempotent via the ``AETHEX-PATCH (AET-1597)`` sentinel. Fatal (return 2) on
+    any miss so the regression surfaces loudly.
+    """
+    api_dir = GENERATED_DIR / "api"
+    patched = 0
+    for rel, success_codes in _TYPED_AGENT_RESPONSE_ENDPOINTS.items():
+        target = api_dir / rel
+        if not target.exists():
+            print(
+                f"warn: typed-agent-response patch could not find "
+                f"{target.relative_to(REPO_ROOT)}; the endpoint may have been renamed. "
+                "Update _TYPED_AGENT_RESPONSE_ENDPOINTS in scripts/sync_from_prod.py.",
+                file=sys.stderr,
+            )
+            return 2
+        source = target.read_text()
+        try:
+            new_source = _patch_agent_response_source(source, success_codes)
+        except ValueError as exc:
+            print(
+                f"warn: typed-agent-response patch failed for "
+                f"{target.relative_to(REPO_ROOT)}: {exc}. "
+                "openapi-python-client may have changed its output shape — typed "
+                "AgentResponse parsing (AET-1597) is at risk of regressing.",
+                file=sys.stderr,
+            )
+            return 2
+        if new_source is None:
+            continue  # already patched or all branches already correct
+        target.write_text(new_source)
+        patched += 1
+    print(f"post-codegen patch: applied typed-agent-response (AET-1597) to {patched} endpoint(s)")
     return 0
 
 

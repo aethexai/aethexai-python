@@ -32,6 +32,11 @@ realtime = [
     { name = "av" },
 ]
 
+[package.dev-dependencies]
+dev = [
+    { name = "respx" },
+]
+
 [package.metadata]
 requires-dist = [
     { name = "aioice", marker = "extra == 'realtime'", specifier = ">=0.9.0,<0.10" },
@@ -49,6 +54,9 @@ requires-dist = [
     { name = "types-python-dateutil", marker = "extra == 'dev'" },
 ]
 provides-extras = ["realtime", "dev"]
+
+[package.metadata.requires-dev]
+dev = [{ name = "respx", specifier = ">=0.23.1" }]
 
 [[package]]
 name = "aioice"

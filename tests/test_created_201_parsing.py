@@ -34,7 +34,13 @@ def client() -> AethexAI:
 
 @respx.mock
 def test_create_agent_parses_201_body(client: AethexAI) -> None:
-    """Untyped (``Any``) success route: 201 body must come back, not None."""
+    """Typed (``AgentResponse``) success route: 201 body must come back as a typed model.
+
+    AET-1597: upgraded from raw dict to ``AgentResponse``; access via attribute
+    (``agent.id``) instead of dict key (``agent["id"]``).
+    """
+    from aethexai._generated.models.agent_response import AgentResponse
+
     respx.post(f"{BASE_URL}/api/v1/agents").mock(
         return_value=httpx.Response(201, json={"id": "agent-1", "name": "Bot"})
     )
@@ -42,7 +48,8 @@ def test_create_agent_parses_201_body(client: AethexAI) -> None:
     agent = client.create_agent(name="Bot", system_prompt="hi", voice_id="fatima")
 
     assert agent is not None
-    assert agent["id"] == "agent-1"
+    assert isinstance(agent, AgentResponse)
+    assert agent.id == "agent-1"
 
 
 @respx.mock
@@ -84,7 +91,9 @@ def test_batch_synthesize_parses_201_typed_model(client: AethexAI) -> None:
 
 @respx.mock
 def test_create_agent_still_parses_200_body(client: AethexAI) -> None:
-    """The 200 branch is preserved alongside the new 201 branch."""
+    """The 200 branch is preserved alongside the 201 branch, and now also typed."""
+    from aethexai._generated.models.agent_response import AgentResponse
+
     respx.post(f"{BASE_URL}/api/v1/agents").mock(
         return_value=httpx.Response(200, json={"id": "agent-200", "name": "Bot"})
     )
@@ -92,4 +101,5 @@ def test_create_agent_still_parses_200_body(client: AethexAI) -> None:
     agent = client.create_agent(name="Bot", system_prompt="hi", voice_id="fatima")
 
     assert agent is not None
-    assert agent["id"] == "agent-200"
+    assert isinstance(agent, AgentResponse)
+    assert agent.id == "agent-200"
