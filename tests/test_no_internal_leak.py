@@ -36,6 +36,23 @@ FORBIDDEN = {
         r"\b(redis|vllm|omniasr|clickhouse|langfuse|coturn|pgbouncer|karpenter)\b",
         re.IGNORECASE,
     ),
+    # Competitive-intelligence classes surfaced by the external-launch audit.
+    "ml model names": re.compile(r"\b(qwen\w*|wav2vec\w*|nano[-_]?qwen\w*)\b", re.IGNORECASE),
+    "ml model sizing": re.compile(r"\bmodel_size\b"),
+    "aws managed services": re.compile(r"\b(eks|ecr|elasticache)\b", re.IGNORECASE),
+    "object storage": re.compile(r"\bS3\b"),
+    "queue runtime": re.compile(r"\bARQ\b"),
+    "kubernetes orchestration": re.compile(r"\b(kubernetes|k8s)\b", re.IGNORECASE),
+    "pod topology": re.compile(
+        r"\b(pod[- ]aware|cross[- ]pod|pod routing|different pod)\b", re.IGNORECASE
+    ),
+    "internal config constants": re.compile(r"\bPAYG_[A-Z_]+\b"),
+    "internal storage internals": re.compile(r"recording uploader|EncryptedString"),
+    # WebRTC TURN/STUN provider — naming it lets a competitor infer our edge stack.
+    "webrtc edge vendor": re.compile(r"cloudflare", re.IGNORECASE),
+    # Lowercase ``<name>-aethex`` is an internal GitHub username; the public
+    # ``X-Aethex-Signature`` webhook header is deliberately not matched.
+    "engineer review notes": re.compile(r"\b[a-z]{3,}-aethex\b|\bround-\d+ MUST\b"),
 }
 
 

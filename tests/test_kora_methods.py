@@ -342,7 +342,8 @@ def test_kora_list_conversations_filters_by_agent_client_side(kora: Kora) -> Non
 
     assert route.called
     assert len(result.data) == 1
-    assert result.data[0]["agent_id"] == "a1"
+    # AET-1598: .data items are now typed ConversationResponse objects.
+    assert result.data[0].agent_id == "a1"
 
 
 @respx.mock

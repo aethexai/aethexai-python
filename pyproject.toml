@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "aethexai"
-version = "0.2.1"
+version = "0.3.0"
 description = "Official Python SDK for the Aethex voice AI platform"
 readme = "README.md"
 license = "MIT"
@@ -42,15 +42,21 @@ Issues = "https://github.com/aethexai/aethexai-python/issues"
 Changelog = "https://github.com/aethexai/aethexai-python/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
-# The realtime extra installs aiortc + aioice + av (PyAV). PyAV requires
-# system libavcodec/libavformat/libavutil/libswscale/libswresample headers
-# at install time. On Debian/Ubuntu: ``apt install libavformat-dev
-# libavfilter-dev libavdevice-dev``. On macOS: ``brew install ffmpeg``.
-# Without those, the wheel build fails.
+# The realtime extra installs aiortc + aioice + av (PyAV).
+#
+# av excludes 14.4.0 because that release is published sdist-only (14.3.0 has no
+# usable files and 14.2.1 was never released), which forces a from-source build
+# that needs FFmpeg dev headers and only compiles against FFmpeg <=7.
+# The constraint resolves to av 14.2.0 — the newest 14.x shipping binary wheels
+# (cp310-cp313, manylinux/macOS/Windows) — so supported Pythons install with no
+# system FFmpeg. (Alpine/musl has no av-14.x musllinux wheel and still builds
+# from source.) Moving av forward is blocked upstream: the aioice<0.10 pin below
+# (load-bearing for _aioice_patches.py) caps aiortc at 1.11.0, which itself caps
+# av<15 — so av>=15 is unreachable until aioice/aiortc are bumped.
 realtime = [
     "aiortc>=1.9.0",
     "aioice>=0.9.0,<0.10",
-    "av>=12.0.0",
+    "av>=14.0.0,!=14.4.0,<15",
 ]
 dev = [
     "pytest>=8.0",

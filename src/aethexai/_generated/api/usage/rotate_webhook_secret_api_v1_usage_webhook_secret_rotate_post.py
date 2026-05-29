@@ -50,23 +50,13 @@ def sync_detailed(
 ) -> Response[Any]:
     """Rotate Webhook Secret
 
-     Generate (or replace) the tenant-level webhook signing secret. Tenant-owned webhook bodies are
-    signed with this secret via
-    HMAC-SHA256 (``X-Aethex-Signature`` header). This includes usage
-    triggers, async transcription callbacks, and TTS batch callbacks. The secret is returned exactly
-    once — store it securely. Rotating
-    replaces it immediately; in-flight deliveries signed with the old
-    secret will fail HMAC verification on the receiver side until you
-    update your handler. A tenant that has never called this endpoint has no signing secret;
-    the trigger evaluator records those firings as ``failed`` with
-    ``last_error='tenant has no webhook_secret configured'``. Concurrency: the tenant row is locked with
-    ``SELECT... FOR UPDATE``
-    for the duration of this transaction so two simultaneous rotate
-    calls serialise. Without the lock both callers could read the same
-    pre-state, generate different new secrets, and only the last
-    commit's secret would persist — the earlier caller would walk
-    away with a secret that is already invalid and every webhook
-    delivery to them would HMAC-mismatch.
+     Generate (or replace) the tenant-level webhook signing secret. Webhook bodies — usage triggers,
+    async transcription callbacks, and TTS batch callbacks — are signed with this secret via HMAC-SHA256
+    (``X-Aethex-Signature`` header). The secret is returned exactly once — store it securely. Rotation
+    takes effect immediately; in-flight deliveries signed with the old secret will fail HMAC
+    verification on your receiver until you update your handler. Until you first call this endpoint the
+    tenant has no signing secret, so usage-trigger firings are recorded as ``failed`` until one is
+    configured. Concurrent rotate calls are serialized, so exactly one new secret takes effect.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -91,23 +81,13 @@ async def asyncio_detailed(
 ) -> Response[Any]:
     """Rotate Webhook Secret
 
-     Generate (or replace) the tenant-level webhook signing secret. Tenant-owned webhook bodies are
-    signed with this secret via
-    HMAC-SHA256 (``X-Aethex-Signature`` header). This includes usage
-    triggers, async transcription callbacks, and TTS batch callbacks. The secret is returned exactly
-    once — store it securely. Rotating
-    replaces it immediately; in-flight deliveries signed with the old
-    secret will fail HMAC verification on the receiver side until you
-    update your handler. A tenant that has never called this endpoint has no signing secret;
-    the trigger evaluator records those firings as ``failed`` with
-    ``last_error='tenant has no webhook_secret configured'``. Concurrency: the tenant row is locked with
-    ``SELECT... FOR UPDATE``
-    for the duration of this transaction so two simultaneous rotate
-    calls serialise. Without the lock both callers could read the same
-    pre-state, generate different new secrets, and only the last
-    commit's secret would persist — the earlier caller would walk
-    away with a secret that is already invalid and every webhook
-    delivery to them would HMAC-mismatch.
+     Generate (or replace) the tenant-level webhook signing secret. Webhook bodies — usage triggers,
+    async transcription callbacks, and TTS batch callbacks — are signed with this secret via HMAC-SHA256
+    (``X-Aethex-Signature`` header). The secret is returned exactly once — store it securely. Rotation
+    takes effect immediately; in-flight deliveries signed with the old secret will fail HMAC
+    verification on your receiver until you update your handler. Until you first call this endpoint the
+    tenant has no signing secret, so usage-trigger firings are recorded as ``failed`` until one is
+    configured. Concurrent rotate calls are serialized, so exactly one new secret takes effect.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.

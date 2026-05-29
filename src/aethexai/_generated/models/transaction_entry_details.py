@@ -14,8 +14,8 @@ T = TypeVar("T", bound="TransactionEntryDetails")
 
 @_attrs_define
 class TransactionEntryDetails:
-    """Free-form metadata (call_id, resource counts, idempotency key, etc). Shape is not guaranteed and may change per
-    tx_type.
+    """Free-form metadata (call_id, resource counts, idempotency key, etc). Shape is not guaranteed and may vary by
+    transaction type.
 
     """
 

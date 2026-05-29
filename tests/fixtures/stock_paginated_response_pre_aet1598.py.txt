@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from typing import Any, Generic, TypeVar, BinaryIO, TextIO, TYPE_CHECKING
+from typing import Any, TypeVar, BinaryIO, TextIO, TYPE_CHECKING, Generator
 
 from attrs import define as _attrs_define
 from attrs import field as _attrs_field
@@ -12,44 +12,27 @@ from ..types import UNSET, Unset
 from typing import cast
 
 
-T = TypeVar("T", bound="PaginatedResponse")  # type: ignore[type-arg]
-
-_ItemT = TypeVar("_ItemT")
+T = TypeVar("T", bound="PaginatedResponse")
 
 
 @_attrs_define
-class PaginatedResponse(Generic[_ItemT]):
-    """Single-page result from a list endpoint.
-
-    **Important:** ``.data`` holds ONE page of results (default limit=50).
-    It does NOT represent the full dataset. To page through all results,
-    advance ``offset`` by ``limit`` while ``.has_more`` is ``True``::
-
-        offset = 0
-        limit = 50
-        while True:
-            page = client.list_agents(offset=offset, limit=limit)
-            for agent in page.data:
-                process(agent)
-            if not page.has_more:
-                break
-            offset += limit
-
+class PaginatedResponse:
+    """
     Attributes:
-        data (list[_ItemT] | Unset): Items on this page only.
+        data (list[Any] | Unset):
         limit (int | Unset):  Default: 50.
         offset (int | Unset):  Default: 0.
         total (int | Unset):  Default: 0.
     """
 
-    data: list[_ItemT] | Unset = UNSET
+    data: list[Any] | Unset = UNSET
     limit: int | Unset = 50
     offset: int | Unset = 0
     total: int | Unset = 0
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
-        data: list[_ItemT] | Unset = UNSET
+        data: list[Any] | Unset = UNSET
         if not isinstance(self.data, Unset):
             data = self.data
 
@@ -98,27 +81,7 @@ class PaginatedResponse(Generic[_ItemT]):
     def additional_keys(self) -> list[str]:
         return list(self.additional_properties.keys())
 
-
-    @property
-    def has_more(self) -> bool:
-        """``True`` when there are more pages beyond this one.
-
-        Returns ``False`` when ``offset``, ``total``, or ``data`` are
-        ``Unset``/``None`` (treat unknown pagination state as complete).
-        """
-        if isinstance(self.offset, Unset) or self.offset is None:
-            return False
-        if isinstance(self.total, Unset) or self.total is None:
-            return False
-        if isinstance(self.data, Unset) or self.data is None:
-            return False
-        return self.offset + len(self.data) < self.total
-
-    def __getitem__(self, key: int | str) -> Any:
-        if isinstance(key, int):
-            if isinstance(self.data, Unset) or self.data is None:
-                raise IndexError(key)
-            return self.data[key]
+    def __getitem__(self, key: str) -> Any:
         return self.additional_properties[key]
 
     def __setitem__(self, key: str, value: Any) -> None:

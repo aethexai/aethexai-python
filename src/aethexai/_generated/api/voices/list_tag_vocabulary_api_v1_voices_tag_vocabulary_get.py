@@ -66,17 +66,11 @@ def sync_detailed(
 ]:
     """List Tag Vocabulary
 
-     Return the closed-vocabulary tag set the curator UI renders. Gated behind ``voices:read`` so the
-    route matches the rest of
-    ``/voices/*``; tag categories are static configuration but the
-    endpoint sits on the public API surface and every other voices
-    listing already requires the same scope. The four-bucket grouping (``tone`` / ``voice_texture`` /
-    ``delivery_style`` / ``business_persona``) is purely a UI affordance;
-    the storage column is a flat list and ``GET /voices?tag=...``
-    accepts any token from any bucket. The schema-layer validator (``VoiceMetadataUpdate.tags``) rejects
-    tokens outside this set with a 422 that points back at this
-    endpoint, so dashboards / SDK consumers have one canonical place to
-    discover the supported tokens.
+     Return the supported set of voice tags. Requires the ``voices:read`` scope, like the rest of
+    ``/voices``. Tags are grouped into categories (``tone`` / ``voice_texture`` / ``delivery_style`` /
+    ``business_persona``) for presentation, but the grouping is purely cosmetic: ``GET /voices?tag=...``
+    accepts any tag from any category. Tags outside this set are rejected with a 422, so this endpoint
+    is the canonical place to discover the supported values.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -104,17 +98,11 @@ def sync(
 ):
     """List Tag Vocabulary
 
-     Return the closed-vocabulary tag set the curator UI renders. Gated behind ``voices:read`` so the
-    route matches the rest of
-    ``/voices/*``; tag categories are static configuration but the
-    endpoint sits on the public API surface and every other voices
-    listing already requires the same scope. The four-bucket grouping (``tone`` / ``voice_texture`` /
-    ``delivery_style`` / ``business_persona``) is purely a UI affordance;
-    the storage column is a flat list and ``GET /voices?tag=...``
-    accepts any token from any bucket. The schema-layer validator (``VoiceMetadataUpdate.tags``) rejects
-    tokens outside this set with a 422 that points back at this
-    endpoint, so dashboards / SDK consumers have one canonical place to
-    discover the supported tokens.
+     Return the supported set of voice tags. Requires the ``voices:read`` scope, like the rest of
+    ``/voices``. Tags are grouped into categories (``tone`` / ``voice_texture`` / ``delivery_style`` /
+    ``business_persona``) for presentation, but the grouping is purely cosmetic: ``GET /voices?tag=...``
+    accepts any tag from any category. Tags outside this set are rejected with a 422, so this endpoint
+    is the canonical place to discover the supported values.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -137,17 +125,11 @@ async def asyncio_detailed(
 ]:
     """List Tag Vocabulary
 
-     Return the closed-vocabulary tag set the curator UI renders. Gated behind ``voices:read`` so the
-    route matches the rest of
-    ``/voices/*``; tag categories are static configuration but the
-    endpoint sits on the public API surface and every other voices
-    listing already requires the same scope. The four-bucket grouping (``tone`` / ``voice_texture`` /
-    ``delivery_style`` / ``business_persona``) is purely a UI affordance;
-    the storage column is a flat list and ``GET /voices?tag=...``
-    accepts any token from any bucket. The schema-layer validator (``VoiceMetadataUpdate.tags``) rejects
-    tokens outside this set with a 422 that points back at this
-    endpoint, so dashboards / SDK consumers have one canonical place to
-    discover the supported tokens.
+     Return the supported set of voice tags. Requires the ``voices:read`` scope, like the rest of
+    ``/voices``. Tags are grouped into categories (``tone`` / ``voice_texture`` / ``delivery_style`` /
+    ``business_persona``) for presentation, but the grouping is purely cosmetic: ``GET /voices?tag=...``
+    accepts any tag from any category. Tags outside this set are rejected with a 422, so this endpoint
+    is the canonical place to discover the supported values.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -173,17 +155,11 @@ async def asyncio(
 ):
     """List Tag Vocabulary
 
-     Return the closed-vocabulary tag set the curator UI renders. Gated behind ``voices:read`` so the
-    route matches the rest of
-    ``/voices/*``; tag categories are static configuration but the
-    endpoint sits on the public API surface and every other voices
-    listing already requires the same scope. The four-bucket grouping (``tone`` / ``voice_texture`` /
-    ``delivery_style`` / ``business_persona``) is purely a UI affordance;
-    the storage column is a flat list and ``GET /voices?tag=...``
-    accepts any token from any bucket. The schema-layer validator (``VoiceMetadataUpdate.tags``) rejects
-    tokens outside this set with a 422 that points back at this
-    endpoint, so dashboards / SDK consumers have one canonical place to
-    discover the supported tokens.
+     Return the supported set of voice tags. Requires the ``voices:read`` scope, like the rest of
+    ``/voices``. Tags are grouped into categories (``tone`` / ``voice_texture`` / ``delivery_style`` /
+    ``business_persona``) for presentation, but the grouping is purely cosmetic: ``GET /voices?tag=...``
+    accepts any tag from any category. Tags outside this set are rejected with a 422, so this endpoint
+    is the canonical place to discover the supported values.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.

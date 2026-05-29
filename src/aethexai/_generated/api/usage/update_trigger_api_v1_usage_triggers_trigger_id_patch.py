@@ -78,26 +78,15 @@ def sync_detailed(
     """Update Trigger
 
      Update a trigger's mutable fields. Three fields are editable: ``is_active`` (deactivate to free a
-    slot under the per-tenant cap without losing audit history),
-    ``threshold_value`` (re-tune the trip point as the customer's
-    volume scales), and ``event_callback_url`` (rotate the receiver). Trigger shape — ``resource_type``,
-    ``threshold_type``, ``period``
-    — is immutable; create a new trigger if you need a different
-    shape so the firings audit table cleanly tracks one configuration
-    over time. Returns 404 when the trigger doesn't exist or belongs to another
-    tenant. Returns 400 when ``event_callback_url`` is structurally
-    invalid or resolves to a non-public address; 503 when DNS
-    resolution itself is unavailable. Empty body is a valid no-op. Activating (``is_active`` flipped
-    from false → true) re-checks
-    the per-tenant active cap so a customer at the cap can't
-    backdoor in by toggling deactivated rows. It also re-validates
-    that the trigger's stored ``resource_type`` is still in the
-    currently-allowed set; rows whose ``resource_type`` is no longer
-    trigger-eligible cannot be re-activated (returns 422 with the
-    recovery instruction to delete and recreate the trigger). This
-    covers both truly legacy values from removed endpoints and live
-    ```` keys that the trigger schema has never accepted
-    (e.g. ``agent``, ``recording`` — see ``ALLOWED_RESOURCE_TYPES``).
+    slot under the per-tenant cap), ``threshold_value`` (re-tune the trip point as your volume scales),
+    and ``event_callback_url`` (change the receiver). The trigger shape — ``resource_type``,
+    ``threshold_type``, ``period`` — is immutable; create a new trigger if you need a different shape.
+    Returns 404 when the trigger doesn't exist or belongs to another tenant. Returns 400 when
+    ``event_callback_url`` is structurally invalid or resolves to a non-public address; 503 when DNS
+    resolution is unavailable. An empty body is a valid no-op. Activating (flipping ``is_active`` from
+    false to true) re-checks the per-tenant active cap. Re-activating a trigger whose ``resource_type``
+    is no longer a supported value returns 422 — create a new trigger with a currently-supported
+    ``resource_type`` instead.
 
     Args:
         trigger_id (UUID):
@@ -148,26 +137,15 @@ def sync(
     """Update Trigger
 
      Update a trigger's mutable fields. Three fields are editable: ``is_active`` (deactivate to free a
-    slot under the per-tenant cap without losing audit history),
-    ``threshold_value`` (re-tune the trip point as the customer's
-    volume scales), and ``event_callback_url`` (rotate the receiver). Trigger shape — ``resource_type``,
-    ``threshold_type``, ``period``
-    — is immutable; create a new trigger if you need a different
-    shape so the firings audit table cleanly tracks one configuration
-    over time. Returns 404 when the trigger doesn't exist or belongs to another
-    tenant. Returns 400 when ``event_callback_url`` is structurally
-    invalid or resolves to a non-public address; 503 when DNS
-    resolution itself is unavailable. Empty body is a valid no-op. Activating (``is_active`` flipped
-    from false → true) re-checks
-    the per-tenant active cap so a customer at the cap can't
-    backdoor in by toggling deactivated rows. It also re-validates
-    that the trigger's stored ``resource_type`` is still in the
-    currently-allowed set; rows whose ``resource_type`` is no longer
-    trigger-eligible cannot be re-activated (returns 422 with the
-    recovery instruction to delete and recreate the trigger). This
-    covers both truly legacy values from removed endpoints and live
-    ```` keys that the trigger schema has never accepted
-    (e.g. ``agent``, ``recording`` — see ``ALLOWED_RESOURCE_TYPES``).
+    slot under the per-tenant cap), ``threshold_value`` (re-tune the trip point as your volume scales),
+    and ``event_callback_url`` (change the receiver). The trigger shape — ``resource_type``,
+    ``threshold_type``, ``period`` — is immutable; create a new trigger if you need a different shape.
+    Returns 404 when the trigger doesn't exist or belongs to another tenant. Returns 400 when
+    ``event_callback_url`` is structurally invalid or resolves to a non-public address; 503 when DNS
+    resolution is unavailable. An empty body is a valid no-op. Activating (flipping ``is_active`` from
+    false to true) re-checks the per-tenant active cap. Re-activating a trigger whose ``resource_type``
+    is no longer a supported value returns 422 — create a new trigger with a currently-supported
+    ``resource_type`` instead.
 
     Args:
         trigger_id (UUID):
@@ -213,26 +191,15 @@ async def asyncio_detailed(
     """Update Trigger
 
      Update a trigger's mutable fields. Three fields are editable: ``is_active`` (deactivate to free a
-    slot under the per-tenant cap without losing audit history),
-    ``threshold_value`` (re-tune the trip point as the customer's
-    volume scales), and ``event_callback_url`` (rotate the receiver). Trigger shape — ``resource_type``,
-    ``threshold_type``, ``period``
-    — is immutable; create a new trigger if you need a different
-    shape so the firings audit table cleanly tracks one configuration
-    over time. Returns 404 when the trigger doesn't exist or belongs to another
-    tenant. Returns 400 when ``event_callback_url`` is structurally
-    invalid or resolves to a non-public address; 503 when DNS
-    resolution itself is unavailable. Empty body is a valid no-op. Activating (``is_active`` flipped
-    from false → true) re-checks
-    the per-tenant active cap so a customer at the cap can't
-    backdoor in by toggling deactivated rows. It also re-validates
-    that the trigger's stored ``resource_type`` is still in the
-    currently-allowed set; rows whose ``resource_type`` is no longer
-    trigger-eligible cannot be re-activated (returns 422 with the
-    recovery instruction to delete and recreate the trigger). This
-    covers both truly legacy values from removed endpoints and live
-    ```` keys that the trigger schema has never accepted
-    (e.g. ``agent``, ``recording`` — see ``ALLOWED_RESOURCE_TYPES``).
+    slot under the per-tenant cap), ``threshold_value`` (re-tune the trip point as your volume scales),
+    and ``event_callback_url`` (change the receiver). The trigger shape — ``resource_type``,
+    ``threshold_type``, ``period`` — is immutable; create a new trigger if you need a different shape.
+    Returns 404 when the trigger doesn't exist or belongs to another tenant. Returns 400 when
+    ``event_callback_url`` is structurally invalid or resolves to a non-public address; 503 when DNS
+    resolution is unavailable. An empty body is a valid no-op. Activating (flipping ``is_active`` from
+    false to true) re-checks the per-tenant active cap. Re-activating a trigger whose ``resource_type``
+    is no longer a supported value returns 422 — create a new trigger with a currently-supported
+    ``resource_type`` instead.
 
     Args:
         trigger_id (UUID):
@@ -281,26 +248,15 @@ async def asyncio(
     """Update Trigger
 
      Update a trigger's mutable fields. Three fields are editable: ``is_active`` (deactivate to free a
-    slot under the per-tenant cap without losing audit history),
-    ``threshold_value`` (re-tune the trip point as the customer's
-    volume scales), and ``event_callback_url`` (rotate the receiver). Trigger shape — ``resource_type``,
-    ``threshold_type``, ``period``
-    — is immutable; create a new trigger if you need a different
-    shape so the firings audit table cleanly tracks one configuration
-    over time. Returns 404 when the trigger doesn't exist or belongs to another
-    tenant. Returns 400 when ``event_callback_url`` is structurally
-    invalid or resolves to a non-public address; 503 when DNS
-    resolution itself is unavailable. Empty body is a valid no-op. Activating (``is_active`` flipped
-    from false → true) re-checks
-    the per-tenant active cap so a customer at the cap can't
-    backdoor in by toggling deactivated rows. It also re-validates
-    that the trigger's stored ``resource_type`` is still in the
-    currently-allowed set; rows whose ``resource_type`` is no longer
-    trigger-eligible cannot be re-activated (returns 422 with the
-    recovery instruction to delete and recreate the trigger). This
-    covers both truly legacy values from removed endpoints and live
-    ```` keys that the trigger schema has never accepted
-    (e.g. ``agent``, ``recording`` — see ``ALLOWED_RESOURCE_TYPES``).
+    slot under the per-tenant cap), ``threshold_value`` (re-tune the trip point as your volume scales),
+    and ``event_callback_url`` (change the receiver). The trigger shape — ``resource_type``,
+    ``threshold_type``, ``period`` — is immutable; create a new trigger if you need a different shape.
+    Returns 404 when the trigger doesn't exist or belongs to another tenant. Returns 400 when
+    ``event_callback_url`` is structurally invalid or resolves to a non-public address; 503 when DNS
+    resolution is unavailable. An empty body is a valid no-op. Activating (flipping ``is_active`` from
+    false to true) re-checks the per-tenant active cap. Re-activating a trigger whose ``resource_type``
+    is no longer a supported value returns 422 — create a new trigger with a currently-supported
+    ``resource_type`` instead.
 
     Args:
         trigger_id (UUID):

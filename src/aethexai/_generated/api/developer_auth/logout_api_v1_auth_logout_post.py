@@ -50,11 +50,7 @@ def sync_detailed(
 ) -> Response[Any]:
     """Logout
 
-     Logout and revoke the current server-side JWT session. Rate-limited per-session: a stolen access
-    token cannot flood
-    /auth/logout to burn the user's session row repeatedly and mask
-    other malicious activity in audit trails. Per ayooluwa-aethex
-    round-2 MUST #2.
+     Log out and revoke the current server-side session. Rate-limited per session.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -79,11 +75,7 @@ async def asyncio_detailed(
 ) -> Response[Any]:
     """Logout
 
-     Logout and revoke the current server-side JWT session. Rate-limited per-session: a stolen access
-    token cannot flood
-    /auth/logout to burn the user's session row repeatedly and mask
-    other malicious activity in audit trails. Per ayooluwa-aethex
-    round-2 MUST #2.
+     Log out and revoke the current server-side session. Rate-limited per session.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.

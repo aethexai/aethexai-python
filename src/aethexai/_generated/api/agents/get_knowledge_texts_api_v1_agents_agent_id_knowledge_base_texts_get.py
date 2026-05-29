@@ -65,8 +65,8 @@ def sync_detailed(
 ) -> Response[Any | HTTPValidationError]:
     """Get Knowledge Texts
 
-     Get extracted text from all processed knowledge base documents. Returns the format expected by
-    PipelineConfig.knowledge_documents for RAG.
+     Get extracted text from all processed knowledge base documents. Returns the agent's
+    knowledge_documents for RAG retrieval.
 
     Args:
         agent_id (UUID):
@@ -97,8 +97,8 @@ def sync(
 ) -> Any | HTTPValidationError | None:
     """Get Knowledge Texts
 
-     Get extracted text from all processed knowledge base documents. Returns the format expected by
-    PipelineConfig.knowledge_documents for RAG.
+     Get extracted text from all processed knowledge base documents. Returns the agent's
+    knowledge_documents for RAG retrieval.
 
     Args:
         agent_id (UUID):
@@ -124,8 +124,8 @@ async def asyncio_detailed(
 ) -> Response[Any | HTTPValidationError]:
     """Get Knowledge Texts
 
-     Get extracted text from all processed knowledge base documents. Returns the format expected by
-    PipelineConfig.knowledge_documents for RAG.
+     Get extracted text from all processed knowledge base documents. Returns the agent's
+    knowledge_documents for RAG retrieval.
 
     Args:
         agent_id (UUID):
@@ -154,8 +154,8 @@ async def asyncio(
 ) -> Any | HTTPValidationError | None:
     """Get Knowledge Texts
 
-     Get extracted text from all processed knowledge base documents. Returns the format expected by
-    PipelineConfig.knowledge_documents for RAG.
+     Get extracted text from all processed knowledge base documents. Returns the agent's
+    knowledge_documents for RAG retrieval.
 
     Args:
         agent_id (UUID):

@@ -18,7 +18,7 @@ from __future__ import annotations
 
 import os
 from collections.abc import Iterator
-from typing import Any
+from typing import Any, cast
 from uuid import UUID
 
 import httpx
@@ -31,6 +31,10 @@ from aethexai._exceptions import (
     _map_status_to_exception,
 )
 from aethexai._generated.client import AuthenticatedClient
+from aethexai._generated.models.agent_response import AgentResponse
+from aethexai._generated.models.call_response import CallResponse
+from aethexai._generated.models.conversation_response import ConversationResponse
+from aethexai._generated.models.paginated_response import PaginatedResponse
 from aethexai._generated.types import UNSET, Unset
 
 _DEFAULT_BASE_URL = "https://api.aethexai.com"
@@ -62,11 +66,6 @@ class AethexAI:
                 "API key is required. Pass api_key= or set the AETHEX_API_KEY env var.",
                 status_code=401,
             )
-        # NOTE: the API key is intentionally NOT stored as an instance attribute.
-        # It lives only inside ``self._client`` (the generated ``AuthenticatedClient``),
-        # which suppresses it from ``repr()``. Anything that stores the raw key
-        # on ``self`` would leak via ``vars(client)`` / ``client.__dict__``.
-        #
         self._base_url = base_url.rstrip("/")
         self._timeout = timeout
         self._max_retries = max_retries
@@ -85,13 +84,7 @@ class AethexAI:
         if httpx_client is not None:
             self._client.set_httpx_client(httpx_client)
 
-    # ── Lifecycle ──────────────────────────────────────────────────────
-
     def __repr__(self) -> str:
-        # Explicit safe repr — never include any field that could carry the
-        # API key (directly or by reference). The default object repr would
-        # be fine today, but a future ``self.foo = secret`` would silently
-        # leak via the default ``str(vars(self))``. Keep this tight.
         return f"{type(self).__name__}(base_url={self._base_url!r}, timeout={self._timeout!r})"
 
     def close(self) -> None:
@@ -104,8 +97,6 @@ class AethexAI:
 
     def __exit__(self, *args: object) -> None:
         self.close()
-
-    # ── Internal request runner ────────────────────────────────────────
 
     def _call(self, op_func: Any, *args: Any, **kwargs: Any) -> Any:
         """Run a generated ``_detailed`` op, raise on non-2xx, return parsed result.
@@ -125,13 +116,20 @@ class AethexAI:
             return response.parsed
         raise _map_status_to_exception(status, response.content, response.headers)
 
-    # ─── agents ────────────────────────────────────────────────────────
+    def list_agents(
+        self, *, offset: int | Unset = 0, limit: int | Unset = 50
+    ) -> PaginatedResponse[AgentResponse]:
+        """List agents. See https://developers.aethexai.com/docs/api-reference/agents.
 
-    def list_agents(self, *, offset: int | Unset = 0, limit: int | Unset = 50) -> Any:
-        """List agents. See https://developers.aethexai.com/docs/api-reference/agents."""
+        Returns a single-page ``PaginatedResponse``; ``.data`` items are
+        ``AgentResponse`` instances. Use ``.has_more`` to detect additional pages.
+        """
         from aethexai._generated.api.agents import list_agents_api_v1_agents_get as _op
 
-        return self._call(_op.sync_detailed, offset=offset, limit=limit)
+        return cast(
+            PaginatedResponse[AgentResponse],
+            self._call(_op.sync_detailed, offset=offset, limit=limit),
+        )
 
     def create_agent(self, **fields: Any) -> Any:
         """Create a new agent. See https://developers.aethexai.com/docs/api-reference/agents."""
@@ -276,8 +274,6 @@ class AethexAI:
             body=build_body(KnowledgeQueryRequest, fields),
         )
 
-    # ─── api_keys ──────────────────────────────────────────────────────
-
     def list_api_keys(self) -> Any:
         """List API keys. See https://developers.aethexai.com/docs/authentication."""
         from aethexai._generated.api.api_keys import list_api_keys_api_v1_api_keys_get as _op
@@ -307,18 +303,6 @@ class AethexAI:
 
         return self._call(_op.sync_detailed, UUID(str(key_id)))
 
-    # NOTE: the 8 billing methods that used
-    # to live here (get_balance, list_plans, select_plan, list_invoices,
-    # list_transactions, list_payment_methods,
-    # create_payment_method_setup_intent, detach_payment_method) were
-    # removed because their server routes require a developer JWT
-    # (``Authorization: Bearer <jwt>``), and ``AethexAI`` only sends
-    # ``X-API-Key``. Every call returned 401 against the live server.
-    # They are now available on ``aethexai.DeveloperClient`` /
-    # ``AsyncDeveloperClient`` with proper JWT auth + token refresh.
-
-    # ─── calls ─────────────────────────────────────────────────────────
-
     def list_calls(
         self,
         *,
@@ -326,12 +310,19 @@ class AethexAI:
         direction: Any | None | Unset = UNSET,
         offset: int | Unset = 0,
         limit: int | Unset = 50,
-    ) -> Any:
-        """List calls. See https://developers.aethexai.com/docs/api-reference/calls."""
+    ) -> PaginatedResponse[CallResponse]:
+        """List calls. See https://developers.aethexai.com/docs/api-reference/calls.
+
+        Returns a single-page ``PaginatedResponse``; ``.data`` items are
+        ``CallResponse`` instances. Use ``.has_more`` to detect additional pages.
+        """
         from aethexai._generated.api.calls import list_calls_api_v1_calls_get as _op
 
-        return self._call(
-            _op.sync_detailed, status=status, direction=direction, offset=offset, limit=limit
+        return cast(
+            PaginatedResponse[CallResponse],
+            self._call(
+                _op.sync_detailed, status=status, direction=direction, offset=offset, limit=limit
+            ),
         )
 
     def create_call_record(self, **fields: Any) -> Any:
@@ -374,8 +365,6 @@ class AethexAI:
         from aethexai._generated.api.calls import get_batch_api_v1_calls_batch_batch_id_get as _op
 
         return self._call(_op.sync_detailed, UUID(str(batch_id)))
-
-    # ─── conversation (live session control) ───────────────────────────
 
     def conversation_connect(self, **fields: Any) -> Any:
         """Establish a new conversation session. See https://developers.aethexai.com/docs/api-reference/conversation."""
@@ -433,15 +422,22 @@ class AethexAI:
 
         return self._call(_op.sync_detailed, session_id, body=build_body(ToolResultRequest, fields))
 
-    # ─── conversations (historical) ────────────────────────────────────
+    def list_conversations(
+        self, *, offset: int | Unset = 0, limit: int | Unset = 50
+    ) -> PaginatedResponse[ConversationResponse]:
+        """List conversations. See https://developers.aethexai.com/docs/api-reference/conversations.
 
-    def list_conversations(self, *, offset: int | Unset = 0, limit: int | Unset = 50) -> Any:
-        """List conversations. See https://developers.aethexai.com/docs/api-reference/conversations."""
+        Returns a single-page ``PaginatedResponse``; ``.data`` items are
+        ``ConversationResponse`` instances. Use ``.has_more`` to detect additional pages.
+        """
         from aethexai._generated.api.conversations import (
             list_conversations_api_v1_conversations_get as _op,
         )
 
-        return self._call(_op.sync_detailed, offset=offset, limit=limit)
+        return cast(
+            PaginatedResponse[ConversationResponse],
+            self._call(_op.sync_detailed, offset=offset, limit=limit),
+        )
 
     def get_conversation(self, conversation_id: str | UUID) -> Any:
         """Retrieve a conversation by id. See https://developers.aethexai.com/docs/api-reference/conversations."""
@@ -538,15 +534,11 @@ class AethexAI:
 
         return self._call(_op.sync_detailed, q=q, limit=limit)
 
-    # ─── models ────────────────────────────────────────────────────────
-
     def list_models(self, *, include_unavailable: bool | Unset = False) -> Any:
         """List available LLM and voice models. See https://developers.aethexai.com/docs/api-reference/models."""
         from aethexai._generated.api.models import list_models_api_v1_models_get as _op
 
         return self._call(_op.sync_detailed, include_unavailable=include_unavailable)
-
-    # ─── phone_numbers ─────────────────────────────────────────────────
 
     def list_phone_numbers(self, *, offset: int | Unset = 0, limit: int | Unset = 50) -> Any:
         """List provisioned phone numbers. See https://developers.aethexai.com/docs/api-reference/phone-numbers."""
@@ -614,8 +606,6 @@ class AethexAI:
 
         return self._call(_op.sync_detailed, body=build_body(TwilioRegisterRequest, fields))
 
-    # ─── twilio accounts ──────────────────────────────────────────────
-
     def register_twilio_account(self, **fields: Any) -> Any:
         """Register a Bring-Your-Own Twilio account."""
         from aethexai._generated.api.twilio_accounts import (
@@ -649,8 +639,6 @@ class AethexAI:
 
         return self._call(_op.sync_detailed, UUID(str(account_id)))
 
-    # ─── recordings ────────────────────────────────────────────────────
-
     def list_recordings(self, *, offset: int | Unset = 0, limit: int | Unset = 50) -> Any:
         """List recordings. See https://developers.aethexai.com/docs/api-reference/recordings."""
         from aethexai._generated.api.recordings import list_recordings_api_v1_recordings_get as _op
@@ -680,8 +668,6 @@ class AethexAI:
         )
 
         return self._call(_op.sync_detailed, UUID(str(recording_id)))
-
-    # ─── transcription ─────────────────────────────────────────────────
 
     def transcribe_audio(self, *, body: Any) -> Any:
         """Synchronously transcribe an audio file (multipart). See https://developers.aethexai.com/docs/api-reference/transcription."""
@@ -738,8 +724,6 @@ class AethexAI:
         )
 
         return self._call(_op.sync_detailed, UUID(str(job_id)))
-
-    # ─── tts ───────────────────────────────────────────────────────────
 
     def synthesize_speech(self, **fields: Any) -> bytes:
         """Synthesize speech from text and return the raw audio bytes."""
@@ -798,8 +782,6 @@ class AethexAI:
 
         return self._call(_op.sync_detailed, UUID(str(batch_id)))
 
-    # ─── uploads ───────────────────────────────────────────────────────
-
     def presign_upload(self, **fields: Any) -> Any:
         """Request a presigned URL for direct file upload. See https://developers.aethexai.com/docs/api-reference/uploads."""
         from aethexai._generated.api.uploads import (
@@ -808,8 +790,6 @@ class AethexAI:
         from aethexai._generated.models.presign_upload_request import PresignUploadRequest
 
         return self._call(_op.sync_detailed, body=build_body(PresignUploadRequest, fields))
-
-    # ─── usage ─────────────────────────────────────────────────────────
 
     def get_usage(self) -> Any:
         """Get usage details for the current period. See https://developers.aethexai.com/docs/api-reference/usage."""
@@ -883,8 +863,6 @@ class AethexAI:
 
         return self._call(_op.sync_detailed)
 
-    # ─── voices ────────────────────────────────────────────────────────
-
     def list_voices(
         self,
         *,
@@ -923,9 +901,6 @@ class AethexAI:
         """
         from aethexai._generated.models.voice_preview_request import VoicePreviewRequest
 
-        # build_body gives a missing-field pre-flight ValidationError;
-        # inline httpx avoids the generated parser's response.json()
-        # crash on the audio/wav body.
         body = build_body(VoicePreviewRequest, fields)
         httpx_client = self._client.get_httpx_client()
         try:

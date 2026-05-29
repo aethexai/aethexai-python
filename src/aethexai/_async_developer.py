@@ -68,8 +68,6 @@ class AsyncDeveloperClient:
         if httpx_client is not None:
             self._client.set_async_httpx_client(httpx_client)
 
-    # ── Lifecycle ──────────────────────────────────────────────────────
-
     def __repr__(self) -> str:
         return (
             f"{type(self).__name__}(base_url={self._base_url!r}, "
@@ -87,8 +85,6 @@ class AsyncDeveloperClient:
 
     async def __aexit__(self, *args: object) -> None:
         await self.close()
-
-    # ── Refresh ────────────────────────────────────────────────────────
 
     async def _refresh_access_token(self) -> bool:
         if not self._refresh_token_box:
@@ -119,8 +115,6 @@ class AsyncDeveloperClient:
             self._refresh_token_box[0] = new_refresh
         return True
 
-    # ── Internal request runner ────────────────────────────────────────
-
     async def _call(self, op_func: Any, *args: Any, **kwargs: Any) -> Any:
         try:
             response = await op_func(*args, client=self._client, **kwargs)
@@ -142,8 +136,6 @@ class AsyncDeveloperClient:
             if 200 <= status < 300:
                 return response.parsed
         raise _map_status_to_exception(status, response.content, response.headers)
-
-    # ── auth/me ────────────────────────────────────────────────────────
 
     async def get_me(self) -> Any:
         """Get the current developer's profile."""
@@ -177,8 +169,6 @@ class AsyncDeveloperClient:
 
         await self._call(_op.asyncio_detailed)
         return None
-
-    # ── billing ────────────────────────────────────────────────────────
 
     async def get_balance(self) -> Any:
         from aethexai._generated.api.billing import get_balance_api_v1_billing_balance_get as _op

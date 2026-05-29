@@ -1712,7 +1712,7 @@
         "type": "object"
       },
       "BalanceResponse": {
-        "description": "``GET /billing/balance`` payload. Renders the portal billing card without a second round-trip:\nbalance, current plan, and the period decomposition. ``estimated_minutes_remaining`` is derived (1 credit \u2248 1 agent\nminute) so the UI doesn't have to know the conversion ratio.",
+        "description": "``GET /billing/balance`` payload: current credit balance, plan, and the billing-period summary. ``estimated_minutes_remaining`` approximates the agent-call minutes your balance covers at the standard 1 credit \u2248 1 minute conversion.",
         "properties": {
           "credit_balance": {
             "description": "Authoritative balance from ``.credit_balance``. Decimal-string to preserve precision for JavaScript clients.",
@@ -1748,7 +1748,7 @@
           },
           "payment_status": {
             "default": "active",
-            "description": "Tenant payment_status: ``active`` (healthy), ``past_due`` (card declined; Stripe is retrying), or ``canceled`` (Stripe gave up retrying or chargeback). Surfaced here so the portal can render a single billing-card without a second round-trip for the status banner.",
+            "description": "Payment status for the account: ``active`` (healthy), ``past_due`` (a payment failed and is being retried), or ``canceled`` (payment retries were exhausted or the charge was disputed).",
             "title": "Payment Status",
             "type": "string"
           },
@@ -1767,7 +1767,7 @@
                 "type": "null"
               }
             ],
-            "description": "Payment cadence on the tenant's active Stripe subscription: ``monthly``, ``yearly``, or ``null`` (free tier or no paid sub). Surfaced so the portal can label the price hero correctly ('$5/mo' vs '$50/yr') and the plan picker can enable monthly\u2194yearly switching without a blind round-trip. Distinct from the GRANT cadence (always monthly today), which lives on ``.billing_interval`` and isn't exposed to the portal.",
+            "description": "Payment cadence on the account's active paid subscription: ``monthly``, ``yearly``, or ``null`` (free tier or no paid subscription).",
             "title": "Subscription Interval"
           }
         },
@@ -2723,7 +2723,7 @@
         "type": "object"
       },
       "DeveloperSessionSummary": {
-        "description": "Per-session inventory row returned by ``GET /auth/sessions``. ``id`` is the first 12 hex chars of the row's ``sid_hash``: enough to\ndisambiguate sessions in the portal UI but useless on its own as a\nsession credential. Forensic fields (``created_ip``,\n``last_activity_ip``, ``user_agent``) are best-effort and may be\nnull for sessions adopted from pre-rollout tokens.",
+        "description": "A single active session returned by ``GET /auth/sessions`` for the \"where you're signed in\" view. ``id`` is a short opaque identifier safe to display; it is not a session credential. ``created_ip``, ``last_activity_ip``, and ``user_agent`` are best-effort and may be null.",
         "properties": {
           "absolute_expires_at": {
             "anyOf": [
@@ -2873,7 +2873,7 @@
         "type": "object"
       },
       "DunningState": {
-        "description": "Stripe-side dunning timeline for a ``past_due`` tenant. Pulled live from Stripe (``stripe.Subscription.retrieve`` with the\nlatest_invoice expanded) rather than cached in our DB \u2014 Stripe's\nSmart Retries reschedule on its side and any cached value would go\nstale within hours. ``None`` for tenants that aren't ``past_due``. The portal banner uses this trio to render\n\"Card declined Apr 28. We'll retry May 1. Service stops May 19 if\nunresolved.\" instead of the prior \"Update card\" with no timeline.",
+        "description": "Payment-retry (dunning) timeline for a ``past_due`` account: how many payment retries have occurred, when the next retry is scheduled, when the last attempt failed, and the final cutoff after which the subscription is canceled. ``None`` for accounts that aren't ``past_due``. These fields let you show a banner such as \"Card declined Apr 28. We'll retry May 1. Service stops May 19 if unresolved.\"",
         "properties": {
           "attempt_count": {
             "default": 0,
@@ -2891,7 +2891,7 @@
                 "type": "null"
               }
             ],
-            "description": "When the subscription will be auto-canceled if dunning still fails. Mirrors ``subscription.cancel_at`` from Stripe; ``None`` if Stripe hasn't scheduled an auto-cancel yet.",
+            "description": "When the subscription is scheduled to be canceled if payment retries still fail; ``None`` if no auto-cancel is scheduled yet.",
             "title": "Final Cutoff At"
           },
           "last_failed_at": {
@@ -3176,7 +3176,7 @@
         "type": "object"
       },
       "InvoiceListResponse": {
-        "description": "``GET /billing/invoices`` payload. Cursor pagination via Stripe's ``starting_after`` (the last invoice\nid on the prior page). Clients pass ``next_cursor`` back as\n``?cursor=...`` (canonical); ``?next_cursor=...`` is accepted as an\nalias. When ``next_cursor`` is null the caller has reached the\noldest invoice. The response field is named ``next_cursor`` and must not be renamed:\nthe portal and SDK consumers have typed against it. Only the *request*\nsurface accepts both names.",
+        "description": "``GET /billing/invoices`` payload. Cursor pagination: clients pass the ``next_cursor`` from the prior page back as ``?cursor=...`` (canonical); ``?next_cursor=...`` is accepted as an alias. When ``next_cursor`` is null the caller has reached the oldest invoice.",
         "properties": {
           "has_more": {
             "default": false,
@@ -3487,7 +3487,7 @@
             "type": "string"
           },
           "pending_overage_usd": {
-            "description": "Pending overage in USD at the current PAYG rate (``PAYG_OVERAGE_RATE_USD_PER_MINUTE`` = $0.065/credit today).",
+            "description": "Pending overage in USD at the current pay-as-you-go rate ($0.065/credit today).",
             "title": "Pending Overage Usd",
             "type": "string"
           },
@@ -3627,7 +3627,7 @@
         "type": "object"
       },
       "PeriodSummary": {
-        "description": "Snapshot of the current billing period: start/end + the\ngrant/used/remaining decomposition the portal billing card needs. ``credits_granted`` is the **plan's monthly allocation**, not a\nsum of ledger grant rows in the current period. A tenant who\nupgraded mid-period or received a manual ``adjustment`` will see\nthis field reflect the plan tier, not the literal credits that\nlanded in the ledger. The portal renders this as \"your plan\nincludes N\", not \"you received N this period.\"\n\n``credits_used`` is the sum of ``tx_type='usage_deduction'`` ledger\nentries since ``started_at``. Excluded from this stat:\n\n * ``plan_credit`` (signup seed)\n * ``plan_renewal`` (monthly / yearly grant)\n * ``adjustment`` (ops-driven manual changes; rare)\n * future PAYG top-ups (will use a distinct ``tx_type``)\n\nNegative ``adjustment`` entries reduce ``credit_balance`` without\nincrementing ``credits_used`` \u2014 the portal can detect this when\n``credits_granted - credits_used > credits_remaining`` and explain\nthe gap as \"ops adjustment\" if needed. ``credits_remaining`` mirrors ``Tenant.credit_balance`` so the portal\ncan highlight a single source-of-truth number; it can exceed\n``credits_granted`` after a PAYG top-up.",
+        "description": "Snapshot of the current billing period (start/end) with the grant/used/remaining credit breakdown. ``credits_granted`` is your plan's monthly credit allocation (the plan tier's included amount), not necessarily the credits literally added this period \u2014 a mid-period upgrade or account adjustment can make the two differ. ``credits_used`` is the credits consumed by usage during this period. ``credits_remaining`` is your current available balance; it can exceed ``credits_granted`` (for example after a top-up).",
         "properties": {
           "credits_granted": {
             "title": "Credits Granted",
@@ -3885,7 +3885,7 @@
         "type": "object"
       },
       "PlanListResponse": {
-        "description": "``GET /billing/plans`` payload. ``current_plan_slug`` lets the\nplan-picker UI highlight the tenant's tier without a second\n``/billing/balance`` call. The hidden ``internal`` tier is filtered\nout before this response is built; non-internal tenants never see it.",
+        "description": "``GET /billing/plans`` payload. ``current_plan_slug`` lets a plan picker highlight your current tier without a second ``/billing/balance`` call.",
         "properties": {
           "current_plan_slug": {
             "title": "Current Plan Slug",
@@ -4622,7 +4622,7 @@
           },
           "details": {
             "additionalProperties": true,
-            "description": "Free-form metadata (call_id, resource counts, idempotency key, etc). Shape is not guaranteed and may change per tx_type.",
+            "description": "Free-form metadata (call_id, resource counts, idempotency key, etc). Shape is not guaranteed and may vary by transaction type.",
             "title": "Details",
             "type": "object"
           },
@@ -5069,7 +5069,7 @@
         "type": "object"
       },
       "UsageByResourceEntry": {
-        "description": "One bucket value in ``UsageSummary.by_resource_type``. Keys mirror what the usage tracker aggregates per ``resource_type``:\nrequest count, token totals, audio seconds, and TTS input\ncharacters. All fields default to zero so an empty bucket is a\nwell-typed object rather than a partial dict.",
+        "description": "One entry in ``UsageSummary.by_resource_type``, aggregating usage for a single ``resource_type``: request count, token totals, audio seconds, and TTS input characters. All fields default to zero, so an entry with no activity is a fully-typed object rather than a partial one.",
         "properties": {
           "audio_seconds": {
             "default": 0.0,
@@ -5587,17 +5587,6 @@
             "default": "",
             "title": "Language",
             "type": "string"
-          },
-          "model_size": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Model Size"
           },
           "name": {
             "title": "Name",
@@ -6182,7 +6171,7 @@
     },
     "/api/v1/agents/{agent_id}/knowledge-base/texts": {
       "get": {
-        "description": "Get extracted text from all processed knowledge base documents. Returns the format expected by PipelineConfig.knowledge_documents for RAG.",
+        "description": "Get extracted text from all processed knowledge base documents. Returns the agent's knowledge_documents for RAG retrieval.",
         "operationId": "get_knowledge_texts_api_v1_agents__agent_id__knowledge_base_texts_get",
         "parameters": [
           {
@@ -6784,7 +6773,7 @@
     },
     "/api/v1/auth/logout": {
       "post": {
-        "description": "Logout and revoke the current server-side JWT session. Rate-limited per-session: a stolen access token cannot flood\n/auth/logout to burn the user's session row repeatedly and mask\nother malicious activity in audit trails. Per ayooluwa-aethex\nround-2 MUST #2.",
+        "description": "Log out and revoke the current server-side session. Rate-limited per session.",
         "operationId": "logout_api_v1_auth_logout_post",
         "responses": {
           "200": {
@@ -6990,7 +6979,7 @@
     },
     "/api/v1/auth/refresh": {
       "post": {
-        "description": "Rotate the developer's access/refresh pair. Accepts the refresh token from the ``aethex_refresh_token`` HttpOnly\ncookie (preferred) or the request body (legacy / non-browser\ncallers). The cookie lane is additionally CSRF-checked (double-submit\n``X-CSRF-Token`` matches ``aethex_csrf_token``). This route does\nnot depend on ``require_developer_jwt`` \u2014 by design, since the\nrefresh token can be valid when the access token has expired \u2014\nso the CSRF guard is wired here explicitly. Without it, a\nsame-site sub-domain that gained XHR foothold could ride the\nvictim's refresh cookie to advance ``refresh_generation`` /\nburn budget / log them out via rotation-anomaly detection. Body-token callers (no cookie present) skip the check.",
+        "description": "Rotate the developer access/refresh token pair. Accepts the refresh token from the ``aethex_refresh_token`` HttpOnly cookie (preferred) or from the request body for non-browser callers. Requests using the cookie are CSRF-protected via the ``X-CSRF-Token`` double-submit header; body-token callers do not require the CSRF header.",
         "operationId": "refresh_api_v1_auth_refresh_post",
         "requestBody": {
           "content": {
@@ -7083,7 +7072,7 @@
     },
     "/api/v1/billing/invoices": {
       "get": {
-        "description": "List the tenant's Stripe invoices, newest-first. Cursor pagination via Stripe's ``starting_after``: pass\n``next_cursor`` from the previous response back as ``?cursor=``\n(canonical) or ``?next_cursor=`` (alias). Each row carries\nStripe-hosted ``hosted_invoice_url`` (full\ninvoice page) and ``invoice_pdf`` (direct PDF download). We do\nnot render PDFs ourselves: Stripe handles invoice generation,\nbranding, and tax line items. Returns an empty list when:\n * No Stripe Customer has been created for this tenant yet\n (free trial that never picked a paid plan). * The tenant has a Customer but no invoices yet (rare; happens\n only between Customer create and the first invoice cycle). 503 when ```` is unset; the portal\nsurfaces this as \"billing isn't configured for this environment\".",
+        "description": "List the account's invoices, newest-first, with cursor pagination: pass ``next_cursor`` from the previous response back as ``?cursor=`` (or its ``?next_cursor=`` alias). Each row carries a ``hosted_invoice_url`` (the full invoice page) and an ``invoice_pdf`` (direct PDF download). Returns an empty list when no invoices exist yet \u2014 for example an account that has never started a paid plan, or one that has just started and has not yet been billed. Returns 503 when billing is not configured.",
         "operationId": "list_tenant_invoices_api_v1_billing_invoices_get",
         "parameters": [
           {
@@ -7655,7 +7644,7 @@
     },
     "/api/v1/calls/trigger": {
       "post": {
-        "description": "Create a call record and schedule the outbound dial (async / 202). Returns **202 Accepted** with the Call record (``status=\"queued\"``)\nas soon as the row is persisted. The actual provider dial \u2014 which\nincludes an up-to-300 s wait for TTS to become ready \u2014 runs as a\nbackground task so the HTTP response is never held open past the\ntypical SDK timeout (30\u201360 s). Clients poll ``GET /calls/{id}`` for\nterminal status. On TTS-readiness failure the row is marked\n``failed`` and ``metadata.error_message`` carries the user-facing\nexplanation.",
+        "description": "Create a call record and schedule the outbound dial (asynchronous). Returns **202 Accepted** with the Call record (``status=\"queued\"``) as soon as it is persisted; the dial proceeds in the background. Poll ``GET /calls/{id}`` for terminal status. On failure the record is marked ``failed`` and ``metadata.error_message`` carries the explanation.",
         "operationId": "trigger_call_api_v1_calls_trigger_post",
         "requestBody": {
           "content": {
@@ -7748,7 +7737,7 @@
     },
     "/api/v1/calls/{call_id}/status": {
       "get": {
-        "description": "Return telephony status for a call. Today's writers emit one of the eight values enumerated by\n``CallStatusLiteral`` (queued / ringing / in-progress / completed /\nfailed / no-answer / busy / canceled). ``connected`` is intentionally\nabsent: no code path writes it today, and including it would imply an\nobservable state customers cannot reach. See. ``CallStatusResponse.status`` is typed as ``str`` rather than\n``CallStatusLiteral`` to remain forward-compatible with historical\n```` rows whose status (e.g. ``'initiated'``, still referenced\nin ``post_call.py``'s CASE expression) sits outside that closed set. The route's *filter* boundary (``GET /calls?status=...``) is the strict\none \u2014 it rejects junk inputs at 422 \u2014 and the response is the lenient\none so legacy data round-trips cleanly.",
+        "description": "Return the telephony status for a call. The status is one of: queued, ringing, in-progress, completed, failed, no-answer, busy, or canceled. The status field is typed as a plain string rather than a closed set so it stays forward-compatible: older calls may carry legacy status values outside the current list. The collection filter (``GET /calls?status=...``) is strict and rejects unknown values with a 422, while this status response is lenient so older calls round-trip cleanly.",
         "operationId": "get_call_status_api_v1_calls__call_id__status_get",
         "parameters": [
           {
@@ -7842,7 +7831,7 @@
     },
     "/api/v1/conversation/{session_id}/end": {
       "post": {
-        "description": "Gracefully end an active WebRTC session via REST. Looks up the running PipelineTask by session_id and queues a\nCancelTaskFrame to trigger a clean shutdown. If the pipeline lives\non a different pod, the request is proxied transparently. Accepts either ``X-API-Key`` or a developer JWT \u2014 see ``connect`` for\nthe rationale.",
+        "description": "Gracefully end an active WebRTC session via REST, triggering a clean shutdown of the session. Accepts either ``X-API-Key`` or a developer JWT \u2014 see ``connect`` for the rationale.",
         "operationId": "end_session_api_v1_conversation__session_id__end_post",
         "parameters": [
           {
@@ -7888,7 +7877,7 @@
     },
     "/api/v1/conversation/{session_id}/ice": {
       "patch": {
-        "description": "Handle ICE candidate trickle. Authenticated, quota-exempt signaling. ICE trickle is time-sensitive and\ncan be high volume, so the rate-limiter middleware does not charge it\nagainst tenant API RPM, but callers must still present a valid\n``calls:write`` API key. Pod-aware: if the peer connection lives on a different pod, the request\nis proxied transparently via the pod routing layer.",
+        "description": "Submit an ICE candidate for the session. ICE trickle is time-sensitive and can be high volume, so it is exempt from your API rate limit, but a valid ``calls:write`` API key is still required.",
         "operationId": "ice_candidate_api_v1_conversation__session_id__ice_patch",
         "parameters": [
           {
@@ -8046,7 +8035,7 @@
     },
     "/api/v1/conversation/{session_id}/tool-result": {
       "post": {
-        "description": "Submit a tool call result back to an active session. When the LLM calls a client-side tool, the client processes it and\nsends the result back via this endpoint. The result is injected into\nthe LLM context as a tool response and triggers a continuation. If the pipeline lives on a different pod, proxies transparently.",
+        "description": "Submit a tool call result back to an active session. When the LLM calls a client-side tool, the client processes it and sends the result back via this endpoint. The result is injected into the LLM context as a tool response and triggers a continuation.",
         "operationId": "tool_result_api_v1_conversation__session_id__tool_result_post",
         "parameters": [
           {
@@ -8271,7 +8260,7 @@
     },
     "/api/v1/conversations/{conversation_id}/audio": {
       "get": {
-        "description": "Return a short-lived signed URL pointing to the audio stream. The URL is served by this API (region/bucket are internal) and carries\na signed ``token`` query param so the URL is directly playable in a\nbrowser ``<audio>`` tag without setting auth headers, mirroring the old\npresigned-URL behaviour. Token TTL matches ``_AUDIO_TOKEN_TTL_SECONDS``. The URL extension and the ``format`` field both reflect the underlying\nrecording's format (``wav`` for the primary path, ``CallRecording.format``\nfor the fallback) so clients can pick a decoder from either signal.",
+        "description": "Return a short-lived signed URL pointing to the conversation audio. The URL carries a signed ``token`` query param so it is directly playable in a browser ``<audio>`` tag without auth headers; the token expires after a fixed lifetime. The URL extension and the ``format`` field both reflect the recording's audio format (typically ``wav``) so clients can pick a decoder from either signal.",
         "operationId": "get_audio_api_v1_conversations__conversation_id__audio_get",
         "parameters": [
           {
@@ -8318,7 +8307,7 @@
     },
     "/api/v1/conversations/{conversation_id}/audio.wav": {
       "get": {
-        "description": "Stream the conversation audio. Bucket and region are never exposed. The recording uploader writes WAV; the ``CallRecording.format`` field\ndefaults to ``wav`` and nothing in the codebase writes anything else. The Content-Type is still taken from the underlying recording (via\n``_FORMAT_CONTENT_TYPES``) so a future non-WAV writer would be served\ncorrectly without re-introducing a per-format route. Auth: either a signed ``?token=`` issued by ``GET /audio`` (lets browsers\nembed the URL in an ``<audio>`` tag without headers), or a normal\n``X-API-Key`` / ``Authorization: Bearer`` API key with the\n``conversations:read`` scope.",
+        "description": "Stream the conversation audio as WAV. Supports HTTP ``Range`` requests for seeking and partial playback. Auth: either a signed ``?token=`` issued by ``GET /audio`` (so a browser can embed the URL directly in an ``<audio>`` tag without headers), or an ``X-API-Key`` / ``Authorization: Bearer`` API key with the ``conversations:read`` scope.",
         "operationId": "stream_audio_api_v1_conversations__conversation_id__audio_wav_get",
         "parameters": [
           {
@@ -8553,7 +8542,7 @@
     },
     "/api/v1/models": {
       "get": {
-        "description": "Return the public LLM model catalog. The empty-string default alias is hidden; it is a backwards-compat\nsentinel for \"use the platform default\" and ``aethex-default`` is the\npublic name for the same routing decision. When ```` is set, the catalog is further\nfiltered to that allowlist so SDK/portal pickers never advertise a model\nthat ``check_llm_model`` would reject with a 422 on agent create/update. The availability filter still applies first: a model in the allowlist\nwhose provider key is missing still shows with ``available: false`` when\n``?include_unavailable=true`` is set.",
+        "description": "Return the available LLM model catalog for this deployment. Each entry includes an ``available`` flag. By default only currently-usable models are returned; pass ``?include_unavailable=true`` to also list models that are not currently usable (returned with ``available: false``). Models not in the catalog are rejected with a 422 on agent create/update.",
         "operationId": "list_models_api_v1_models_get",
         "parameters": [
           {
@@ -8713,7 +8702,7 @@
     },
     "/api/v1/phone-numbers/twilio/register": {
       "post": {
-        "description": "Register a Twilio phone number under a tenant-owned Twilio account. The caller must supply a ``twilio_account_id`` that resolves to an\nactive row in ```` owned by this tenant -- the\nlegacy cluster-wide ``TWILIO_ACCOUNT_SID`` env-var fallback is gone\n( wiped any remaining legacy rows). The service uses\nthat tenant's credentials to bind the number's Voice URL on\nTwilio's side and persists ``phone_number.twilio_account_id`` so\nupdate/release can find the same credentials later. Status codes:\n * 404 -- agent_id (when supplied) does not exist for this tenant. * 422 -- twilio_account_id is invalid / cross-tenant / released,\n or the phone number isn't in the supplied Twilio account. * 503 -- encryption key not configured (cannot decrypt the\n Twilio auth_token), or Twilio API unreachable / timed out.",
+        "description": "Register a Twilio phone number under a Twilio account you own. Supply a ``twilio_account_id`` for an active Twilio account registered under this tenant; the platform uses that account's stored credentials to bind the number's Voice URL on Twilio and records the association so later update/release calls reuse the same account. Status codes:\n * 404 -- agent_id (when supplied) does not exist for this tenant. * 422 -- twilio_account_id is invalid / cross-tenant / released, or the phone number isn't in the supplied Twilio account. * 503 -- the Twilio account credentials are unavailable, or the Twilio API is unreachable / timed out.",
         "operationId": "register_twilio_api_v1_phone_numbers_twilio_register_post",
         "requestBody": {
           "content": {
@@ -9484,7 +9473,7 @@
     },
     "/api/v1/tts/batch": {
       "post": {
-        "description": "Batch synthesis \u2014 submit multiple texts, get a batch_id for polling. Audio files are stored in S3. Poll GET /tts/batch/{batch_id} for\npresigned download URLs when complete. Usage metering is deferred to the worker (run_tts_batch) so only\nsuccessfully synthesized items are billed.",
+        "description": "Batch synthesis \u2014 submit multiple texts, get a batch_id for polling. Poll GET /tts/batch/{batch_id} for download URLs when complete. Only successfully synthesized items are billed.",
         "operationId": "batch_synthesize_api_v1_tts_batch_post",
         "requestBody": {
           "content": {
@@ -9684,7 +9673,7 @@
         ]
       },
       "post": {
-        "description": "Register a Twilio Account SID for this tenant. Validates the supplied ``account_sid`` + ``auth_token`` pair by\nfetching the account from Twilio. Persists the SID and the (encrypted)\nauth token; the token is needed at runtime for inbound-webhook\nsignature verification and outbound API calls and is decrypted via\nthe ``EncryptedString`` column type. Status codes:\n * 422 -- Twilio rejected the request (400/401/403/404): bad\n credentials, or a SID that doesn't exist or that the supplied\n token can't access; or the fetched SID does not match the\n supplied SID. * 409 -- the Account SID is already claimed by another active row,\n or the tenant has reached the active-account cap. * 429 -- per-tenant registration rate limit exceeded. * 503 -- server-side service issue: encryption key not configured,\n Twilio API unreachable / 5xx / 429, Twilio did not respond\n within the configured timeout, or the rate limiter is\n offline -- this endpoint is destructive enough that we fail\n closed when admission control can't run, rather than silently\n unthrottling Twilio API and worker-slot pressure.",
+        "description": "Register a Twilio Account SID for this tenant. Validates the supplied ``account_sid`` + ``auth_token`` pair by fetching the account from Twilio before persisting. The auth token is stored encrypted and used at runtime for inbound-webhook signature verification and outbound Twilio API calls. Status codes:\n * 422 -- Twilio rejected the request: bad credentials, a SID that doesn't exist or that the supplied token can't access, or a fetched SID that does not match the supplied SID. * 409 -- the Account SID is already claimed by another active account, or the tenant has reached the active-account cap. * 429 -- per-tenant registration rate limit exceeded. * 503 -- service temporarily unavailable; please retry.",
         "operationId": "register_twilio_account_api_v1_twilio_accounts_post",
         "requestBody": {
           "content": {
@@ -10144,7 +10133,7 @@
         ]
       },
       "post": {
-        "description": "Configure a usage threshold + callback URL. The evaluator (ARQ cron, every 5 minutes) checks active triggers\nand posts a signed webhook when the threshold is crossed for the\nperiod. One firing per period; the trigger auto-rearms when the\nperiod rolls over. Returns 409 when the tenant already has the per-tenant cap of\nactive triggers; PATCH ``is_active=false`` on an existing trigger\nto recover a slot before adding a new one. Returns 400 when the tenant has no ``webhook_secret`` configured. Triggers without a signing secret would deliver an unsigned\nwebhook (or, more precisely, would be skipped by the evaluator\nand audited as ``failed`` with no ability to deliver), so we\nrefuse the create at the boundary instead of accepting a\nconfiguration that will never fire. The customer's recovery is\na single ``POST /usage/webhook-secret/rotate``.",
+        "description": "Configure a usage threshold + callback URL. Active triggers are evaluated periodically; a signed webhook is posted when the threshold is crossed for the period. One firing per period; the trigger auto-rearms when the period rolls over. Returns 409 when the tenant already has the per-tenant cap of active triggers; PATCH ``is_active=false`` on an existing trigger to recover a slot before adding a new one. Returns 400 when the tenant has no ``webhook_secret`` configured \u2014 without a signing secret the webhook could not be delivered, so the create is refused at the boundary rather than accepting a configuration that will never fire. The recovery is a single ``POST /usage/webhook-secret/rotate``.",
         "operationId": "create_trigger_api_v1_usage_triggers_post",
         "requestBody": {
           "content": {
@@ -10191,7 +10180,7 @@
     },
     "/api/v1/usage/triggers/{trigger_id}": {
       "patch": {
-        "description": "Update a trigger's mutable fields. Three fields are editable: ``is_active`` (deactivate to free a\nslot under the per-tenant cap without losing audit history),\n``threshold_value`` (re-tune the trip point as the customer's\nvolume scales), and ``event_callback_url`` (rotate the receiver). Trigger shape \u2014 ``resource_type``, ``threshold_type``, ``period``\n\u2014 is immutable; create a new trigger if you need a different\nshape so the firings audit table cleanly tracks one configuration\nover time. Returns 404 when the trigger doesn't exist or belongs to another\ntenant. Returns 400 when ``event_callback_url`` is structurally\ninvalid or resolves to a non-public address; 503 when DNS\nresolution itself is unavailable. Empty body is a valid no-op. Activating (``is_active`` flipped from false \u2192 true) re-checks\nthe per-tenant active cap so a customer at the cap can't\nbackdoor in by toggling deactivated rows. It also re-validates\nthat the trigger's stored ``resource_type`` is still in the\ncurrently-allowed set; rows whose ``resource_type`` is no longer\ntrigger-eligible cannot be re-activated (returns 422 with the\nrecovery instruction to delete and recreate the trigger). This\ncovers both truly legacy values from removed endpoints and live\n```` keys that the trigger schema has never accepted\n(e.g. ``agent``, ``recording`` \u2014 see ``ALLOWED_RESOURCE_TYPES``).",
+        "description": "Update a trigger's mutable fields. Three fields are editable: ``is_active`` (deactivate to free a slot under the per-tenant cap), ``threshold_value`` (re-tune the trip point as your volume scales), and ``event_callback_url`` (change the receiver). The trigger shape \u2014 ``resource_type``, ``threshold_type``, ``period`` \u2014 is immutable; create a new trigger if you need a different shape. Returns 404 when the trigger doesn't exist or belongs to another tenant. Returns 400 when ``event_callback_url`` is structurally invalid or resolves to a non-public address; 503 when DNS resolution is unavailable. An empty body is a valid no-op. Activating (flipping ``is_active`` from false to true) re-checks the per-tenant active cap. Re-activating a trigger whose ``resource_type`` is no longer a supported value returns 422 \u2014 create a new trigger with a currently-supported ``resource_type`` instead.",
         "operationId": "update_trigger_api_v1_usage_triggers__trigger_id__patch",
         "parameters": [
           {
@@ -10315,7 +10304,7 @@
     },
     "/api/v1/usage/triggers/{trigger_id}/firings/{firing_id}/redeliver": {
       "post": {
-        "description": "Re-attempt webhook delivery for a single firing. Replays the EXACT bytes we POSTed the first time so the receiver\nsees identical signature + payload. Updates the same audit row\nin place (incrementing ``attempt_count``, refreshing\n``delivery_status`` / ``http_status`` / ``last_error``); we do\nNOT insert a new firing row because each row represents one\n\"threshold crossed for this period\" event and a redeliver is the\nsame logical event, just retried. 404 when trigger or firing isn't owned by the calling tenant\n(no cross-tenant probing). 400 when the tenant has rotated their webhook_secret and the old\nsignature would no longer verify on the receiver \u2014 refuse the\nredeliver because the receiver would silently reject it as\ntampered. Customer recovery: configure a new trigger or wait for\nthe next natural fire (which will use the new secret).",
+        "description": "Re-attempt webhook delivery for a single firing. Replays the exact bytes originally sent so your receiver sees an identical signature and payload, updating the same firing in place (its ``attempt_count``, ``delivery_status``, ``http_status``, and ``last_error``) rather than recording a new firing. Returns 404 when the trigger or firing isn't owned by the calling tenant. Returns 400 when the tenant has rotated their webhook_secret and the original signature would no longer verify, since the receiver would reject the replay as tampered; in that case configure a new trigger or wait for the next natural fire, which will use the new secret.",
         "operationId": "redeliver_firing_api_v1_usage_triggers__trigger_id__firings__firing_id__redeliver_post",
         "parameters": [
           {
@@ -10374,7 +10363,7 @@
     },
     "/api/v1/usage/webhook-secret/rotate": {
       "post": {
-        "description": "Generate (or replace) the tenant-level webhook signing secret. Tenant-owned webhook bodies are signed with this secret via\nHMAC-SHA256 (``X-Aethex-Signature`` header). This includes usage\ntriggers, async transcription callbacks, and TTS batch callbacks. The secret is returned exactly once \u2014 store it securely. Rotating\nreplaces it immediately; in-flight deliveries signed with the old\nsecret will fail HMAC verification on the receiver side until you\nupdate your handler. A tenant that has never called this endpoint has no signing secret;\nthe trigger evaluator records those firings as ``failed`` with\n``last_error='tenant has no webhook_secret configured'``. Concurrency: the tenant row is locked with ``SELECT... FOR UPDATE``\nfor the duration of this transaction so two simultaneous rotate\ncalls serialise. Without the lock both callers could read the same\npre-state, generate different new secrets, and only the last\ncommit's secret would persist \u2014 the earlier caller would walk\naway with a secret that is already invalid and every webhook\ndelivery to them would HMAC-mismatch.",
+        "description": "Generate (or replace) the tenant-level webhook signing secret. Webhook bodies \u2014 usage triggers, async transcription callbacks, and TTS batch callbacks \u2014 are signed with this secret via HMAC-SHA256 (``X-Aethex-Signature`` header). The secret is returned exactly once \u2014 store it securely. Rotation takes effect immediately; in-flight deliveries signed with the old secret will fail HMAC verification on your receiver until you update your handler. Until you first call this endpoint the tenant has no signing secret, so usage-trigger firings are recorded as ``failed`` until one is configured. Concurrent rotate calls are serialized, so exactly one new secret takes effect.",
         "operationId": "rotate_webhook_secret_api_v1_usage_webhook_secret_rotate_post",
         "responses": {
           "200": {
@@ -10556,7 +10545,7 @@
     },
     "/api/v1/voices/tag-vocabulary": {
       "get": {
-        "description": "Return the closed-vocabulary tag set the curator UI renders. Gated behind ``voices:read`` so the route matches the rest of\n``/voices/*``; tag categories are static configuration but the\nendpoint sits on the public API surface and every other voices\nlisting already requires the same scope. The four-bucket grouping (``tone`` / ``voice_texture`` /\n``delivery_style`` / ``business_persona``) is purely a UI affordance;\nthe storage column is a flat list and ``GET /voices?tag=...``\naccepts any token from any bucket. The schema-layer validator (``VoiceMetadataUpdate.tags``) rejects\ntokens outside this set with a 422 that points back at this\nendpoint, so dashboards / SDK consumers have one canonical place to\ndiscover the supported tokens.",
+        "description": "Return the supported set of voice tags. Requires the ``voices:read`` scope, like the rest of ``/voices``. Tags are grouped into categories (``tone`` / ``voice_texture`` / ``delivery_style`` / ``business_persona``) for presentation, but the grouping is purely cosmetic: ``GET /voices?tag=...`` accepts any tag from any category. Tags outside this set are rejected with a 422, so this endpoint is the canonical place to discover the supported values.",
         "operationId": "list_tag_vocabulary_api_v1_voices_tag_vocabulary_get",
         "responses": {
           "200": {

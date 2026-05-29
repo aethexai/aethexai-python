@@ -76,17 +76,12 @@ def sync_detailed(
     client: AuthenticatedClient,
     include_unavailable: bool | Unset = False,
 ) -> Response[HTTPValidationError | list[ModelEntry]]:
-    r"""List Models
+    """List Models
 
-     Return the public LLM model catalog. The empty-string default alias is hidden; it is a backwards-
-    compat
-    sentinel for \"use the platform default\" and ``aethex-default`` is the
-    public name for the same routing decision. When ```` is set, the catalog is further
-    filtered to that allowlist so SDK/portal pickers never advertise a model
-    that ``check_llm_model`` would reject with a 422 on agent create/update. The availability filter
-    still applies first: a model in the allowlist
-    whose provider key is missing still shows with ``available: false`` when
-    ``?include_unavailable=true`` is set.
+     Return the available LLM model catalog for this deployment. Each entry includes an ``available``
+    flag. By default only currently-usable models are returned; pass ``?include_unavailable=true`` to
+    also list models that are not currently usable (returned with ``available: false``). Models not in
+    the catalog are rejected with a 422 on agent create/update.
 
     Args:
         include_unavailable (bool | Unset): Include models whose upstream provider key is not
@@ -117,17 +112,12 @@ def sync(
     client: AuthenticatedClient,
     include_unavailable: bool | Unset = False,
 ) -> HTTPValidationError | list[ModelEntry] | None:
-    r"""List Models
+    """List Models
 
-     Return the public LLM model catalog. The empty-string default alias is hidden; it is a backwards-
-    compat
-    sentinel for \"use the platform default\" and ``aethex-default`` is the
-    public name for the same routing decision. When ```` is set, the catalog is further
-    filtered to that allowlist so SDK/portal pickers never advertise a model
-    that ``check_llm_model`` would reject with a 422 on agent create/update. The availability filter
-    still applies first: a model in the allowlist
-    whose provider key is missing still shows with ``available: false`` when
-    ``?include_unavailable=true`` is set.
+     Return the available LLM model catalog for this deployment. Each entry includes an ``available``
+    flag. By default only currently-usable models are returned; pass ``?include_unavailable=true`` to
+    also list models that are not currently usable (returned with ``available: false``). Models not in
+    the catalog are rejected with a 422 on agent create/update.
 
     Args:
         include_unavailable (bool | Unset): Include models whose upstream provider key is not
@@ -153,17 +143,12 @@ async def asyncio_detailed(
     client: AuthenticatedClient,
     include_unavailable: bool | Unset = False,
 ) -> Response[HTTPValidationError | list[ModelEntry]]:
-    r"""List Models
+    """List Models
 
-     Return the public LLM model catalog. The empty-string default alias is hidden; it is a backwards-
-    compat
-    sentinel for \"use the platform default\" and ``aethex-default`` is the
-    public name for the same routing decision. When ```` is set, the catalog is further
-    filtered to that allowlist so SDK/portal pickers never advertise a model
-    that ``check_llm_model`` would reject with a 422 on agent create/update. The availability filter
-    still applies first: a model in the allowlist
-    whose provider key is missing still shows with ``available: false`` when
-    ``?include_unavailable=true`` is set.
+     Return the available LLM model catalog for this deployment. Each entry includes an ``available``
+    flag. By default only currently-usable models are returned; pass ``?include_unavailable=true`` to
+    also list models that are not currently usable (returned with ``available: false``). Models not in
+    the catalog are rejected with a 422 on agent create/update.
 
     Args:
         include_unavailable (bool | Unset): Include models whose upstream provider key is not
@@ -192,17 +177,12 @@ async def asyncio(
     client: AuthenticatedClient,
     include_unavailable: bool | Unset = False,
 ) -> HTTPValidationError | list[ModelEntry] | None:
-    r"""List Models
+    """List Models
 
-     Return the public LLM model catalog. The empty-string default alias is hidden; it is a backwards-
-    compat
-    sentinel for \"use the platform default\" and ``aethex-default`` is the
-    public name for the same routing decision. When ```` is set, the catalog is further
-    filtered to that allowlist so SDK/portal pickers never advertise a model
-    that ``check_llm_model`` would reject with a 422 on agent create/update. The availability filter
-    still applies first: a model in the allowlist
-    whose provider key is missing still shows with ``available: false`` when
-    ``?include_unavailable=true`` is set.
+     Return the available LLM model catalog for this deployment. Each entry includes an ``available``
+    flag. By default only currently-usable models are returned; pass ``?include_unavailable=true`` to
+    also list models that are not currently usable (returned with ``available: false``). Models not in
+    the catalog are rejected with a 422 on agent create/update.
 
     Args:
         include_unavailable (bool | Unset): Include models whose upstream provider key is not

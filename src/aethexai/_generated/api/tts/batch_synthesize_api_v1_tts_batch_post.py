@@ -72,11 +72,8 @@ def sync_detailed(
 ) -> Response[HTTPValidationError | TTSBatchResponse]:
     """Batch Synthesize
 
-     Batch synthesis — submit multiple texts, get a batch_id for polling. Audio files are stored in S3.
-    Poll GET /tts/batch/{batch_id} for
-    presigned download URLs when complete. Usage metering is deferred to the worker (run_tts_batch) so
-    only
-    successfully synthesized items are billed.
+     Batch synthesis — submit multiple texts, get a batch_id for polling. Poll GET /tts/batch/{batch_id}
+    for download URLs when complete. Only successfully synthesized items are billed.
 
     Args:
         body (TTSBatchCreate):
@@ -107,11 +104,8 @@ def sync(
 ) -> HTTPValidationError | TTSBatchResponse | None:
     """Batch Synthesize
 
-     Batch synthesis — submit multiple texts, get a batch_id for polling. Audio files are stored in S3.
-    Poll GET /tts/batch/{batch_id} for
-    presigned download URLs when complete. Usage metering is deferred to the worker (run_tts_batch) so
-    only
-    successfully synthesized items are billed.
+     Batch synthesis — submit multiple texts, get a batch_id for polling. Poll GET /tts/batch/{batch_id}
+    for download URLs when complete. Only successfully synthesized items are billed.
 
     Args:
         body (TTSBatchCreate):
@@ -137,11 +131,8 @@ async def asyncio_detailed(
 ) -> Response[HTTPValidationError | TTSBatchResponse]:
     """Batch Synthesize
 
-     Batch synthesis — submit multiple texts, get a batch_id for polling. Audio files are stored in S3.
-    Poll GET /tts/batch/{batch_id} for
-    presigned download URLs when complete. Usage metering is deferred to the worker (run_tts_batch) so
-    only
-    successfully synthesized items are billed.
+     Batch synthesis — submit multiple texts, get a batch_id for polling. Poll GET /tts/batch/{batch_id}
+    for download URLs when complete. Only successfully synthesized items are billed.
 
     Args:
         body (TTSBatchCreate):
@@ -170,11 +161,8 @@ async def asyncio(
 ) -> HTTPValidationError | TTSBatchResponse | None:
     """Batch Synthesize
 
-     Batch synthesis — submit multiple texts, get a batch_id for polling. Audio files are stored in S3.
-    Poll GET /tts/batch/{batch_id} for
-    presigned download URLs when complete. Usage metering is deferred to the worker (run_tts_batch) so
-    only
-    successfully synthesized items are billed.
+     Batch synthesis — submit multiple texts, get a batch_id for polling. Poll GET /tts/batch/{batch_id}
+    for download URLs when complete. Only successfully synthesized items are billed.
 
     Args:
         body (TTSBatchCreate):

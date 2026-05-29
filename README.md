@@ -31,10 +31,15 @@ Optional extras:
 pip install "aethexai[realtime]"   # WebRTC conversations (Conversation class)
 ```
 
-The `[realtime]` extra installs `aiortc` and `av` (PyAV). PyAV needs system
-FFmpeg headers at wheel-build time — on Debian/Ubuntu install
-`libavformat-dev libavfilter-dev libavdevice-dev` first; on macOS,
-`brew install ffmpeg`.
+The `[realtime]` extra installs `aiortc` and `av` (PyAV). PyAV ships prebuilt
+binary wheels (with FFmpeg bundled) for **manylinux** (glibc) Linux, macOS, and
+Windows on Python 3.10–3.13, so a normal install needs **no** system FFmpeg. You
+only need system FFmpeg if PyAV has to build from source (e.g. an unusual
+platform/arch, or **Alpine/musl** — the pinned PyAV 14.x has no musllinux wheel):
+on Debian/Ubuntu `apt install libavformat-dev libavfilter-dev libavdevice-dev`;
+on macOS the pinned PyAV (14.x) targets FFmpeg 7, so install `brew install
+ffmpeg@7` (plain `brew install ffmpeg` now gives FFmpeg 8, which this PyAV
+release does not compile against).
 
 Requires Python 3.10+.
 
@@ -263,6 +268,25 @@ client = AethexAI(
 | `timeout` | `30.0` | Per-request timeout in seconds. |
 | `max_retries` | `2` | HTTP transport retries for retryable failures. |
 | `httpx_client` | `None` | Optional custom `httpx.Client` or `httpx.AsyncClient`. |
+
+### Environment variables
+
+The SDK reads configuration from environment variables — export them in your
+shell (or pass the values directly to the client):
+
+```bash
+export AETHEX_API_KEY=ae_live_...   # or ae_test_...
+```
+
+| Variable | Used by | Notes |
+|---|---|---|
+| `AETHEX_API_KEY` | `AethexAI`, `Kora` | Required unless you pass `api_key=`. |
+| `AETHEX_BASE_URL` | example scripts | Optional base-URL override. |
+| `AETHEX_DEVELOPER_ACCESS_TOKEN` | `DeveloperClient` | JWT for account/billing. |
+| `AETHEX_DEVELOPER_REFRESH_TOKEN` | `DeveloperClient` | Optional; enables token refresh. |
+
+See [`examples/README.md`](examples/README.md) for the variables used by the
+example scripts.
 
 ## Errors
 

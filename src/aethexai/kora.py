@@ -29,7 +29,7 @@ from __future__ import annotations
 
 from collections.abc import Iterator
 from io import BytesIO
-from typing import Any, BinaryIO
+from typing import Any, BinaryIO, cast
 from uuid import UUID
 
 import httpx
@@ -98,6 +98,7 @@ from aethexai._generated.api.voices import (
 )
 from aethexai._generated.client import AuthenticatedClient
 from aethexai._generated.models.agent_create import AgentCreate
+from aethexai._generated.models.agent_response import AgentResponse
 from aethexai._generated.models.agent_update import AgentUpdate
 from aethexai._generated.models.body_transcribe_async_api_v1_transcribe_async_post import (
     BodyTranscribeAsyncApiV1TranscribeAsyncPost,
@@ -106,6 +107,9 @@ from aethexai._generated.models.body_transcribe_sync_api_v1_transcribe_post impo
     BodyTranscribeSyncApiV1TranscribePost,
 )
 from aethexai._generated.models.call_create import CallCreate
+from aethexai._generated.models.call_response import CallResponse
+from aethexai._generated.models.conversation_response import ConversationResponse
+from aethexai._generated.models.paginated_response import PaginatedResponse
 from aethexai._generated.models.tts_request import TTSRequest
 from aethexai._generated.models.tts_stream_request import TTSStreamRequest
 from aethexai._generated.models.voice_preview_request import VoicePreviewRequest
@@ -167,10 +171,6 @@ class Kora:
         if not api_key:
             raise ValueError("api_key is required. Pass it positionally: Kora(base_url, api_key).")
         self._base_url = base_url
-        # NOTE: api_key is intentionally NOT stored as an instance attribute.
-        # See ``AethexAI.__init__`` for the rationale. Kora was the easiest leak vector
-        # because both ``Kora._api_key`` and ``AuthenticatedClient.token``
-        # carried the same secret.
         timeout_arg: httpx.Timeout | None = httpx.Timeout(timeout) if timeout is not None else None
         self._client = AuthenticatedClient(
             base_url=base_url,
@@ -182,10 +182,7 @@ class Kora:
             raise_on_unexpected_status=raise_on_unexpected_status,
         )
 
-    # ── Lifecycle ─────────────────────────────────────────────────────────
-
     def __repr__(self) -> str:
-        # See ``AethexAI.__repr__``.
         return f"{type(self).__name__}(base_url={self._base_url!r})"
 
     def close(self) -> None:
@@ -202,8 +199,6 @@ class Kora:
         """Exit the context manager and close the HTTP client."""
         self._client.__exit__(*args)
 
-    # ── Internal request runner ───────────────────────────────────────────
-
     def _call(self, op_func: Any, *args: Any, **kwargs: Any) -> Any:
         """Run a generated ``sync_detailed`` op, raise on non-2xx, return parsed."""
         response = op_func(*args, client=self._client, **kwargs)
@@ -211,8 +206,6 @@ class Kora:
         if 200 <= status < 300:
             return response.parsed
         raise _map_status_to_exception(status, response.content, response.headers)
-
-    # ── Agents ────────────────────────────────────────────────────────────
 
     def create_agent(
         self,
@@ -258,12 +251,19 @@ class Kora:
         *,
         limit: int | None = None,
         offset: int | None = None,
-    ) -> Any:
-        """List agents on the current account."""
-        return self._call(
-            _list_agents_op.sync_detailed,
-            limit=limit if limit is not None else UNSET,
-            offset=offset if offset is not None else UNSET,
+    ) -> PaginatedResponse[AgentResponse]:
+        """List agents on the current account.
+
+        Returns a single-page ``PaginatedResponse``; ``.data`` items are
+        ``AgentResponse`` instances. Use ``.has_more`` to detect additional pages.
+        """
+        return cast(
+            PaginatedResponse[AgentResponse],
+            self._call(
+                _list_agents_op.sync_detailed,
+                limit=limit if limit is not None else UNSET,
+                offset=offset if offset is not None else UNSET,
+            ),
         )
 
     def update_agent(self, agent_id: str | UUID, **kwargs: Any) -> Any:
@@ -281,8 +281,6 @@ class Kora:
     def duplicate_agent(self, agent_id: str | UUID) -> Any:
         """Clone an agent, returning the new duplicate."""
         return self._call(_duplicate_agent_op.sync_detailed, _to_uuid(agent_id))
-
-    # ── Calls (outbound voice) ────────────────────────────────────────────
 
     def trigger_call(
         self,
@@ -311,19 +309,24 @@ class Kora:
         *,
         limit: int | None = None,
         offset: int | None = None,
-    ) -> Any:
-        """List recent calls on the current account."""
-        return self._call(
-            _list_calls_op.sync_detailed,
-            limit=limit if limit is not None else UNSET,
-            offset=offset if offset is not None else UNSET,
+    ) -> PaginatedResponse[CallResponse]:
+        """List recent calls on the current account.
+
+        Returns a single-page ``PaginatedResponse``; ``.data`` items are
+        ``CallResponse`` instances. Use ``.has_more`` to detect additional pages.
+        """
+        return cast(
+            PaginatedResponse[CallResponse],
+            self._call(
+                _list_calls_op.sync_detailed,
+                limit=limit if limit is not None else UNSET,
+                offset=offset if offset is not None else UNSET,
+            ),
         )
 
     def get_call_status(self, call_id: str | UUID) -> Any:
         """Fetch the current status of a call."""
         return self._call(_get_call_status_op.sync_detailed, _to_uuid(call_id))
-
-    # ── Voices ────────────────────────────────────────────────────────────
 
     def list_voices(
         self,
@@ -376,8 +379,6 @@ class Kora:
         if 200 <= status < 300:
             return response.content
         raise _map_status_to_exception(status, response.content, response.headers)
-
-    # ── Text-to-speech (kora_speak) ───────────────────────────────────────
 
     def synthesize_speech(
         self,
@@ -448,13 +449,9 @@ class Kora:
         ) as response:
             status = int(response.status_code)
             if not (200 <= status < 300):
-                # Materialize the (small) error body so we can build a typed
-                # exception consistent with every other Kora method.
                 response.read()
                 raise _map_status_to_exception(status, response.content, response.headers)
             yield from response.iter_bytes(chunk_size)
-
-    # ── Transcription (kora_read) ─────────────────────────────────────────
 
     def transcribe(
         self,
@@ -492,8 +489,6 @@ class Kora:
         """Poll an async transcription job by id."""
         return self._call(_get_transcribe_job_op.sync_detailed, _to_uuid(job_id))
 
-    # ── Conversations (read-only) ─────────────────────────────────────────
-
     def get_conversation(self, conversation_id: str | UUID) -> Any:
         """Fetch a single conversation record by id."""
         return self._call(_get_conversation_op.sync_detailed, _to_uuid(conversation_id))
@@ -504,17 +499,23 @@ class Kora:
         agent_id: str | UUID | None = None,
         limit: int | None = None,
         offset: int | None = None,
-    ) -> Any:
+    ) -> PaginatedResponse[ConversationResponse]:
         """List conversations on the current account.
+
+        Returns a single-page ``PaginatedResponse``; ``.data`` items are
+        ``ConversationResponse`` instances. Use ``.has_more`` to detect additional pages.
 
         Note: the underlying ``GET /api/v1/conversations`` endpoint does not
         support an ``agent_id`` filter; if one is supplied here it is applied
         client-side to the returned page.
         """
-        result = self._call(
-            _list_conversations_op.sync_detailed,
-            limit=limit if limit is not None else UNSET,
-            offset=offset if offset is not None else UNSET,
+        result = cast(
+            PaginatedResponse[ConversationResponse],
+            self._call(
+                _list_conversations_op.sync_detailed,
+                limit=limit if limit is not None else UNSET,
+                offset=offset if offset is not None else UNSET,
+            ),
         )
         if agent_id is None or result is None:
             return result
