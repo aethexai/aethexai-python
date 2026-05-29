@@ -64,7 +64,7 @@ class HTTPValidationError:
         # wrapper layer sees ``response.status_code == 422`` and raises the
         # typed exception via ``_map_status_to_exception(status, response.content, ...)``,
         # which parses the envelope directly. This patch is re-applied by
-        # ``scripts/sync_from_prod.py`` after every regeneration.
+        # the SDK-sync tooling after every regeneration.
         d = dict(src_dict)
         _detail = d.pop("detail", UNSET)
         detail: list[ValidationError] | Unset = UNSET

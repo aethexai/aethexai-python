@@ -340,7 +340,7 @@ def _apply_post_codegen_patches() -> int:
     # 2. Add the sentinel right after the imports.
     sentinel = (
         "\n# Sentinel: confirms the secret-fields-repr-suppression patch has been applied\n"
-        "# to this codegen file. ``scripts/sync_from_prod.py`` re-applies the patch\n"
+        "# to this codegen file. The SDK-sync tooling re-applies the patch\n"
         "# after every ``openapi-python-client generate`` and uses this sentinel to\n"
         "# detect already-patched files. DO NOT remove without auditing every call\n"
         "# site that depends on ``token`` and the auth-header value not appearing in\n"
@@ -425,7 +425,7 @@ def _apply_http_validation_error_patch() -> int:
         "        # wrapper layer sees ``response.status_code == 422`` and raises the\n"
         "        # typed exception via ``_map_status_to_exception(status, response.content, ...)``,\n"
         "        # which parses the envelope directly. This patch is re-applied by\n"
-        "        # ``scripts/sync_from_prod.py`` after every regeneration.\n"
+        "        # the SDK-sync tooling after every regeneration.\n"
         "        d = dict(src_dict)\n"
         '        _detail = d.pop("detail", UNSET)\n'
         "        detail: list[ValidationError] | Unset = UNSET\n"
