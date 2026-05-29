@@ -503,19 +503,44 @@ _INFRA_SENTENCE_TERMS = re.compile(
 )
 
 
-def _scrub_text(text: str) -> str:
-    """Remove internal references from a single customer-visible string."""
-    for pattern in _TEXT_SCRUB_PATTERNS:
-        text = pattern.sub("", text)
-    # Drop whole sentences that narrate infrastructure.
-    sentences = re.split(r"(?<=[.!?])\s+", text)
-    text = " ".join(s for s in sentences if not _INFRA_SENTENCE_TERMS.search(s))
-    # Tidy whitespace and orphaned punctuation left behind by the removals.
+# Parenthetical asides that name infrastructure, e.g. "(no WAF body inspection)".
+# Dropped without losing the surrounding sentence.
+_INFRA_PARENTHETICAL = re.compile(
+    r"\s*\([^)]*(?:" + _INFRA_SENTENCE_TERMS.pattern + r")[^)]*\)", re.IGNORECASE
+)
+
+
+def _tidy_text(text: str) -> str:
+    """Collapse whitespace and orphaned punctuation left behind by scrubbing."""
     text = re.sub(r"\s+([,.;:])", r"\1", text)
     text = re.sub(r"\(\s*[,;]?\s*\)", "", text)
     text = re.sub(r"[ \t]{2,}", " ", text)
     text = re.sub(r"\n{3,}", "\n\n", text)
     return text.strip()
+
+
+def _scrub_text(text: str) -> str:
+    """Remove internal references from a single customer-visible string.
+
+    Inline tokens (ticket ids, internal table names, env vars, ...) are stripped
+    everywhere; parenthetical asides that name infrastructure are dropped
+    without losing the surrounding sentence; any remaining infra-narrating
+    sentence is dropped whole. Safety net: scrubbing never turns a non-empty
+    description into an empty one — it falls back to a token-only scrub so real
+    customer documentation survives.
+    """
+    cleaned = text
+    for pattern in _TEXT_SCRUB_PATTERNS:
+        cleaned = pattern.sub("", cleaned)
+    cleaned = _INFRA_PARENTHETICAL.sub("", cleaned)
+    sentences = re.split(r"(?<=[.!?])\s+", cleaned)
+    cleaned = _tidy_text(" ".join(s for s in sentences if not _INFRA_SENTENCE_TERMS.search(s)))
+    if text.strip() and not cleaned.strip():
+        fallback = text
+        for pattern in _TEXT_SCRUB_PATTERNS:
+            fallback = pattern.sub("", fallback)
+        return _tidy_text(fallback)
+    return cleaned
 
 
 def _scrub_in_place(node: Any) -> None:

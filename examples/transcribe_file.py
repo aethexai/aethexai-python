@@ -91,22 +91,16 @@ def transcribe_async_with_polling(
         language=language if language else UNSET,
     )
     job = client.transcribe_audio_async(body=body)
-    job_id = getattr(job, "id", None) or getattr(job, "job_id", None)
+    job_id = job.get("id") or job.get("job_id")
     if not job_id:
-        raise RuntimeError(
-            f"transcribe_audio_async returned no usable id; got {job!r}"
-        )
+        raise RuntimeError(f"transcribe_audio_async returned no usable id; got {job!r}")
     print(f"  submitted async job: {job_id}")
 
     deadline = time.monotonic() + max_seconds
     last_status: str | None = None
     while time.monotonic() < deadline:
         snapshot = client.get_transcription_job(job_id)
-        status = (
-            getattr(snapshot, "status", None)
-            or getattr(snapshot, "state", None)
-            or "unknown"
-        )
+        status = snapshot.get("status") or snapshot.get("state") or "unknown"
         if status != last_status:
             print(f"  job status: {status}")
             last_status = status
@@ -119,13 +113,9 @@ def transcribe_async_with_polling(
 
 def _print_transcript(label: str, result: Any) -> None:
     """Pretty-print whatever transcript shape the server returned."""
-    text = (
-        getattr(result, "text", None)
-        or getattr(result, "transcript", None)
-        or getattr(result, "transcription", None)
-    )
-    detected = getattr(result, "language", None) or getattr(result, "detected_language", None)
-    duration = getattr(result, "duration", None) or getattr(result, "duration_seconds", None)
+    text = result.get("text") or result.get("transcript") or result.get("transcription")
+    detected = result.get("language") or result.get("detected_language")
+    duration = result.get("duration") or result.get("duration_seconds")
     print(f"[{label}]")
     if detected:
         print(f"  detected language: {detected}")
@@ -167,9 +157,7 @@ def main() -> int:
 
         # ── 2. Async + polling ─────────────────────────────────────────
         print(f"Transcribing (async) {audio_path.name} ...")
-        async_result = transcribe_async_with_polling(
-            client, audio_path, language=language
-        )
+        async_result = transcribe_async_with_polling(client, audio_path, language=language)
         _print_transcript("async", async_result)
 
     return 0

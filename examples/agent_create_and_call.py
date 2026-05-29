@@ -68,7 +68,7 @@ def main() -> int:
             max_duration_seconds=300,
             silence_timeout_seconds=8,
         )
-        print(f"Created agent: {agent["id"]}")
+        print(f"Created agent: {agent['id']}")
 
         # ── 2. Upload a knowledge-base doc (text snippet) ────────────────
         # The multipart endpoint accepts either a raw file or an inline
@@ -82,7 +82,7 @@ def main() -> int:
             filename="branch-hours.txt",
         )
         doc = client.upload_knowledge_doc(agent["id"], body=kb_body)
-        print(f"Uploaded knowledge doc: {getattr(doc, 'id', doc)}")
+        print(f"Uploaded knowledge doc: {doc.get('id', doc)}")
 
         # ── 3. Update the agent's first_message after the fact ───────────
         # Demonstrates PATCH semantics — only fields you pass get changed.
@@ -90,20 +90,18 @@ def main() -> int:
             agent["id"],
             first_message="Bonjour, Aethex Bank a votre service.",
         )
-        print(f"Updated agent first_message; revision: {getattr(updated, 'id', 'ok')}")
+        print(f"Updated agent first_message; revision: {updated.get('id', 'ok')}")
 
         # ── 4. Place the outbound call ───────────────────────────────────
         call = client.trigger_call(agent_id=str(agent["id"]), to_number=to_number)
-        print(f"Triggered call: {call["id"]}")
+        print(f"Triggered call: {call['id']}")
 
         # ── 5. Poll for terminal status ──────────────────────────────────
         deadline = time.monotonic() + MAX_POLL_SECONDS
         last_status: str | None = None
         while time.monotonic() < deadline:
             status_resp = client.get_call_status(call["id"])
-            status = getattr(status_resp, "status", None) or getattr(
-                status_resp, "state", "unknown"
-            )
+            status = status_resp.get("status") or status_resp.get("state", "unknown")
             if status != last_status:
                 print(f"  call status: {status}")
                 last_status = status

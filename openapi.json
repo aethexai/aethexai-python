@@ -6104,7 +6104,7 @@
     },
     "/api/v1/agents/{agent_id}/knowledge-base/by-upload": {
       "post": {
-        "description": "",
+        "description": "Ingest a knowledge-base document via a presigned upload.",
         "operationId": "upload_knowledge_doc_by_upload_api_v1_agents__agent_id__knowledge_base_by_upload_post",
         "parameters": [
           {
@@ -8038,7 +8038,7 @@
     },
     "/api/v1/conversation/{session_id}/status": {
       "get": {
-        "description": "Get status of an active or completed session. Returns status, duration, and turn count.",
+        "description": "Get status of an active or completed session. Returns status, duration, and turn count. Works for both active\nand completed sessions.",
         "operationId": "get_session_status_api_v1_conversation__session_id__status_get",
         "parameters": [
           {
@@ -8430,7 +8430,7 @@
     },
     "/api/v1/conversations/{conversation_id}/audio/revoke": {
       "post": {
-        "description": "Revoke a previously-minted audio token before its natural expiry. Use case: a customer accidentally shares a public audio link and\nwants to invalidate it without waiting up to an hour for the TTL. Returns 204 on success; idempotent (re-revoking a revoked token is\na no-op). 404 if the token isn't valid for THIS conversation under\nTHIS tenant \u2014 same response we'd give for unauthorized cross-tenant\naccess, so callers can't probe for valid tokens.",
+        "description": "Revoke a previously-minted audio token before its natural expiry. Use case: a customer accidentally shares a public audio link and\nwants to invalidate it without waiting up to an hour for the TTL. The token's ``jti`` is added to the revocation cache with a TTL matching the token's remaining\nlifetime, so memory pressure is bounded by the natural expiry\nschedule. Returns 204 on success; idempotent (re-revoking a revoked token is\na no-op). 404 if the token isn't valid for THIS conversation under\nTHIS tenant \u2014 same response we'd give for unauthorized cross-tenant\naccess, so callers can't probe for valid tokens.",
         "operationId": "revoke_audio_token_api_v1_conversations__conversation_id__audio_revoke_post",
         "parameters": [
           {
@@ -10295,7 +10295,7 @@
         ]
       },
       "post": {
-        "description": "Register a Twilio Account SID for this tenant. Validates the supplied ``account_sid`` + ``auth_token`` pair by\nfetching the account from Twilio. Persists the SID and the (encrypted)\nauth token; the token is needed at runtime for inbound-webhook\nsignature verification and outbound API calls and is decrypted via\nthe ``EncryptedString`` column type. Status codes:\n * 422 -- Twilio rejected the request (400/401/403/404): bad\n credentials, or a SID that doesn't exist or that the supplied\n token can't access; or the fetched SID does not match the\n supplied SID. * 409 -- the Account SID is already claimed by another active row,\n or the tenant has reached the active-account cap. * 429 -- per-tenant registration rate limit exceeded.",
+        "description": "Register a Twilio Account SID for this tenant. Validates the supplied ``account_sid`` + ``auth_token`` pair by\nfetching the account from Twilio. Persists the SID and the (encrypted)\nauth token; the token is needed at runtime for inbound-webhook\nsignature verification and outbound API calls and is decrypted via\nthe ``EncryptedString`` column type. Status codes:\n * 422 -- Twilio rejected the request (400/401/403/404): bad\n credentials, or a SID that doesn't exist or that the supplied\n token can't access; or the fetched SID does not match the\n supplied SID. * 409 -- the Account SID is already claimed by another active row,\n or the tenant has reached the active-account cap. * 429 -- per-tenant registration rate limit exceeded. * 503 -- server-side service issue: encryption key not configured,\n Twilio API unreachable / 5xx / 429, Twilio did not respond\n within the configured timeout, or the rate limiter is\n offline -- this endpoint is destructive enough that we fail\n closed when admission control can't run, rather than silently\n unthrottling Twilio API and worker-slot pressure.",
         "operationId": "register_twilio_account_api_v1_twilio_accounts_post",
         "requestBody": {
           "content": {

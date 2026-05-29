@@ -31,6 +31,11 @@ FORBIDDEN = {
     "aws region": re.compile(r"eu-central-\d"),
     "developer machine path": re.compile(r"/Users/[a-z]+/"),
     "internal hostnames": re.compile(r"\.cluster\.local|\.svc\b"),
+    "pr references": re.compile(r"\bPR #\d+"),
+    "infra nouns": re.compile(
+        r"\b(redis|vllm|omniasr|clickhouse|langfuse|coturn|pgbouncer|karpenter)\b",
+        re.IGNORECASE,
+    ),
 }
 
 

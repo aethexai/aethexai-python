@@ -62,7 +62,9 @@ def sync_detailed(
 ) -> Response[Any | HTTPValidationError]:
     """Get Session Status
 
-     Get status of an active or completed session. Returns status, duration, and turn count.
+     Get status of an active or completed session. Returns status, duration, and turn count. Works for
+    both active
+    and completed sessions.
 
     Args:
         session_id (str):
@@ -93,7 +95,9 @@ def sync(
 ) -> Any | HTTPValidationError | None:
     """Get Session Status
 
-     Get status of an active or completed session. Returns status, duration, and turn count.
+     Get status of an active or completed session. Returns status, duration, and turn count. Works for
+    both active
+    and completed sessions.
 
     Args:
         session_id (str):
@@ -119,7 +123,9 @@ async def asyncio_detailed(
 ) -> Response[Any | HTTPValidationError]:
     """Get Session Status
 
-     Get status of an active or completed session. Returns status, duration, and turn count.
+     Get status of an active or completed session. Returns status, duration, and turn count. Works for
+    both active
+    and completed sessions.
 
     Args:
         session_id (str):
@@ -148,7 +154,9 @@ async def asyncio(
 ) -> Any | HTTPValidationError | None:
     """Get Session Status
 
-     Get status of an active or completed session. Returns status, duration, and turn count.
+     Get status of an active or completed session. Returns status, duration, and turn count. Works for
+    both active
+    and completed sessions.
 
     Args:
         session_id (str):

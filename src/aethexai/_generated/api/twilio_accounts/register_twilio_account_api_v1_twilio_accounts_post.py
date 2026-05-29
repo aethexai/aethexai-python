@@ -81,7 +81,12 @@ def sync_detailed(
      token can't access; or the fetched SID does not match the
      supplied SID. * 409 -- the Account SID is already claimed by another active row,
      or the tenant has reached the active-account cap. * 429 -- per-tenant registration rate limit
-    exceeded.
+    exceeded. * 503 -- server-side service issue: encryption key not configured,
+     Twilio API unreachable / 5xx / 429, Twilio did not respond
+     within the configured timeout, or the rate limiter is
+     offline -- this endpoint is destructive enough that we fail
+     closed when admission control can't run, rather than silently
+     unthrottling Twilio API and worker-slot pressure.
 
     Args:
         body (TwilioAccountCreate): Request body for ``POST /api/v1/twilio-accounts``.
@@ -125,7 +130,12 @@ def sync(
      token can't access; or the fetched SID does not match the
      supplied SID. * 409 -- the Account SID is already claimed by another active row,
      or the tenant has reached the active-account cap. * 429 -- per-tenant registration rate limit
-    exceeded.
+    exceeded. * 503 -- server-side service issue: encryption key not configured,
+     Twilio API unreachable / 5xx / 429, Twilio did not respond
+     within the configured timeout, or the rate limiter is
+     offline -- this endpoint is destructive enough that we fail
+     closed when admission control can't run, rather than silently
+     unthrottling Twilio API and worker-slot pressure.
 
     Args:
         body (TwilioAccountCreate): Request body for ``POST /api/v1/twilio-accounts``.
@@ -164,7 +174,12 @@ async def asyncio_detailed(
      token can't access; or the fetched SID does not match the
      supplied SID. * 409 -- the Account SID is already claimed by another active row,
      or the tenant has reached the active-account cap. * 429 -- per-tenant registration rate limit
-    exceeded.
+    exceeded. * 503 -- server-side service issue: encryption key not configured,
+     Twilio API unreachable / 5xx / 429, Twilio did not respond
+     within the configured timeout, or the rate limiter is
+     offline -- this endpoint is destructive enough that we fail
+     closed when admission control can't run, rather than silently
+     unthrottling Twilio API and worker-slot pressure.
 
     Args:
         body (TwilioAccountCreate): Request body for ``POST /api/v1/twilio-accounts``.
@@ -206,7 +221,12 @@ async def asyncio(
      token can't access; or the fetched SID does not match the
      supplied SID. * 409 -- the Account SID is already claimed by another active row,
      or the tenant has reached the active-account cap. * 429 -- per-tenant registration rate limit
-    exceeded.
+    exceeded. * 503 -- server-side service issue: encryption key not configured,
+     Twilio API unreachable / 5xx / 429, Twilio did not respond
+     within the configured timeout, or the rate limiter is
+     offline -- this endpoint is destructive enough that we fail
+     closed when admission control can't run, rather than silently
+     unthrottling Twilio API and worker-slot pressure.
 
     Args:
         body (TwilioAccountCreate): Request body for ``POST /api/v1/twilio-accounts``.

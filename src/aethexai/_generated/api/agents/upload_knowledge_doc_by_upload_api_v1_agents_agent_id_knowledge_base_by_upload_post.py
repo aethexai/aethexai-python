@@ -73,6 +73,8 @@ def sync_detailed(
 ) -> Response[Any | HTTPValidationError]:
     """Upload Knowledge Doc By Upload
 
+     Ingest a knowledge-base document via a presigned upload.
+
     Args:
         agent_id (UUID):
         body (KnowledgeDocByUploadRequest):
@@ -105,6 +107,8 @@ def sync(
 ) -> Any | HTTPValidationError | None:
     """Upload Knowledge Doc By Upload
 
+     Ingest a knowledge-base document via a presigned upload.
+
     Args:
         agent_id (UUID):
         body (KnowledgeDocByUploadRequest):
@@ -131,6 +135,8 @@ async def asyncio_detailed(
     body: KnowledgeDocByUploadRequest,
 ) -> Response[Any | HTTPValidationError]:
     """Upload Knowledge Doc By Upload
+
+     Ingest a knowledge-base document via a presigned upload.
 
     Args:
         agent_id (UUID):
@@ -161,6 +167,8 @@ async def asyncio(
     body: KnowledgeDocByUploadRequest,
 ) -> Any | HTTPValidationError | None:
     """Upload Knowledge Doc By Upload
+
+     Ingest a knowledge-base document via a presigned upload.
 
     Args:
         agent_id (UUID):
