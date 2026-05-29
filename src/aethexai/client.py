@@ -787,10 +787,25 @@ class AethexAI:
 
     def batch_synthesize(self, **fields: Any) -> Any:
         """Submit a TTS batch job. See https://developers.aethexai.com/docs/api-reference/tts."""
-        from aethexai._generated.api.tts import batch_synthesize_api_v1_tts_batch_post as _op
         from aethexai._generated.models.tts_batch_create import TTSBatchCreate
+        from aethexai._generated.models.tts_batch_response import TTSBatchResponse
 
-        return self._call(_op.sync_detailed, body=build_body(TTSBatchCreate, fields))
+        body = build_body(TTSBatchCreate, fields)
+        httpx_client = self._client.get_httpx_client()
+        try:
+            response = httpx_client.post(
+                "/api/v1/tts/batch",
+                json=body.to_dict(),
+                headers={"Content-Type": "application/json"},
+            )
+        except httpx.TimeoutException as exc:
+            raise APITimeoutError() from exc
+        except httpx.HTTPError as exc:
+            raise APIConnectionError(cause=exc) from exc
+        status = int(response.status_code)
+        if 200 <= status < 300:
+            return TTSBatchResponse.from_dict(response.json())
+        raise _map_status_to_exception(status, response.content, response.headers)
 
     def get_tts_batch(self, batch_id: str | UUID) -> Any:
         """Retrieve a TTS batch by id. See https://developers.aethexai.com/docs/api-reference/tts."""
