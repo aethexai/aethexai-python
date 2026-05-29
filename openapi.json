@@ -1002,6 +1002,17 @@
             "title": "Voice Id",
             "type": "string"
           },
+          "voice_name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Voice Name"
+          },
           "voicemail_action": {
             "default": "leave_message",
             "title": "Voicemail Action",
@@ -3643,6 +3654,55 @@
         "title": "ModelEntry",
         "type": "object"
       },
+      "OfferRequest": {
+        "properties": {
+          "pc_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Pc Id"
+          },
+          "requestData": {
+            "anyOf": [
+              {},
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Requestdata"
+          },
+          "restart_pc": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Restart Pc"
+          },
+          "sdp": {
+            "title": "Sdp",
+            "type": "string"
+          },
+          "type": {
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "sdp",
+          "type"
+        ],
+        "title": "OfferRequest",
+        "type": "object"
+      },
       "PaginatedResponse": {
         "properties": {
           "data": {
@@ -4298,7 +4358,7 @@
         "type": "object"
       },
       "SelectPlanResponse": {
-        "description": "``POST /billing/plans/{slug}/select`` payload.\n\nReturns the new state after the Stripe subscription create / update\n/ scheduled cancellation. ``status`` is one of:\n\n  * Stripe subscription status pass-through: ``active``,\n    ``trialing``, ``incomplete`` (first-charge pending),\n    ``past_due``, etc.\n  * ``free`` -- already-free tenant re-affirmed the free tier; no\n    Stripe call was needed.\n  * ``scheduled_cancellation`` -- voluntary downgrade from a paid\n    tier to free. The Stripe sub stays active through the period\n    the customer paid for; the portal renders \"Cancellation\n    scheduled for <period_end>\" until the period-boundary\n    ``customer.subscription.deleted`` webhook flips them to free.\n\nWhen ``status='incomplete'`` (declining first-charge under\n``payment_behavior='default_incomplete'``) the response includes\n``payment_intent_client_secret`` so the portal can call\n``stripe.confirmCardPayment(client_secret)`` to recover within\nStripe's 23-hour completion window. ``billing_plan`` does NOT\nadvance to the new tier in this case; the customer's plan only\nchanges after Stripe transitions the subscription to ``active``\nand fires ``customer.subscription.updated`` (which the webhook\nhandler picks up to commit the plan).",
+        "description": "``POST /billing/plans/{slug}/select`` payload.\n\nReturns the new state after the Stripe subscription create / update\n/ scheduled cancellation. ``status`` is one of:\n\n  * Stripe subscription status pass-through: ``active``,\n    ``trialing``, ``incomplete`` (first-charge pending),\n    ``past_due``, etc.\n  * ``free`` -- already-free tenant with a saved payment method\n    re-affirmed the free tier; no Stripe call was needed.\n  * ``scheduled_cancellation`` -- voluntary downgrade from a paid\n    tier to free. The Stripe sub stays active through the period\n    the customer paid for; the portal renders \"Cancellation\n    scheduled for <period_end>\" until the period-boundary\n    ``customer.subscription.deleted`` webhook flips them to free.\n\nWhen ``status='incomplete'`` (declining first-charge under\n``payment_behavior='default_incomplete'``) the response includes\n``payment_intent_client_secret`` so the portal can call\n``stripe.confirmCardPayment(client_secret)`` to recover within\nStripe's 23-hour completion window. ``billing_plan`` does NOT\nadvance to the new tier in this case; the customer's plan only\nchanges after Stripe transitions the subscription to ``active``\nand fires ``customer.subscription.updated`` (which the webhook\nhandler picks up to commit the plan).",
         "properties": {
           "awaiting_payment": {
             "default": false,
@@ -4441,56 +4501,6 @@
           "candidates"
         ],
         "title": "SmallWebRTCPatchRequest",
-        "type": "object"
-      },
-      "SmallWebRTCRequest": {
-        "description": "Small WebRTC transport session arguments for the runner.\n\nParameters:\n    sdp: The SDP string (Session Description Protocol).\n    type: The type of the SDP, either \"offer\" or \"answer\".\n    pc_id: Optional identifier for the peer connection.\n    restart_pc: Optional whether to restart the peer connection.\n    request_data: Optional custom data sent by the customer.",
-        "properties": {
-          "pc_id": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Pc Id"
-          },
-          "request_data": {
-            "anyOf": [
-              {},
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Request Data"
-          },
-          "restart_pc": {
-            "anyOf": [
-              {
-                "type": "boolean"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Restart Pc"
-          },
-          "sdp": {
-            "title": "Sdp",
-            "type": "string"
-          },
-          "type": {
-            "title": "Type",
-            "type": "string"
-          }
-        },
-        "required": [
-          "sdp",
-          "type"
-        ],
-        "title": "SmallWebRTCRequest",
         "type": "object"
       },
       "TTSBatchCreate": {
@@ -5741,8 +5751,19 @@
         "type": "object"
       },
       "VoiceCatalogEntry": {
-        "description": "Admin-only response shape returned by the internal PATCH endpoint.\n\nMirrors ``VoiceResponse`` minus ``model_size`` (the PATCH handler\nfetches ``Voice`` without joining ``TtsModel``), plus the internal\n``display_name`` and ``internal_notes`` columns so curator tooling\ncan round-trip an update without a follow-up GET. The public\n``GET /voices`` surface still uses ``VoiceResponse`` and never\nexposes ``display_name`` or ``internal_notes`` as discrete fields;\n``display_name`` folds into ``name`` via ``Voice.public_name`` and\n``internal_notes`` is admin-only.\n\nWARNING: ``internal_notes`` must never appear on a public\n``response_model``. It is intentionally excluded from\n``_voice_to_response``; verify any new route that uses this class\nsits behind the ``/internal`` auth boundary.",
+        "description": "Admin-only response shape returned by the internal PATCH endpoint\nand the admin listing at ``GET /internal/voices``.\n\nMirrors ``VoiceResponse`` and adds the curator-only fields:\n\n* ``voice_type`` (curator-only, dropped from the public surface in\n  PR #978: customers cannot switch on materialisation type, but the\n  curator dashboard, CI smoke discovery, and the integration-test\n  fixture all need it to distinguish ``icl`` / ``singlespeaker`` /\n  ``multispeaker``)\n* ``display_name`` (curator override; folded into ``name`` on the\n  public response via ``Voice.public_name``)\n* ``internal_notes`` (admin-only; never copied onto the public\n  response)\n* ``status`` (soft-retire flag; surfaced here so curators can\n  flip it round-trip without a follow-up GET)\n\n``model_size`` is absent from BOTH shapes: it was dropped from the\npublic response in PR #978 and the PATCH handler does not join\n``TtsModel`` so the value is not available here either.\n\nWARNING: ``internal_notes`` must never appear on a public\n``response_model``. It is intentionally excluded from\n``_voice_to_response``; verify any new route that uses this class\nsits behind the ``/internal`` auth boundary (either\n``require_internal_auth`` or ``require_admin``).",
         "properties": {
+          "country": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Country"
+          },
           "description": {
             "anyOf": [
               {
@@ -5855,8 +5876,19 @@
         "type": "string"
       },
       "VoiceMetadataUpdate": {
-        "description": "Body for ``PATCH /internal/voices/{voice_key}``.\n\nEditable fields:\n\n* ``display_name``: curator-authored override for the customer-facing\n  voice name. The migrated ``name`` value is the durable fallback;\n  setting this to ``null`` clears the override and the response reverts\n  to the migrated name.\n* ``status``: soft-retire flag. ``\"active\"`` shows the voice on\n  ``GET /voices``; ``\"retired\"`` hides it from listings and 404s\n  ``GET /voices/{voice_id}`` while leaving the row (and the internal\n  voice-registry consumed by the TTS pod) untouched.\n* ``description``: customer-facing one-liner. Brand-leak validated\n  like ``display_name``.\n* ``internal_notes``: admin-only commentary, never copied onto the\n  public ``VoiceResponse``. No brand-leak scrub because the field is\n  meant to hold context that legitimately names internal voices.\n* ``tags``: closed-vocabulary list of tokens drawn from\n  :data:`VOICE_TAG_VOCABULARY`. Send ``[]`` to clear; sending\n  ``null`` is rejected because the underlying column is NOT NULL.\n* ``gender``: curator-authored correction for the speaker's perceived\n  gender. The seed gender is best-effort and is known to be wrong on\n  some pool voices, so the dashboard exposes a male/female/neutral\n  selector that PATCHes the canonical value here. Sending ``null``\n  is rejected because the underlying column is NOT NULL; omit the\n  key to leave the existing value unchanged.\n\nEvery field is optional. Omitting a key leaves the column untouched\nvia ``model_dump(exclude_unset=True)``; sending ``null`` on a\nnullable field clears it.\n\nUnknown keys are intentionally tolerated (``extra='ignore'``, the\nPydantic default) so a rolling deploy stays safe: during the window\nbetween an API rollout that adds a new metadata field and the\nmatching dashboard rollout, a dashboard PATCH that still sends an\nolder shape (or, in the reverse direction, a dashboard that already\nsends a newer field name) must not 422 the curator out of a save.\nThe trade-off is that a typo in a hand-rolled curator script\nsilently no-ops the misspelled key; the dashboard form is the only\nreal client and is exercised end-to-end before each deploy.",
+        "description": "Body for ``PATCH /internal/voices/{voice_key}``.\n\nEditable fields:\n\n* ``display_name``: curator-authored override for the customer-facing\n  voice name. The migrated ``name`` value is the durable fallback;\n  setting this to ``null`` clears the override and the response reverts\n  to the migrated name.\n* ``status``: soft-retire flag. ``\"active\"`` shows the voice on\n  ``GET /voices``; ``\"retired\"`` hides it from listings and 404s\n  ``GET /voices/{voice_id}`` while leaving the row (and the internal\n  voice-registry consumed by the TTS pod) untouched.\n* ``description``: customer-facing one-liner. Brand-leak validated\n  like ``display_name``.\n* ``internal_notes``: admin-only commentary, never copied onto the\n  public ``VoiceResponse``. No brand-leak scrub because the field is\n  meant to hold context that legitimately names internal voices.\n* ``tags``: closed-vocabulary list of tokens drawn from\n  :data:`VOICE_TAG_VOCABULARY`. Send ``[]`` to clear; sending\n  ``null`` is rejected because the underlying column is NOT NULL.\n* ``gender``: curator-authored correction for the speaker's perceived\n  gender. The seed gender is best-effort and is known to be wrong on\n  some pool voices, so the dashboard exposes a male/female/neutral\n  selector that PATCHes the canonical value here. Sending ``null``\n  is rejected because the underlying column is NOT NULL; omit the\n  key to leave the existing value unchanged.\n* ``country``: ISO 3166-1 alpha-2 code for the voice's accent /\n  origin (``\"NG\"`` / ``\"GH\"`` / ``\"FR\"`` / ...). Validated against\n  :data:`aethex.models.voice.VOICE_COUNTRY_CODES`. ``null`` clears\n  the column (unlike ``gender`` / ``status`` / ``tags`` because\n  ``vo_voices.country`` is NULLABLE). Call\n  ``GET /voices/countries`` to enumerate the supported codes.\n\nEvery field is optional. Omitting a key leaves the column untouched\nvia ``model_dump(exclude_unset=True)``; sending ``null`` on a\nnullable field clears it.\n\nUnknown keys are intentionally tolerated (``extra='ignore'``, the\nPydantic default) so a rolling deploy stays safe: during the window\nbetween an API rollout that adds a new metadata field and the\nmatching dashboard rollout, a dashboard PATCH that still sends an\nolder shape (or, in the reverse direction, a dashboard that already\nsends a newer field name) must not 422 the curator out of a save.\nThe trade-off is that a typo in a hand-rolled curator script\nsilently no-ops the misspelled key; the dashboard form is the only\nreal client and is exercised end-to-end before each deploy.",
         "properties": {
+          "country": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Country"
+          },
           "description": {
             "anyOf": [
               {
@@ -5959,6 +5991,17 @@
       },
       "VoiceResponse": {
         "properties": {
+          "country": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Country"
+          },
           "description": {
             "anyOf": [
               {
@@ -5989,17 +6032,6 @@
             "title": "Language",
             "type": "string"
           },
-          "model_size": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Model Size"
-          },
           "name": {
             "title": "Name",
             "type": "string"
@@ -6026,11 +6058,6 @@
             },
             "title": "Tags",
             "type": "array"
-          },
-          "voice_type": {
-            "default": "icl",
-            "title": "Voice Type",
-            "type": "string"
           }
         },
         "required": [
@@ -6146,7 +6173,9 @@
           "201": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/AgentResponse"
+                }
               }
             },
             "description": "Successful Response"
@@ -6292,7 +6321,9 @@
           "200": {
             "content": {
               "application/json": {
-                "schema": {}
+                "schema": {
+                  "$ref": "#/components/schemas/AgentResponse"
+                }
               }
             },
             "description": "Successful Response"
@@ -7668,7 +7699,7 @@
     },
     "/api/v1/billing/plans/{slug}/select": {
       "post": {
-        "description": "Switch the tenant's subscription to the named plan tier.\n\nFirst-time selection of a paid tier creates a new Stripe\nSubscription against the tenant's saved payment method. Subsequent\nselections update the existing Subscription's price item with\npro-ration. Selecting the free tier cancels the active\nSubscription (the renewal job continues granting free-tier\ncredits).\n\nRequired state:\n  * Tenant must have ``has_payment_method=True`` (i.e. attached a\n    chargeable card or Link PM via the SetupIntent flow) before\n    selecting any paid tier. Free tier is always selectable.\n  * Plan row must have ``stripe_price_id`` populated (ops sets\n    this after creating the Stripe Price). If not populated for\n    the requested tier, the route returns 503.",
+        "description": "Switch the tenant's subscription to the named plan tier.\n\nFirst-time selection of a paid tier creates a new Stripe\nSubscription against the tenant's saved payment method. Subsequent\nselections update the existing Subscription's price item with\npro-ration. Selecting the free tier cancels the active\nSubscription (the renewal job continues granting free-tier\ncredits).\n\nRequired state:\n  * Tenant must have ``has_payment_method=True`` (i.e. attached a\n    chargeable card or Link PM via the SetupIntent flow) before\n    selecting any public self-serve tier, including the free tier.\n    Paid-to-free cancellation is still allowed because it schedules\n    the existing subscription to end.\n  * Plan row must have ``stripe_price_id`` populated (ops sets\n    this after creating the Stripe Price). If not populated for\n    the requested tier, the route returns 503.",
         "operationId": "select_plan_api_v1_billing_plans__slug__select_post",
         "parameters": [
           {
@@ -8362,7 +8393,7 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SmallWebRTCRequest"
+                "$ref": "#/components/schemas/OfferRequest"
               }
             }
           },
@@ -9011,7 +9042,7 @@
     },
     "/api/v1/dashboard/agents/{agent_id}": {
       "get": {
-        "description": "Fetch a small header view of a single agent for the developer's tenant.\n\nDistinct from ``GET /api/v1/agents/{id}`` (API-key-authed, full record):\nthis JWT-authed variant returns only the fields the dashboard renders\non the agent detail / Test surfaces. Pairs ``voice_id`` with the\ncurator-authored display name from ``vo_voices`` so the page can show\n\"Adamma\" instead of an internal slug. Returns 404 if the agent doesn't\nexist or doesn't belong to the developer's tenant \u2014 same shape as the\nAPI-key endpoint so the portal can reuse its missing-agent rendering.",
+        "description": "Fetch a small header view of a single agent for the developer's tenant.\n\nDistinct from ``GET /api/v1/agents/{id}`` (API-key-authed, full record):\nthis JWT-authed variant returns only the fields the dashboard renders\non the agent detail / Test surfaces. ``voice_id`` resolves to the\npublic catalog UUID (matching ``GET /voices``) and ``voice_name`` is\nthe curator-authored display name so the page can show \"Adamma\"\ninstead of an internal slug. ``voice_label`` is retained as an alias\nof ``voice_name`` for backwards compatibility with the portal's\nexisting rendering, but new callers should prefer ``voice_name``.\nReturns 404 if the agent doesn't exist or doesn't belong to the\ndeveloper's tenant \u2014 same shape as the API-key endpoint so the\nportal can reuse its missing-agent rendering.",
         "operationId": "get_my_agent_api_v1_dashboard_agents__agent_id__get",
         "parameters": [
           {
@@ -11562,6 +11593,22 @@
           },
           {
             "in": "query",
+            "name": "country",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Country"
+            }
+          },
+          {
+            "in": "query",
             "name": "limit",
             "required": false,
             "schema": {
@@ -11616,6 +11663,40 @@
           }
         ],
         "summary": "List Voices",
+        "tags": [
+          "voices"
+        ]
+      }
+    },
+    "/api/v1/voices/countries": {
+      "get": {
+        "description": "Return the closed set of ISO 3166-1 alpha-2 country codes accepted\nby the ``?country=`` filter on ``GET /voices`` and by the curator\nPATCH on ``country``.\n\nWire shape is a list of ``{\"code\": \"NG\", \"name\": \"Nigeria\"}`` objects\nsorted by code so SDKs and the developer-portal country picker can\nrender the catalogue without hardcoding the list. Gated behind\n``voices:read`` so the surface matches the rest of ``/voices/*``;\nthe data is static configuration but the endpoint sits on the public\nAPI and every other voices listing already requires the same scope.\n\nAdding a new country is an ``ALTER TYPE voice_country ADD VALUE``\nmigration plus an entry in\n:data:`aethex.models.voice.VOICE_COUNTRY_CODES` and\n:data:`aethex.models.voice.VOICE_COUNTRY_NAMES`; the response surface\nhere picks it up on the next deploy.",
+        "operationId": "list_countries_api_v1_voices_countries_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "additionalProperties": {
+                      "type": "string"
+                    },
+                    "type": "object"
+                  },
+                  "title": "Response List Countries Api V1 Voices Countries Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "APIKeyHeader": []
+          }
+        ],
+        "summary": "List Countries",
         "tags": [
           "voices"
         ]
@@ -11916,6 +11997,133 @@
         "summary": "Tts Voice Registry",
         "tags": [
           "internal"
+        ]
+      }
+    },
+    "/internal/voices": {
+      "get": {
+        "description": "Admin-only listing of voices with full ``VoiceCatalogEntry`` shape.\n\nMirrors ``GET /api/v1/voices`` live-visibility semantics (active\nvoice AND active/null backing model) so the deploy/CI smoke\ndiscriminator selects from the same catalog customers see. Without\nthe backing-model predicate the admin selector returns active\nvoices backed by retired ``TtsModel`` rows that are absent from the\npublic catalog; the smoke gate then picks one of those rows, fails\nto bind via ``/voices/{id}``, and silently falls back to a base\nvoice, going green even when every live pool voice is gone from\nthe customer surface.\n\nThe public ``GET /voices`` deliberately omits ``voice_type`` and\n``model_size`` (PR #978) so customers can't switch on implementation\ndetail. CI smoke (``tests/test_api_smoke.sh``) and the integration-\ntest fixture (``tests/api/test_voices.py``) still need to discover\nan active multispeaker pool voice so the deploy gate exercises pool\nrouting end-to-end; this endpoint is the supported way to find one\nby ``voice_type``. The response carries the full curator shape\n(including ``internal_notes``) and must not be linked to from any\ncustomer surface.\n\nFilters short-circuit to a Pydantic 422 on unknown enum values\n(rather than the silent-empty behaviour of the public listing) so\na typo in a CI script fails loudly rather than skipping the smoke\ncheck.",
+        "operationId": "list_voices_admin_internal_voices_get",
+        "parameters": [
+          {
+            "description": "Filter by materialisation type (``icl`` / ``singlespeaker`` / ``multispeaker``). Used by CI smoke + integration fixtures to discover a pool voice for the runtime round-trip after ``voice_type`` was removed from the public ``GET /voices`` response in PR #978. Unknown values 422.",
+            "in": "query",
+            "name": "voice_type",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by materialisation type (``icl`` / ``singlespeaker`` / ``multispeaker``). Used by CI smoke + integration fixtures to discover a pool voice for the runtime round-trip after ``voice_type`` was removed from the public ``GET /voices`` response in PR #978. Unknown values 422.",
+              "title": "Voice Type"
+            }
+          },
+          {
+            "description": "Filter by base language (``english`` / ``french`` / ``arabic``). Unknown values 422.",
+            "in": "query",
+            "name": "language",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by base language (``english`` / ``french`` / ``arabic``). Unknown values 422.",
+              "title": "Language"
+            }
+          },
+          {
+            "description": "Filter by cloned-vs-global. Defaults to no filter so global and tenant-cloned voices are both visible to the admin.",
+            "in": "query",
+            "name": "is_cloned",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "description": "Filter by cloned-vs-global. Defaults to no filter so global and tenant-cloned voices are both visible to the admin.",
+              "title": "Is Cloned"
+            }
+          },
+          {
+            "description": "Filter by soft-retire status (``active`` / ``retired`` / ``all``). Defaults to ``active`` so smoke and integration discovery never picks a retired voice (which would 404 on the public detail endpoint).",
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "default": "active",
+              "description": "Filter by soft-retire status (``active`` / ``retired`` / ``all``). Defaults to ``active`` so smoke and integration discovery never picks a retired voice (which would 404 on the public detail endpoint).",
+              "title": "Status",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 500,
+              "maximum": 1000,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/VoiceCatalogEntry"
+                  },
+                  "title": "Response List Voices Admin Internal Voices Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Voices Admin",
+        "tags": [
+          "internal-admin"
         ]
       }
     },

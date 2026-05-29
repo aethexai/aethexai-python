@@ -146,6 +146,12 @@ def sync_detailed(
               selector that PATCHes the canonical value here. Sending ``null``
               is rejected because the underlying column is NOT NULL; omit the
               key to leave the existing value unchanged.
+            * ``country``: ISO 3166-1 alpha-2 code for the voice's accent /
+              origin (``"NG"`` / ``"GH"`` / ``"FR"`` / ...). Validated against
+              :data:`aethex.models.voice.VOICE_COUNTRY_CODES`. ``null`` clears
+              the column (unlike ``gender`` / ``status`` / ``tags`` because
+              ``vo_voices.country`` is NULLABLE). Call
+              ``GET /voices/countries`` to enumerate the supported codes.
 
             Every field is optional. Omitting a key leaves the column untouched
             via ``model_dump(exclude_unset=True)``; sending ``null`` on a
@@ -261,6 +267,12 @@ def sync(
               selector that PATCHes the canonical value here. Sending ``null``
               is rejected because the underlying column is NOT NULL; omit the
               key to leave the existing value unchanged.
+            * ``country``: ISO 3166-1 alpha-2 code for the voice's accent /
+              origin (``"NG"`` / ``"GH"`` / ``"FR"`` / ...). Validated against
+              :data:`aethex.models.voice.VOICE_COUNTRY_CODES`. ``null`` clears
+              the column (unlike ``gender`` / ``status`` / ``tags`` because
+              ``vo_voices.country`` is NULLABLE). Call
+              ``GET /voices/countries`` to enumerate the supported codes.
 
             Every field is optional. Omitting a key leaves the column untouched
             via ``model_dump(exclude_unset=True)``; sending ``null`` on a
@@ -371,6 +383,12 @@ async def asyncio_detailed(
               selector that PATCHes the canonical value here. Sending ``null``
               is rejected because the underlying column is NOT NULL; omit the
               key to leave the existing value unchanged.
+            * ``country``: ISO 3166-1 alpha-2 code for the voice's accent /
+              origin (``"NG"`` / ``"GH"`` / ``"FR"`` / ...). Validated against
+              :data:`aethex.models.voice.VOICE_COUNTRY_CODES`. ``null`` clears
+              the column (unlike ``gender`` / ``status`` / ``tags`` because
+              ``vo_voices.country`` is NULLABLE). Call
+              ``GET /voices/countries`` to enumerate the supported codes.
 
             Every field is optional. Omitting a key leaves the column untouched
             via ``model_dump(exclude_unset=True)``; sending ``null`` on a
@@ -484,6 +502,12 @@ async def asyncio(
               selector that PATCHes the canonical value here. Sending ``null``
               is rejected because the underlying column is NOT NULL; omit the
               key to leave the existing value unchanged.
+            * ``country``: ISO 3166-1 alpha-2 code for the voice's accent /
+              origin (``"NG"`` / ``"GH"`` / ``"FR"`` / ...). Validated against
+              :data:`aethex.models.voice.VOICE_COUNTRY_CODES`. ``null`` clears
+              the column (unlike ``gender`` / ``status`` / ``tags`` because
+              ``vo_voices.country`` is NULLABLE). Call
+              ``GET /voices/countries`` to enumerate the supported codes.
 
             Every field is optional. Omitting a key leaves the column untouched
             via ``model_dump(exclude_unset=True)``; sending ``null`` on a

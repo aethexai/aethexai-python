@@ -18,26 +18,38 @@ T = TypeVar("T", bound="VoiceCatalogEntry")
 
 @_attrs_define
 class VoiceCatalogEntry:
-    """Admin-only response shape returned by the internal PATCH endpoint.
+    """Admin-only response shape returned by the internal PATCH endpoint
+    and the admin listing at ``GET /internal/voices``.
 
-    Mirrors ``VoiceResponse`` minus ``model_size`` (the PATCH handler
-    fetches ``Voice`` without joining ``TtsModel``), plus the internal
-    ``display_name`` and ``internal_notes`` columns so curator tooling
-    can round-trip an update without a follow-up GET. The public
-    ``GET /voices`` surface still uses ``VoiceResponse`` and never
-    exposes ``display_name`` or ``internal_notes`` as discrete fields;
-    ``display_name`` folds into ``name`` via ``Voice.public_name`` and
-    ``internal_notes`` is admin-only.
+    Mirrors ``VoiceResponse`` and adds the curator-only fields:
+
+    * ``voice_type`` (curator-only, dropped from the public surface in
+      PR #978: customers cannot switch on materialisation type, but the
+      curator dashboard, CI smoke discovery, and the integration-test
+      fixture all need it to distinguish ``icl`` / ``singlespeaker`` /
+      ``multispeaker``)
+    * ``display_name`` (curator override; folded into ``name`` on the
+      public response via ``Voice.public_name``)
+    * ``internal_notes`` (admin-only; never copied onto the public
+      response)
+    * ``status`` (soft-retire flag; surfaced here so curators can
+      flip it round-trip without a follow-up GET)
+
+    ``model_size`` is absent from BOTH shapes: it was dropped from the
+    public response in PR #978 and the PATCH handler does not join
+    ``TtsModel`` so the value is not available here either.
 
     WARNING: ``internal_notes`` must never appear on a public
     ``response_model``. It is intentionally excluded from
     ``_voice_to_response``; verify any new route that uses this class
-    sits behind the ``/internal`` auth boundary.
+    sits behind the ``/internal`` auth boundary (either
+    ``require_internal_auth`` or ``require_admin``).
 
         Attributes:
             id (str):
             name (str):
             status (VoiceCatalogEntryStatus):
+            country (None | str | Unset):
             description (None | str | Unset):
             display_name (None | str | Unset):
             gender (str | Unset):  Default: ''.
@@ -53,6 +65,7 @@ class VoiceCatalogEntry:
     id: str
     name: str
     status: VoiceCatalogEntryStatus
+    country: None | str | Unset = UNSET
     description: None | str | Unset = UNSET
     display_name: None | str | Unset = UNSET
     gender: str | Unset = ""
@@ -71,6 +84,12 @@ class VoiceCatalogEntry:
         name = self.name
 
         status = self.status.value
+
+        country: None | str | Unset
+        if isinstance(self.country, Unset):
+            country = UNSET
+        else:
+            country = self.country
 
         description: None | str | Unset
         if isinstance(self.description, Unset):
@@ -119,6 +138,8 @@ class VoiceCatalogEntry:
                 "status": status,
             }
         )
+        if country is not UNSET:
+            field_dict["country"] = country
         if description is not UNSET:
             field_dict["description"] = description
         if display_name is not UNSET:
@@ -150,6 +171,15 @@ class VoiceCatalogEntry:
         name = d.pop("name")
 
         status = VoiceCatalogEntryStatus(d.pop("status"))
+
+        def _parse_country(data: object) -> None | str | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(None | str | Unset, data)
+
+        country = _parse_country(d.pop("country", UNSET))
 
         def _parse_description(data: object) -> None | str | Unset:
             if data is None:
@@ -203,6 +233,7 @@ class VoiceCatalogEntry:
             id=id,
             name=name,
             status=status,
+            country=country,
             description=description,
             display_name=display_name,
             gender=gender,

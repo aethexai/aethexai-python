@@ -19,6 +19,7 @@ def _get_kwargs(
     language: None | str | Unset = UNSET,
     supports_dialect_style: bool | None | Unset = UNSET,
     tag: None | str | Unset = UNSET,
+    country: None | str | Unset = UNSET,
     limit: int | Unset = 100,
     offset: int | Unset = 0,
 ) -> dict[str, Any]:
@@ -45,6 +46,13 @@ def _get_kwargs(
     else:
         json_tag = tag
     params["tag"] = json_tag
+
+    json_country: None | str | Unset
+    if isinstance(country, Unset):
+        json_country = UNSET
+    else:
+        json_country = country
+    params["country"] = json_country
 
     params["limit"] = limit
 
@@ -102,6 +110,7 @@ def sync_detailed(
     language: None | str | Unset = UNSET,
     supports_dialect_style: bool | None | Unset = UNSET,
     tag: None | str | Unset = UNSET,
+    country: None | str | Unset = UNSET,
     limit: int | Unset = 100,
     offset: int | Unset = 0,
 ) -> Response[HTTPValidationError | list[VoiceResponse]]:
@@ -111,6 +120,7 @@ def sync_detailed(
         language (None | str | Unset):
         supports_dialect_style (bool | None | Unset):
         tag (None | str | Unset):
+        country (None | str | Unset):
         limit (int | Unset):  Default: 100.
         offset (int | Unset):  Default: 0.
 
@@ -126,6 +136,7 @@ def sync_detailed(
         language=language,
         supports_dialect_style=supports_dialect_style,
         tag=tag,
+        country=country,
         limit=limit,
         offset=offset,
     )
@@ -143,6 +154,7 @@ def sync(
     language: None | str | Unset = UNSET,
     supports_dialect_style: bool | None | Unset = UNSET,
     tag: None | str | Unset = UNSET,
+    country: None | str | Unset = UNSET,
     limit: int | Unset = 100,
     offset: int | Unset = 0,
 ) -> HTTPValidationError | list[VoiceResponse] | None:
@@ -152,6 +164,7 @@ def sync(
         language (None | str | Unset):
         supports_dialect_style (bool | None | Unset):
         tag (None | str | Unset):
+        country (None | str | Unset):
         limit (int | Unset):  Default: 100.
         offset (int | Unset):  Default: 0.
 
@@ -168,6 +181,7 @@ def sync(
         language=language,
         supports_dialect_style=supports_dialect_style,
         tag=tag,
+        country=country,
         limit=limit,
         offset=offset,
     ).parsed
@@ -179,6 +193,7 @@ async def asyncio_detailed(
     language: None | str | Unset = UNSET,
     supports_dialect_style: bool | None | Unset = UNSET,
     tag: None | str | Unset = UNSET,
+    country: None | str | Unset = UNSET,
     limit: int | Unset = 100,
     offset: int | Unset = 0,
 ) -> Response[HTTPValidationError | list[VoiceResponse]]:
@@ -188,6 +203,7 @@ async def asyncio_detailed(
         language (None | str | Unset):
         supports_dialect_style (bool | None | Unset):
         tag (None | str | Unset):
+        country (None | str | Unset):
         limit (int | Unset):  Default: 100.
         offset (int | Unset):  Default: 0.
 
@@ -203,6 +219,7 @@ async def asyncio_detailed(
         language=language,
         supports_dialect_style=supports_dialect_style,
         tag=tag,
+        country=country,
         limit=limit,
         offset=offset,
     )
@@ -218,6 +235,7 @@ async def asyncio(
     language: None | str | Unset = UNSET,
     supports_dialect_style: bool | None | Unset = UNSET,
     tag: None | str | Unset = UNSET,
+    country: None | str | Unset = UNSET,
     limit: int | Unset = 100,
     offset: int | Unset = 0,
 ) -> HTTPValidationError | list[VoiceResponse] | None:
@@ -227,6 +245,7 @@ async def asyncio(
         language (None | str | Unset):
         supports_dialect_style (bool | None | Unset):
         tag (None | str | Unset):
+        country (None | str | Unset):
         limit (int | Unset):  Default: 100.
         offset (int | Unset):  Default: 0.
 
@@ -244,6 +263,7 @@ async def asyncio(
             language=language,
             supports_dialect_style=supports_dialect_style,
             tag=tag,
+            country=country,
             limit=limit,
             offset=offset,
         )

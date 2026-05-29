@@ -45,6 +45,12 @@ class VoiceMetadataUpdate:
       selector that PATCHes the canonical value here. Sending ``null``
       is rejected because the underlying column is NOT NULL; omit the
       key to leave the existing value unchanged.
+    * ``country``: ISO 3166-1 alpha-2 code for the voice's accent /
+      origin (``"NG"`` / ``"GH"`` / ``"FR"`` / ...). Validated against
+      :data:`aethex.models.voice.VOICE_COUNTRY_CODES`. ``null`` clears
+      the column (unlike ``gender`` / ``status`` / ``tags`` because
+      ``vo_voices.country`` is NULLABLE). Call
+      ``GET /voices/countries`` to enumerate the supported codes.
 
     Every field is optional. Omitting a key leaves the column untouched
     via ``model_dump(exclude_unset=True)``; sending ``null`` on a
@@ -61,6 +67,7 @@ class VoiceMetadataUpdate:
     real client and is exercised end-to-end before each deploy.
 
         Attributes:
+            country (None | str | Unset):
             description (None | str | Unset):
             display_name (None | str | Unset):
             gender (None | Unset | VoiceGender):
@@ -69,6 +76,7 @@ class VoiceMetadataUpdate:
             tags (list[str] | None | Unset):
     """
 
+    country: None | str | Unset = UNSET
     description: None | str | Unset = UNSET
     display_name: None | str | Unset = UNSET
     gender: None | Unset | VoiceGender = UNSET
@@ -78,6 +86,12 @@ class VoiceMetadataUpdate:
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
+        country: None | str | Unset
+        if isinstance(self.country, Unset):
+            country = UNSET
+        else:
+            country = self.country
+
         description: None | str | Unset
         if isinstance(self.description, Unset):
             description = UNSET
@@ -124,6 +138,8 @@ class VoiceMetadataUpdate:
         field_dict: dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update({})
+        if country is not UNSET:
+            field_dict["country"] = country
         if description is not UNSET:
             field_dict["description"] = description
         if display_name is not UNSET:
@@ -142,6 +158,15 @@ class VoiceMetadataUpdate:
     @classmethod
     def from_dict(cls: type[T], src_dict: Mapping[str, Any]) -> T:
         d = dict(src_dict)
+
+        def _parse_country(data: object) -> None | str | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(None | str | Unset, data)
+
+        country = _parse_country(d.pop("country", UNSET))
 
         def _parse_description(data: object) -> None | str | Unset:
             if data is None:
@@ -222,6 +247,7 @@ class VoiceMetadataUpdate:
         tags = _parse_tags(d.pop("tags", UNSET))
 
         voice_metadata_update = cls(
+            country=country,
             description=description,
             display_name=display_name,
             gender=gender,

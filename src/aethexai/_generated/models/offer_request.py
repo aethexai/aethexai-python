@@ -12,26 +12,18 @@ from ..types import UNSET, Unset
 from typing import cast
 
 
-T = TypeVar("T", bound="SmallWebRTCRequest")
+T = TypeVar("T", bound="OfferRequest")
 
 
 @_attrs_define
-class SmallWebRTCRequest:
-    """Small WebRTC transport session arguments for the runner.
-
-    Parameters:
-        sdp: The SDP string (Session Description Protocol).
-        type: The type of the SDP, either "offer" or "answer".
-        pc_id: Optional identifier for the peer connection.
-        restart_pc: Optional whether to restart the peer connection.
-        request_data: Optional custom data sent by the customer.
-
-        Attributes:
-            sdp (str):
-            type_ (str):
-            pc_id (None | str | Unset):
-            request_data (Any | None | Unset):
-            restart_pc (bool | None | Unset):
+class OfferRequest:
+    """
+    Attributes:
+        sdp (str):
+        type_ (str):
+        pc_id (None | str | Unset):
+        request_data (Any | None | Unset):
+        restart_pc (bool | None | Unset):
     """
 
     sdp: str
@@ -75,7 +67,7 @@ class SmallWebRTCRequest:
         if pc_id is not UNSET:
             field_dict["pc_id"] = pc_id
         if request_data is not UNSET:
-            field_dict["request_data"] = request_data
+            field_dict["requestData"] = request_data
         if restart_pc is not UNSET:
             field_dict["restart_pc"] = restart_pc
 
@@ -104,7 +96,7 @@ class SmallWebRTCRequest:
                 return data
             return cast(Any | None | Unset, data)
 
-        request_data = _parse_request_data(d.pop("request_data", UNSET))
+        request_data = _parse_request_data(d.pop("requestData", UNSET))
 
         def _parse_restart_pc(data: object) -> bool | None | Unset:
             if data is None:
@@ -115,7 +107,7 @@ class SmallWebRTCRequest:
 
         restart_pc = _parse_restart_pc(d.pop("restart_pc", UNSET))
 
-        small_web_rtc_request = cls(
+        offer_request = cls(
             sdp=sdp,
             type_=type_,
             pc_id=pc_id,
@@ -123,8 +115,8 @@ class SmallWebRTCRequest:
             restart_pc=restart_pc,
         )
 
-        small_web_rtc_request.additional_properties = d
-        return small_web_rtc_request
+        offer_request.additional_properties = d
+        return offer_request
 
     @property
     def additional_keys(self) -> list[str]:

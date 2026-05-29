@@ -25,8 +25,8 @@ class SelectPlanResponse:
       * Stripe subscription status pass-through: ``active``,
         ``trialing``, ``incomplete`` (first-charge pending),
         ``past_due``, etc.
-      * ``free`` -- already-free tenant re-affirmed the free tier; no
-        Stripe call was needed.
+      * ``free`` -- already-free tenant with a saved payment method
+        re-affirmed the free tier; no Stripe call was needed.
       * ``scheduled_cancellation`` -- voluntary downgrade from a paid
         tier to free. The Stripe sub stays active through the period
         the customer paid for; the portal renders "Cancellation

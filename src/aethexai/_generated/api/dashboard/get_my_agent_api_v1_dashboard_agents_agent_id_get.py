@@ -67,11 +67,15 @@ def sync_detailed(
 
     Distinct from ``GET /api/v1/agents/{id}`` (API-key-authed, full record):
     this JWT-authed variant returns only the fields the dashboard renders
-    on the agent detail / Test surfaces. Pairs ``voice_id`` with the
-    curator-authored display name from ``vo_voices`` so the page can show
-    \"Adamma\" instead of an internal slug. Returns 404 if the agent doesn't
-    exist or doesn't belong to the developer's tenant — same shape as the
-    API-key endpoint so the portal can reuse its missing-agent rendering.
+    on the agent detail / Test surfaces. ``voice_id`` resolves to the
+    public catalog UUID (matching ``GET /voices``) and ``voice_name`` is
+    the curator-authored display name so the page can show \"Adamma\"
+    instead of an internal slug. ``voice_label`` is retained as an alias
+    of ``voice_name`` for backwards compatibility with the portal's
+    existing rendering, but new callers should prefer ``voice_name``.
+    Returns 404 if the agent doesn't exist or doesn't belong to the
+    developer's tenant — same shape as the API-key endpoint so the
+    portal can reuse its missing-agent rendering.
 
     Args:
         agent_id (UUID):
@@ -106,11 +110,15 @@ def sync(
 
     Distinct from ``GET /api/v1/agents/{id}`` (API-key-authed, full record):
     this JWT-authed variant returns only the fields the dashboard renders
-    on the agent detail / Test surfaces. Pairs ``voice_id`` with the
-    curator-authored display name from ``vo_voices`` so the page can show
-    \"Adamma\" instead of an internal slug. Returns 404 if the agent doesn't
-    exist or doesn't belong to the developer's tenant — same shape as the
-    API-key endpoint so the portal can reuse its missing-agent rendering.
+    on the agent detail / Test surfaces. ``voice_id`` resolves to the
+    public catalog UUID (matching ``GET /voices``) and ``voice_name`` is
+    the curator-authored display name so the page can show \"Adamma\"
+    instead of an internal slug. ``voice_label`` is retained as an alias
+    of ``voice_name`` for backwards compatibility with the portal's
+    existing rendering, but new callers should prefer ``voice_name``.
+    Returns 404 if the agent doesn't exist or doesn't belong to the
+    developer's tenant — same shape as the API-key endpoint so the
+    portal can reuse its missing-agent rendering.
 
     Args:
         agent_id (UUID):
@@ -140,11 +148,15 @@ async def asyncio_detailed(
 
     Distinct from ``GET /api/v1/agents/{id}`` (API-key-authed, full record):
     this JWT-authed variant returns only the fields the dashboard renders
-    on the agent detail / Test surfaces. Pairs ``voice_id`` with the
-    curator-authored display name from ``vo_voices`` so the page can show
-    \"Adamma\" instead of an internal slug. Returns 404 if the agent doesn't
-    exist or doesn't belong to the developer's tenant — same shape as the
-    API-key endpoint so the portal can reuse its missing-agent rendering.
+    on the agent detail / Test surfaces. ``voice_id`` resolves to the
+    public catalog UUID (matching ``GET /voices``) and ``voice_name`` is
+    the curator-authored display name so the page can show \"Adamma\"
+    instead of an internal slug. ``voice_label`` is retained as an alias
+    of ``voice_name`` for backwards compatibility with the portal's
+    existing rendering, but new callers should prefer ``voice_name``.
+    Returns 404 if the agent doesn't exist or doesn't belong to the
+    developer's tenant — same shape as the API-key endpoint so the
+    portal can reuse its missing-agent rendering.
 
     Args:
         agent_id (UUID):
@@ -177,11 +189,15 @@ async def asyncio(
 
     Distinct from ``GET /api/v1/agents/{id}`` (API-key-authed, full record):
     this JWT-authed variant returns only the fields the dashboard renders
-    on the agent detail / Test surfaces. Pairs ``voice_id`` with the
-    curator-authored display name from ``vo_voices`` so the page can show
-    \"Adamma\" instead of an internal slug. Returns 404 if the agent doesn't
-    exist or doesn't belong to the developer's tenant — same shape as the
-    API-key endpoint so the portal can reuse its missing-agent rendering.
+    on the agent detail / Test surfaces. ``voice_id`` resolves to the
+    public catalog UUID (matching ``GET /voices``) and ``voice_name`` is
+    the curator-authored display name so the page can show \"Adamma\"
+    instead of an internal slug. ``voice_label`` is retained as an alias
+    of ``voice_name`` for backwards compatibility with the portal's
+    existing rendering, but new callers should prefer ``voice_name``.
+    Returns 404 if the agent doesn't exist or doesn't belong to the
+    developer's tenant — same shape as the API-key endpoint so the
+    portal can reuse its missing-agent rendering.
 
     Args:
         agent_id (UUID):
