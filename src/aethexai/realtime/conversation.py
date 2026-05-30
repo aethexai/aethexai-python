@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 RATE = 48_000
-FRAME_SAMPLES = 960  # 20ms at 48kHz
+FRAME_SAMPLES = 960
 
 
 def _stereo_to_mono(data: bytes) -> bytes:
@@ -62,7 +62,6 @@ class SilenceTrack:
                 "aiortc and av are required for WebRTC. "
                 "Install with: pip install aethexai[realtime]"
             )
-        # We subclass at runtime to avoid import errors when aiortc is absent
         self._track = _make_silence_track()
 
 
@@ -77,10 +76,10 @@ def _make_silence_track():  # type: ignore[no-untyped-def]
         def __init__(self) -> None:
             super().__init__()
             self._pts = 0
-            self._silence = b"\x00" * (FRAME_SAMPLES * 2)  # s16 mono
+            self._silence = b"\x00" * (FRAME_SAMPLES * 2)
 
         async def recv(self):  # type: ignore[no-untyped-def]
-            await asyncio.sleep(0.02)  # pace at ~50fps
+            await asyncio.sleep(0.02)
             frame = av.AudioFrame(format="s16", layout="mono", samples=FRAME_SAMPLES)
             frame.planes[0].update(self._silence)
             frame.sample_rate = RATE
@@ -147,7 +146,6 @@ class Conversation:
 
     async def start(self) -> None:
         """Establish the WebRTC connection to the agent."""
-        # 1. Apply aioice TURN patches
         from aethexai.realtime._aioice_patches import apply_patches
 
         apply_patches()
@@ -159,16 +157,11 @@ class Conversation:
             RTCSessionDescription,
         )
 
-        # 2. POST /api/v1/conversation/connect -> session_id + ice_config.
-        #    Goes through the public wrapper (which dispatches the generated
-        #    op against the correct /api/v1 path). The wrapper returns the
-        #    parsed JSON dict directly.
         session_data = await self._client.conversation_connect(agent_id=str(self._agent_id))
         self._session_id = session_data["session_id"]
         logger.info("Session %s created", self._session_id[:8])
         self._notify_status("connecting")
 
-        # 3. Create RTCPeerConnection with ALL ice servers (STUN + TURN)
         ice_servers: list[Any] = []
         for s in session_data.get("ice_config", {}).get("iceServers", []):
             urls = s.get("urls", [])
@@ -182,26 +175,23 @@ class Conversation:
                 )
             )
         if not ice_servers:
-            ice_servers = [RTCIceServer(urls=["stun:stun.cloudflare.com:3478"])]
+            ice_servers = [RTCIceServer(urls=["stun:stun.l.google.com:19302"])]
         logger.info("ICE servers: %s", [s.urls for s in ice_servers])
 
         pc = RTCPeerConnection(configuration=RTCConfiguration(iceServers=ice_servers))
         self._pc = pc
 
-        # 4. Add audio transceiver (sendrecv), 2 video transceivers (recvonly)
         audio_track = self._audio_input or _make_silence_track()
         pc.addTransceiver(audio_track, direction="sendrecv")
         pc.addTransceiver("video", direction="recvonly")
         pc.addTransceiver("video", direction="recvonly")
 
-        # 5. Client creates data channel (server expects client to create it)
         dc = pc.createDataChannel("chat", ordered=True)
         self._dc = dc
         dc_open = asyncio.Event()
 
         def on_dc_open() -> None:
             logger.info("Data channel open for session %s", self._session_id[:8])
-            # 11. Send trackStatus signaling
             for idx, enabled in [(0, True), (1, False), (2, False)]:
                 dc.send(
                     json.dumps(
@@ -236,14 +226,12 @@ class Conversation:
             elif msg_type == "metrics" and self._callbacks.on_metrics:
                 self._callbacks.on_metrics(msg)
 
-        # 6. Set up on_track handler for incoming audio
         @pc.on("track")
         def on_track(track: Any) -> None:
             logger.info("Track received: kind=%s", track.kind)
             if track.kind == "audio":
                 self._capture_task = asyncio.ensure_future(self._capture_audio(track))
 
-        # Connection state monitoring
         @pc.on("connectionstatechange")
         def on_conn_state() -> None:
             state = pc.connectionState
@@ -252,12 +240,9 @@ class Conversation:
             if state in ("failed", "closed"):
                 self._connected = False
 
-        # 7. Create SDP offer and wait for ICE gathering
         offer = await pc.createOffer()
         await pc.setLocalDescription(offer)
 
-        # Wait for ICE gathering to complete (aiortc gathers synchronously
-        # in most cases, but add a safety timeout)
         deadline = asyncio.get_event_loop().time() + 30
         while pc.iceGatheringState != "complete":
             if asyncio.get_event_loop().time() > deadline:
@@ -266,9 +251,6 @@ class Conversation:
             await asyncio.sleep(0.2)
         logger.info("ICE gathering done (state=%s)", pc.iceGatheringState)
 
-        # 8. POST /api/v1/conversation/{session_id}/offer with full SDP.
-        #    No trickle ICE -- aiortc embeds all candidates during
-        #    setLocalDescription. Goes through the public wrapper.
         sdp = pc.localDescription.sdp
         answer = await self._client.send_offer(
             self._session_id,
@@ -277,12 +259,10 @@ class Conversation:
         )
         logger.info("SDP answer received")
 
-        # 9. Set remote description from answer
         await pc.setRemoteDescription(RTCSessionDescription(sdp=answer["sdp"], type=answer["type"]))
 
-        # 10. Wait for data channel to open
         connected = False
-        for _ in range(200):  # 20 seconds max
+        for _ in range(200):
             await asyncio.sleep(0.1)
             if dc_open.is_set():
                 connected = True
@@ -311,7 +291,6 @@ class Conversation:
             self._notify_error(err)
             raise err
 
-        # 12. Connected
         self._connected = True
         self._notify_status("connected")
         logger.info("Session %s connected", self._session_id[:8])
@@ -325,7 +304,6 @@ class Conversation:
 
         if self._session_id:
             try:
-                # POST /api/v1/conversation/{session_id}/end via public wrapper.
                 await self._client.end_conversation_session(self._session_id)
             except Exception as exc:
                 logger.debug("Error ending session: %s", exc)
@@ -336,16 +314,6 @@ class Conversation:
 
         self._connected = False
         self._notify_status("closed")
-
-    # ── Internal helpers ──────────────────────────────────────────────
-    #
-    # ``send_text`` and ``inject_context`` were removed: the server has no
-    # ``/conversation/{sid}/send-text`` or ``/conversation/{sid}/inject-context``
-    # routes (audit finding A.2(c) of docs/audits/pre-launch-2026-05-17.md).
-    # For mid-conversation text, send directly on the open data channel:
-    # ``conv._dc.send(json.dumps({"type": "agent_text_input", "text": "..."}))``
-    # or whatever schema the agent expects. For tool-call results, use
-    # ``AsyncAethexAI.send_tool_result(session_id, tool_call_id=..., result=...)``.
 
     async def _capture_audio(self, track: Any) -> None:
         """Receive audio frames from the remote track and invoke callback."""
@@ -366,8 +334,6 @@ class Conversation:
                 for f in out_frames:
                     pcm += bytes(f.planes[0])
                 if self._mono_audio:
-                    # Resampler already outputs mono, but guard against
-                    # unexpected stereo from some codecs
                     if frame.layout.name != "mono" and len(pcm) >= 4:
                         pcm = _stereo_to_mono(pcm)
                 if pcm and self._callbacks.on_agent_audio:

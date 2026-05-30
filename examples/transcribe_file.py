@@ -93,20 +93,14 @@ def transcribe_async_with_polling(
     job = client.transcribe_audio_async(body=body)
     job_id = getattr(job, "id", None) or getattr(job, "job_id", None)
     if not job_id:
-        raise RuntimeError(
-            f"transcribe_audio_async returned no usable id; got {job!r}"
-        )
+        raise RuntimeError(f"transcribe_audio_async returned no usable id; got {job!r}")
     print(f"  submitted async job: {job_id}")
 
     deadline = time.monotonic() + max_seconds
     last_status: str | None = None
     while time.monotonic() < deadline:
         snapshot = client.get_transcription_job(job_id)
-        status = (
-            getattr(snapshot, "status", None)
-            or getattr(snapshot, "state", None)
-            or "unknown"
-        )
+        status = getattr(snapshot, "status", None) or getattr(snapshot, "state", None) or "unknown"
         if status != last_status:
             print(f"  job status: {status}")
             last_status = status
@@ -167,9 +161,7 @@ def main() -> int:
 
         # ── 2. Async + polling ─────────────────────────────────────────
         print(f"Transcribing (async) {audio_path.name} ...")
-        async_result = transcribe_async_with_polling(
-            client, audio_path, language=language
-        )
+        async_result = transcribe_async_with_polling(client, audio_path, language=language)
         _print_transcript("async", async_result)
 
     return 0

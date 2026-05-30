@@ -17,23 +17,18 @@ T = TypeVar("T", bound="SelectPlanResponse")
 
 @_attrs_define
 class SelectPlanResponse:
-    """``POST /billing/plans/{slug}/select`` payload.
-
-    Returns the new state after the Stripe subscription create / update
+    """``POST /billing/plans/{slug}/select`` payload. Returns the new state after the Stripe subscription create / update
     / scheduled cancellation. ``status`` is one of:
 
-      * Stripe subscription status pass-through: ``active``,
-        ``trialing``, ``incomplete`` (first-charge pending),
-        ``past_due``, etc.
-      * ``free`` -- already-free tenant re-affirmed the free tier; no
-        Stripe call was needed.
-      * ``scheduled_cancellation`` -- voluntary downgrade from a paid
-        tier to free. The Stripe sub stays active through the period
-        the customer paid for; the portal renders "Cancellation
-        scheduled for <period_end>" until the period-boundary
-        ``customer.subscription.deleted`` webhook flips them to free.
-
-    When ``status='incomplete'`` (declining first-charge under
+     * Stripe subscription status pass-through: ``active``,
+     ``trialing``, ``incomplete`` (first-charge pending),
+     ``past_due``, etc. * ``free`` -- already-free tenant re-affirmed the free tier; no
+     Stripe call was needed. * ``scheduled_cancellation`` -- voluntary downgrade from a paid
+     tier to free. The Stripe sub stays active through the period
+     the customer paid for; the portal renders "Cancellation
+     scheduled for <period_end>" until the period-boundary
+     ``customer.subscription.deleted`` webhook flips them to free. When ``status='incomplete'`` (declining first-charge
+    under
     ``payment_behavior='default_incomplete'``) the response includes
     ``payment_intent_client_secret`` so the portal can call
     ``stripe.confirmCardPayment(client_secret)`` to recover within

@@ -16,9 +16,8 @@ T = TypeVar("T", bound="TwilioAccountCreate")
 
 @_attrs_define
 class TwilioAccountCreate:
-    """Request body for ``POST /api/v1/twilio-accounts``.
-
-    ``auth_token`` is required at registration time so we can verify the
+    """Request body for ``POST /api/v1/twilio-accounts``. ``auth_token`` is required at registration time so we can verify
+    the
     SID/token pair with Twilio before persisting.
 
         Attributes:

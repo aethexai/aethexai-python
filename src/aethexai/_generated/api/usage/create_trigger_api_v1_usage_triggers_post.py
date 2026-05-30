@@ -36,7 +36,9 @@ def _get_kwargs(
 def _parse_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
 ) -> HTTPValidationError | UsageTriggerResponse | None:
-    if response.status_code == 201:
+    if 200 <= response.status_code < 300:
+        if not response.content:
+            return None
         response_201 = UsageTriggerResponse.from_dict(response.json())
 
         return response_201
@@ -70,24 +72,14 @@ def sync_detailed(
 ) -> Response[HTTPValidationError | UsageTriggerResponse]:
     """Create Trigger
 
-     Configure a usage threshold + callback URL.
-
-    The evaluator (ARQ cron, every 5 minutes) checks active triggers
-    and posts a signed webhook when the threshold is crossed for the
-    period. One firing per period; the trigger auto-rearms when the
-    period rolls over.
-
-    Returns 409 when the tenant already has the per-tenant cap of
-    active triggers; PATCH ``is_active=false`` on an existing trigger
-    to recover a slot before adding a new one.
-
-    Returns 400 when the tenant has no ``webhook_secret`` configured.
-    Triggers without a signing secret would deliver an unsigned
-    webhook (or, more precisely, would be skipped by the evaluator
-    and audited as ``failed`` with no ability to deliver), so we
-    refuse the create at the boundary instead of accepting a
-    configuration that will never fire. The customer's recovery is
-    a single ``POST /usage/webhook-secret/rotate``.
+     Configure a usage threshold + callback URL. Active triggers are evaluated periodically; a signed
+    webhook is posted when the threshold is crossed for the period. One firing per period; the trigger
+    auto-rearms when the period rolls over. Returns 409 when the tenant already has the per-tenant cap
+    of active triggers; PATCH ``is_active=false`` on an existing trigger to recover a slot before adding
+    a new one. Returns 400 when the tenant has no ``webhook_secret`` configured — without a signing
+    secret the webhook could not be delivered, so the create is refused at the boundary rather than
+    accepting a configuration that will never fire. The recovery is a single ``POST /usage/webhook-
+    secret/rotate``.
 
     Args:
         body (UsageTriggerCreate):
@@ -118,24 +110,14 @@ def sync(
 ) -> HTTPValidationError | UsageTriggerResponse | None:
     """Create Trigger
 
-     Configure a usage threshold + callback URL.
-
-    The evaluator (ARQ cron, every 5 minutes) checks active triggers
-    and posts a signed webhook when the threshold is crossed for the
-    period. One firing per period; the trigger auto-rearms when the
-    period rolls over.
-
-    Returns 409 when the tenant already has the per-tenant cap of
-    active triggers; PATCH ``is_active=false`` on an existing trigger
-    to recover a slot before adding a new one.
-
-    Returns 400 when the tenant has no ``webhook_secret`` configured.
-    Triggers without a signing secret would deliver an unsigned
-    webhook (or, more precisely, would be skipped by the evaluator
-    and audited as ``failed`` with no ability to deliver), so we
-    refuse the create at the boundary instead of accepting a
-    configuration that will never fire. The customer's recovery is
-    a single ``POST /usage/webhook-secret/rotate``.
+     Configure a usage threshold + callback URL. Active triggers are evaluated periodically; a signed
+    webhook is posted when the threshold is crossed for the period. One firing per period; the trigger
+    auto-rearms when the period rolls over. Returns 409 when the tenant already has the per-tenant cap
+    of active triggers; PATCH ``is_active=false`` on an existing trigger to recover a slot before adding
+    a new one. Returns 400 when the tenant has no ``webhook_secret`` configured — without a signing
+    secret the webhook could not be delivered, so the create is refused at the boundary rather than
+    accepting a configuration that will never fire. The recovery is a single ``POST /usage/webhook-
+    secret/rotate``.
 
     Args:
         body (UsageTriggerCreate):
@@ -161,24 +143,14 @@ async def asyncio_detailed(
 ) -> Response[HTTPValidationError | UsageTriggerResponse]:
     """Create Trigger
 
-     Configure a usage threshold + callback URL.
-
-    The evaluator (ARQ cron, every 5 minutes) checks active triggers
-    and posts a signed webhook when the threshold is crossed for the
-    period. One firing per period; the trigger auto-rearms when the
-    period rolls over.
-
-    Returns 409 when the tenant already has the per-tenant cap of
-    active triggers; PATCH ``is_active=false`` on an existing trigger
-    to recover a slot before adding a new one.
-
-    Returns 400 when the tenant has no ``webhook_secret`` configured.
-    Triggers without a signing secret would deliver an unsigned
-    webhook (or, more precisely, would be skipped by the evaluator
-    and audited as ``failed`` with no ability to deliver), so we
-    refuse the create at the boundary instead of accepting a
-    configuration that will never fire. The customer's recovery is
-    a single ``POST /usage/webhook-secret/rotate``.
+     Configure a usage threshold + callback URL. Active triggers are evaluated periodically; a signed
+    webhook is posted when the threshold is crossed for the period. One firing per period; the trigger
+    auto-rearms when the period rolls over. Returns 409 when the tenant already has the per-tenant cap
+    of active triggers; PATCH ``is_active=false`` on an existing trigger to recover a slot before adding
+    a new one. Returns 400 when the tenant has no ``webhook_secret`` configured — without a signing
+    secret the webhook could not be delivered, so the create is refused at the boundary rather than
+    accepting a configuration that will never fire. The recovery is a single ``POST /usage/webhook-
+    secret/rotate``.
 
     Args:
         body (UsageTriggerCreate):
@@ -207,24 +179,14 @@ async def asyncio(
 ) -> HTTPValidationError | UsageTriggerResponse | None:
     """Create Trigger
 
-     Configure a usage threshold + callback URL.
-
-    The evaluator (ARQ cron, every 5 minutes) checks active triggers
-    and posts a signed webhook when the threshold is crossed for the
-    period. One firing per period; the trigger auto-rearms when the
-    period rolls over.
-
-    Returns 409 when the tenant already has the per-tenant cap of
-    active triggers; PATCH ``is_active=false`` on an existing trigger
-    to recover a slot before adding a new one.
-
-    Returns 400 when the tenant has no ``webhook_secret`` configured.
-    Triggers without a signing secret would deliver an unsigned
-    webhook (or, more precisely, would be skipped by the evaluator
-    and audited as ``failed`` with no ability to deliver), so we
-    refuse the create at the boundary instead of accepting a
-    configuration that will never fire. The customer's recovery is
-    a single ``POST /usage/webhook-secret/rotate``.
+     Configure a usage threshold + callback URL. Active triggers are evaluated periodically; a signed
+    webhook is posted when the threshold is crossed for the period. One firing per period; the trigger
+    auto-rearms when the period rolls over. Returns 409 when the tenant already has the per-tenant cap
+    of active triggers; PATCH ``is_active=false`` on an existing trigger to recover a slot before adding
+    a new one. Returns 400 when the tenant has no ``webhook_secret`` configured — without a signing
+    secret the webhook could not be delivered, so the create is refused at the boundary rather than
+    accepting a configuration that will never fire. The recovery is a single ``POST /usage/webhook-
+    secret/rotate``.
 
     Args:
         body (UsageTriggerCreate):

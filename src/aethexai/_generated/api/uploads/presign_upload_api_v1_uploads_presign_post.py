@@ -36,7 +36,9 @@ def _get_kwargs(
 def _parse_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
 ) -> HTTPValidationError | PresignUploadResponse | None:
-    if response.status_code == 200:
+    if 200 <= response.status_code < 300:
+        if not response.content:
+            return None
         response_200 = PresignUploadResponse.from_dict(response.json())
 
         return response_200
@@ -70,8 +72,8 @@ def sync_detailed(
 ) -> Response[HTTPValidationError | PresignUploadResponse]:
     """Get a presigned URL to upload a file directly to storage
 
-     Binary bodies bypass the API ALB/WAF. After the PUT succeeds, pass `upload_id` to the consuming
-    endpoint (e.g. `POST /transcribe/by-upload`).
+     After the PUT succeeds, pass `upload_id` to the consuming endpoint (e.g. `POST /transcribe/by-
+    upload`).
 
     Args:
         body (PresignUploadRequest): Ask the server for a presigned URL the client can PUT a file
@@ -103,8 +105,8 @@ def sync(
 ) -> HTTPValidationError | PresignUploadResponse | None:
     """Get a presigned URL to upload a file directly to storage
 
-     Binary bodies bypass the API ALB/WAF. After the PUT succeeds, pass `upload_id` to the consuming
-    endpoint (e.g. `POST /transcribe/by-upload`).
+     After the PUT succeeds, pass `upload_id` to the consuming endpoint (e.g. `POST /transcribe/by-
+    upload`).
 
     Args:
         body (PresignUploadRequest): Ask the server for a presigned URL the client can PUT a file
@@ -131,8 +133,8 @@ async def asyncio_detailed(
 ) -> Response[HTTPValidationError | PresignUploadResponse]:
     """Get a presigned URL to upload a file directly to storage
 
-     Binary bodies bypass the API ALB/WAF. After the PUT succeeds, pass `upload_id` to the consuming
-    endpoint (e.g. `POST /transcribe/by-upload`).
+     After the PUT succeeds, pass `upload_id` to the consuming endpoint (e.g. `POST /transcribe/by-
+    upload`).
 
     Args:
         body (PresignUploadRequest): Ask the server for a presigned URL the client can PUT a file
@@ -162,8 +164,8 @@ async def asyncio(
 ) -> HTTPValidationError | PresignUploadResponse | None:
     """Get a presigned URL to upload a file directly to storage
 
-     Binary bodies bypass the API ALB/WAF. After the PUT succeeds, pass `upload_id` to the consuming
-    endpoint (e.g. `POST /transcribe/by-upload`).
+     After the PUT succeeds, pass `upload_id` to the consuming endpoint (e.g. `POST /transcribe/by-
+    upload`).
 
     Args:
         body (PresignUploadRequest): Ask the server for a presigned URL the client can PUT a file

@@ -38,7 +38,9 @@ def _get_kwargs(
 def _parse_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
 ) -> Any | HTTPValidationError | None:
-    if response.status_code == 200:
+    if 200 <= response.status_code < 300:
+        if not response.content:
+            return None
         response_200 = response.json()
         return response_200
 
@@ -72,23 +74,14 @@ def sync_detailed(
 ) -> Response[Any | HTTPValidationError]:
     """Ice Candidate
 
-     Handle ICE candidate trickle.
-
-    Authenticated, quota-exempt signaling. ICE trickle is time-sensitive and
-    can be high volume, so the rate-limiter middleware does not charge it
-    against tenant API RPM, but callers must still present a valid
-    ``calls:write`` API key.
-
-    Pod-aware: if the peer connection lives on a different pod, the request
-    is proxied transparently via the AET-857 pod routing layer.
+     Submit an ICE candidate for the session. ICE trickle is time-sensitive and can be high volume, so it
+    is exempt from your API rate limit, but a valid ``calls:write`` API key is still required.
 
     Args:
         session_id (str):
         body (SmallWebRTCPatchRequest): Small WebRTC transport session arguments for the runner.
-
             Parameters:
-                pc_id: Identifier for the peer connection.
-                candidates: A list of ICE candidate patches.
+             pc_id: Identifier for the peer connection. candidates: A list of ICE candidate patches.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -118,23 +111,14 @@ def sync(
 ) -> Any | HTTPValidationError | None:
     """Ice Candidate
 
-     Handle ICE candidate trickle.
-
-    Authenticated, quota-exempt signaling. ICE trickle is time-sensitive and
-    can be high volume, so the rate-limiter middleware does not charge it
-    against tenant API RPM, but callers must still present a valid
-    ``calls:write`` API key.
-
-    Pod-aware: if the peer connection lives on a different pod, the request
-    is proxied transparently via the AET-857 pod routing layer.
+     Submit an ICE candidate for the session. ICE trickle is time-sensitive and can be high volume, so it
+    is exempt from your API rate limit, but a valid ``calls:write`` API key is still required.
 
     Args:
         session_id (str):
         body (SmallWebRTCPatchRequest): Small WebRTC transport session arguments for the runner.
-
             Parameters:
-                pc_id: Identifier for the peer connection.
-                candidates: A list of ICE candidate patches.
+             pc_id: Identifier for the peer connection. candidates: A list of ICE candidate patches.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -159,23 +143,14 @@ async def asyncio_detailed(
 ) -> Response[Any | HTTPValidationError]:
     """Ice Candidate
 
-     Handle ICE candidate trickle.
-
-    Authenticated, quota-exempt signaling. ICE trickle is time-sensitive and
-    can be high volume, so the rate-limiter middleware does not charge it
-    against tenant API RPM, but callers must still present a valid
-    ``calls:write`` API key.
-
-    Pod-aware: if the peer connection lives on a different pod, the request
-    is proxied transparently via the AET-857 pod routing layer.
+     Submit an ICE candidate for the session. ICE trickle is time-sensitive and can be high volume, so it
+    is exempt from your API rate limit, but a valid ``calls:write`` API key is still required.
 
     Args:
         session_id (str):
         body (SmallWebRTCPatchRequest): Small WebRTC transport session arguments for the runner.
-
             Parameters:
-                pc_id: Identifier for the peer connection.
-                candidates: A list of ICE candidate patches.
+             pc_id: Identifier for the peer connection. candidates: A list of ICE candidate patches.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -203,23 +178,14 @@ async def asyncio(
 ) -> Any | HTTPValidationError | None:
     """Ice Candidate
 
-     Handle ICE candidate trickle.
-
-    Authenticated, quota-exempt signaling. ICE trickle is time-sensitive and
-    can be high volume, so the rate-limiter middleware does not charge it
-    against tenant API RPM, but callers must still present a valid
-    ``calls:write`` API key.
-
-    Pod-aware: if the peer connection lives on a different pod, the request
-    is proxied transparently via the AET-857 pod routing layer.
+     Submit an ICE candidate for the session. ICE trickle is time-sensitive and can be high volume, so it
+    is exempt from your API rate limit, but a valid ``calls:write`` API key is still required.
 
     Args:
         session_id (str):
         body (SmallWebRTCPatchRequest): Small WebRTC transport session arguments for the runner.
-
             Parameters:
-                pc_id: Identifier for the peer connection.
-                candidates: A list of ICE candidate patches.
+             pc_id: Identifier for the peer connection. candidates: A list of ICE candidate patches.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.

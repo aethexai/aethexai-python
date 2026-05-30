@@ -39,7 +39,9 @@ def _get_kwargs(
 def _parse_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
 ) -> Any | HTTPValidationError | None:
-    if response.status_code == 204:
+    if 200 <= response.status_code < 300:
+        if not response.content:
+            return None
         response_204 = cast(Any, None)
         return response_204
 
@@ -73,16 +75,12 @@ def sync_detailed(
 ) -> Response[Any | HTTPValidationError]:
     """Revoke Audio Token
 
-     Revoke a previously-minted audio token before its natural expiry.
-
-    Use case: a customer accidentally shares a public audio link and
-    wants to invalidate it without waiting up to an hour for the TTL.
-    The token's ``jti`` is added to the revocation cache (Redis +
-    in-memory fallback) with a TTL matching the token's remaining
+     Revoke a previously-minted audio token before its natural expiry. Use case: a customer accidentally
+    shares a public audio link and
+    wants to invalidate it without waiting up to an hour for the TTL. The token's ``jti`` is added to
+    the revocation cache with a TTL matching the token's remaining
     lifetime, so memory pressure is bounded by the natural expiry
-    schedule.
-
-    Returns 204 on success; idempotent (re-revoking a revoked token is
+    schedule. Returns 204 on success; idempotent (re-revoking a revoked token is
     a no-op). 404 if the token isn't valid for THIS conversation under
     THIS tenant — same response we'd give for unauthorized cross-tenant
     access, so callers can't probe for valid tokens.
@@ -119,16 +117,12 @@ def sync(
 ) -> Any | HTTPValidationError | None:
     """Revoke Audio Token
 
-     Revoke a previously-minted audio token before its natural expiry.
-
-    Use case: a customer accidentally shares a public audio link and
-    wants to invalidate it without waiting up to an hour for the TTL.
-    The token's ``jti`` is added to the revocation cache (Redis +
-    in-memory fallback) with a TTL matching the token's remaining
+     Revoke a previously-minted audio token before its natural expiry. Use case: a customer accidentally
+    shares a public audio link and
+    wants to invalidate it without waiting up to an hour for the TTL. The token's ``jti`` is added to
+    the revocation cache with a TTL matching the token's remaining
     lifetime, so memory pressure is bounded by the natural expiry
-    schedule.
-
-    Returns 204 on success; idempotent (re-revoking a revoked token is
+    schedule. Returns 204 on success; idempotent (re-revoking a revoked token is
     a no-op). 404 if the token isn't valid for THIS conversation under
     THIS tenant — same response we'd give for unauthorized cross-tenant
     access, so callers can't probe for valid tokens.
@@ -160,16 +154,12 @@ async def asyncio_detailed(
 ) -> Response[Any | HTTPValidationError]:
     """Revoke Audio Token
 
-     Revoke a previously-minted audio token before its natural expiry.
-
-    Use case: a customer accidentally shares a public audio link and
-    wants to invalidate it without waiting up to an hour for the TTL.
-    The token's ``jti`` is added to the revocation cache (Redis +
-    in-memory fallback) with a TTL matching the token's remaining
+     Revoke a previously-minted audio token before its natural expiry. Use case: a customer accidentally
+    shares a public audio link and
+    wants to invalidate it without waiting up to an hour for the TTL. The token's ``jti`` is added to
+    the revocation cache with a TTL matching the token's remaining
     lifetime, so memory pressure is bounded by the natural expiry
-    schedule.
-
-    Returns 204 on success; idempotent (re-revoking a revoked token is
+    schedule. Returns 204 on success; idempotent (re-revoking a revoked token is
     a no-op). 404 if the token isn't valid for THIS conversation under
     THIS tenant — same response we'd give for unauthorized cross-tenant
     access, so callers can't probe for valid tokens.
@@ -204,16 +194,12 @@ async def asyncio(
 ) -> Any | HTTPValidationError | None:
     """Revoke Audio Token
 
-     Revoke a previously-minted audio token before its natural expiry.
-
-    Use case: a customer accidentally shares a public audio link and
-    wants to invalidate it without waiting up to an hour for the TTL.
-    The token's ``jti`` is added to the revocation cache (Redis +
-    in-memory fallback) with a TTL matching the token's remaining
+     Revoke a previously-minted audio token before its natural expiry. Use case: a customer accidentally
+    shares a public audio link and
+    wants to invalidate it without waiting up to an hour for the TTL. The token's ``jti`` is added to
+    the revocation cache with a TTL matching the token's remaining
     lifetime, so memory pressure is bounded by the natural expiry
-    schedule.
-
-    Returns 204 on success; idempotent (re-revoking a revoked token is
+    schedule. Returns 204 on success; idempotent (re-revoking a revoked token is
     a no-op). 404 if the token isn't valid for THIS conversation under
     THIS tenant — same response we'd give for unauthorized cross-tenant
     access, so callers can't probe for valid tokens.

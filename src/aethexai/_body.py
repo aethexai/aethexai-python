@@ -13,6 +13,8 @@ every missing field before delegating to ``from_dict``.
 
 from __future__ import annotations
 
+import builtins
+import keyword
 from typing import Any, TypeVar
 
 import attrs
@@ -22,14 +24,30 @@ from aethexai._exceptions import ValidationError
 T = TypeVar("T")
 
 
+def _wire_name(attr_name: str) -> str:
+    """Map a generated attribute name back to its JSON wire key.
+
+    openapi-python-client suffixes ``_`` onto attribute names that collide with
+    a Python keyword or builtin (the JSON ``type`` field becomes ``type_``,
+    ``from`` becomes ``from_``, etc.). Wrapper methods take wire names as
+    keyword arguments, so the required-field pre-check must compare against wire
+    names — otherwise a required ``type`` field is always reported missing.
+    """
+    if attr_name.endswith("_") and (
+        keyword.iskeyword(attr_name[:-1]) or hasattr(builtins, attr_name[:-1])
+    ):
+        return attr_name[:-1]
+    return attr_name
+
+
 def _required_field_names(model_cls: type) -> list[str]:
-    """Return names of attrs fields that have no default (i.e. required at init)."""
+    """Return wire names of attrs fields that have no default (required at init)."""
     names: list[str] = []
     for f in attrs.fields(model_cls):
         if not f.init:
             continue
         if f.default is attrs.NOTHING:
-            names.append(f.name)
+            names.append(_wire_name(f.name))
     return names
 
 
@@ -49,9 +67,6 @@ def build_body(model_cls: type[T], fields: dict[str, Any]) -> T:
         else:
             joined = ", ".join(repr(n) for n in missing)
             msg = f"Missing required fields for {model_name}: {joined}"
-        # Mirror the server's 422 envelope so callers can write one handler
-        # that iterates `response["detail"]` regardless of whether the error
-        # came from the SDK pre-flight or the server.
         detail = [
             {
                 "type": "missing",
@@ -68,7 +83,7 @@ def build_body(model_cls: type[T], fields: dict[str, Any]) -> T:
             response={
                 "error": "Validation failed",
                 "code": "validation_error",
-                "request_id": None,  # pre-flight: no server-side request
+                "request_id": None,
                 "detail": detail,
                 "fields": detail,
             },

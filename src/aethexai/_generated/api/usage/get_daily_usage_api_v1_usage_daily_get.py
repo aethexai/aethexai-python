@@ -48,7 +48,9 @@ def _get_kwargs(
 def _parse_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
 ) -> HTTPValidationError | list[UsageDailyEntry] | None:
-    if response.status_code == 200:
+    if 200 <= response.status_code < 300:
+        if not response.content:
+            return None
         response_200 = []
         _response_200 = response.json()
         for response_200_item_data in _response_200:
@@ -88,15 +90,12 @@ def sync_detailed(
 ) -> Response[HTTPValidationError | list[UsageDailyEntry]]:
     """Get Daily Usage
 
-     Per-day usage rollup for the trailing N calendar days.
-
-    ``days`` is a **date window**, not a row limit: the response always
+     Per-day usage rollup for the trailing N calendar days. ``days`` is a **date window**, not a row
+    limit: the response always
     contains exactly ``days`` entries, one per calendar day in UTC,
     newest-first. Days with no activity are returned as zero-filled
     rows so the response is chart-ready without client-side gap
-    handling.
-
-    The 1..365 bound is enforced by Pydantic; values outside that
+    handling. The 1..365 bound is enforced by Pydantic; values outside that
     range 422 at the boundary.
 
     Args:
@@ -133,15 +132,12 @@ def sync(
 ) -> HTTPValidationError | list[UsageDailyEntry] | None:
     """Get Daily Usage
 
-     Per-day usage rollup for the trailing N calendar days.
-
-    ``days`` is a **date window**, not a row limit: the response always
+     Per-day usage rollup for the trailing N calendar days. ``days`` is a **date window**, not a row
+    limit: the response always
     contains exactly ``days`` entries, one per calendar day in UTC,
     newest-first. Days with no activity are returned as zero-filled
     rows so the response is chart-ready without client-side gap
-    handling.
-
-    The 1..365 bound is enforced by Pydantic; values outside that
+    handling. The 1..365 bound is enforced by Pydantic; values outside that
     range 422 at the boundary.
 
     Args:
@@ -173,15 +169,12 @@ async def asyncio_detailed(
 ) -> Response[HTTPValidationError | list[UsageDailyEntry]]:
     """Get Daily Usage
 
-     Per-day usage rollup for the trailing N calendar days.
-
-    ``days`` is a **date window**, not a row limit: the response always
+     Per-day usage rollup for the trailing N calendar days. ``days`` is a **date window**, not a row
+    limit: the response always
     contains exactly ``days`` entries, one per calendar day in UTC,
     newest-first. Days with no activity are returned as zero-filled
     rows so the response is chart-ready without client-side gap
-    handling.
-
-    The 1..365 bound is enforced by Pydantic; values outside that
+    handling. The 1..365 bound is enforced by Pydantic; values outside that
     range 422 at the boundary.
 
     Args:
@@ -216,15 +209,12 @@ async def asyncio(
 ) -> HTTPValidationError | list[UsageDailyEntry] | None:
     """Get Daily Usage
 
-     Per-day usage rollup for the trailing N calendar days.
-
-    ``days`` is a **date window**, not a row limit: the response always
+     Per-day usage rollup for the trailing N calendar days. ``days`` is a **date window**, not a row
+    limit: the response always
     contains exactly ``days`` entries, one per calendar day in UTC,
     newest-first. Days with no activity are returned as zero-filled
     rows so the response is chart-ready without client-side gap
-    handling.
-
-    The 1..365 bound is enforced by Pydantic; values outside that
+    handling. The 1..365 bound is enforced by Pydantic; values outside that
     range 422 at the boundary.
 
     Args:

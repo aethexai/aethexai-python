@@ -20,15 +20,11 @@ class InvoiceEntry:
     """A single invoice in the customer's billing history. Sourced
     directly from Stripe; no PDF rendering on our side. The portal
     table renders ``hosted_invoice_url`` as "View" and ``invoice_pdf``
-    as "Download PDF" links that 302 to Stripe-hosted assets.
-
-    ``status`` is one of ``draft / open / paid / uncollectible / void``.
-    ``amount_paid`` and ``amount_due`` are USD cents. ``created`` /
+    as "Download PDF" links that 302 to Stripe-hosted assets. ``status`` is one of ``draft / open / paid / uncollectible
+    / void``. ``amount_paid`` and ``amount_due`` are USD cents. ``created`` /
     ``period_start`` / ``period_end`` are Unix epochs (seconds) so the
     portal can render whatever timezone-local format the user expects
-    without us forcing a representation here.
-
-    ``hosted_invoice_url`` and ``invoice_pdf`` can be ``None`` for
+    without us forcing a representation here. ``hosted_invoice_url`` and ``invoice_pdf`` can be ``None`` for
     invoices in the ``draft`` state (no PDF generated yet).
 
         Attributes:

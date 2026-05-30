@@ -41,16 +41,11 @@ def _get_kwargs(
 def _parse_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
 ) -> Any | HTTPValidationError | None:
-    # AETHEX-PATCH (AET-1580): backend returns 201 Created on this resource POST
-    # (aethex PR #955). Parse it exactly like 200 so the wrapper layer returns
-    # the created resource instead of None. Re-applied by sync_from_prod.py.
-    if response.status_code == 201:
+    if 200 <= response.status_code < 300:
+        if not response.content:
+            return None
         response_201 = response.json()
         return response_201
-
-    if response.status_code == 200:
-        response_200 = response.json()
-        return response_200
 
     if response.status_code == 422:
         response_422 = HTTPValidationError.from_dict(response.json())

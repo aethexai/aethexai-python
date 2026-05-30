@@ -6,8 +6,7 @@ that authenticate via ``require_api_key``. The ``/api/v1/billing/*`` and
 ``/api/v1/auth/me`` routes, however, require a developer-JWT bearer
 token (``Authorization: Bearer <jwt>``) — issued by the magic-link
 sign-in flow, the Google sign-in flow, or token refresh — and 401 on
-any API-key call (audit finding A.1 in
-``docs/audits/pre-launch-2026-05-17.md``).
+any API-key call.
 
 ``DeveloperClient`` is the JWT counterpart::
 
@@ -81,18 +80,11 @@ class DeveloperClient:
                 "developers.aethexai.com.",
                 status_code=401,
             )
-        # NOTE: access/refresh tokens are intentionally NOT stored as instance
-        # attributes — see ``AethexAI.__init__`` for the rationale (audit A.5).
-        # The access token lives in ``self._client.token`` (with repr=False
-        # applied via the post-codegen patch in ``scripts/sync_from_prod.py``);
-        # the refresh token lives in the closure of ``_refresh_access_token``.
         self._base_url = base_url.rstrip("/")
         self._timeout = timeout
         self._max_retries = max_retries
 
         resolved_refresh = refresh_token or os.environ.get("AETHEX_DEVELOPER_REFRESH_TOKEN", "")
-        # Boxed so the refresh callback can rotate it atomically without
-        # mutating instance state visible to introspection.
         self._refresh_token_box: list[str] = [resolved_refresh] if resolved_refresh else []
 
         httpx_args: dict[str, Any] = {
@@ -101,18 +93,13 @@ class DeveloperClient:
         self._client = AuthenticatedClient(
             base_url=self._base_url,
             token=resolved_access,
-            # Defaults: auth_header_name="Authorization", prefix="Bearer".
             timeout=httpx.Timeout(timeout),
             httpx_args=httpx_args,
         )
         if httpx_client is not None:
             self._client.set_httpx_client(httpx_client)
 
-    # ── Lifecycle ──────────────────────────────────────────────────────
-
     def __repr__(self) -> str:
-        # See ``AethexAI.__repr__`` — never include any field that could
-        # carry the JWT access or refresh token.
         return (
             f"{type(self).__name__}(base_url={self._base_url!r}, "
             f"timeout={self._timeout!r}, "
@@ -129,8 +116,6 @@ class DeveloperClient:
 
     def __exit__(self, *args: object) -> None:
         self.close()
-
-    # ── Refresh ────────────────────────────────────────────────────────
 
     def _refresh_access_token(self) -> bool:
         """Try to refresh the access token via the stored refresh token.
@@ -161,19 +146,13 @@ class DeveloperClient:
         access_token = getattr(tokens, "access_token", "") if tokens is not None else ""
         if not access_token:
             return False
-        # Rotate: install the new access token onto the generated client
-        # and (when present) the new refresh token in the box.
         self._client.token = access_token
-        # The httpx client caches the Authorization header on first use;
-        # flush it so the next request picks up the new token.
         if self._client._client is not None:
             self._client._client.headers["Authorization"] = f"Bearer {access_token}"
         new_refresh = getattr(tokens, "refresh_token", "") if tokens is not None else ""
         if new_refresh:
             self._refresh_token_box[0] = new_refresh
         return True
-
-    # ── Internal request runner ────────────────────────────────────────
 
     def _call(self, op_func: Any, *args: Any, **kwargs: Any) -> Any:
         """Run a generated ``_detailed`` op, raise on non-2xx, return parsed.
@@ -202,8 +181,6 @@ class DeveloperClient:
             if 200 <= status < 300:
                 return response.parsed
         raise _map_status_to_exception(status, response.content, response.headers)
-
-    # ── auth/me ────────────────────────────────────────────────────────
 
     def get_me(self) -> Any:
         """Get the current developer's profile. See https://developers.aethexai.com/docs/authentication."""
@@ -235,8 +212,6 @@ class DeveloperClient:
 
         self._call(_op.sync_detailed)
         return None
-
-    # ── billing ────────────────────────────────────────────────────────
 
     def get_balance(self) -> Any:
         """Get account credit balance."""

@@ -16,9 +16,8 @@ T = TypeVar("T", bound="SelectPlanRequest")
 
 @_attrs_define
 class SelectPlanRequest:
-    """Optional body for ``POST /billing/plans/{slug}/select``.
-
-    Defaults to monthly billing. Yearly is rejected with 400 if the
+    """Optional body for ``POST /billing/plans/{slug}/select``. Defaults to monthly billing. Yearly is rejected with 400 if
+    the
     requested plan has no yearly variant configured (currently the
     free trial). The interval drives which ``stripe_price_id`` the
     backend hands to ``create_subscription`` /

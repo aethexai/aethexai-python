@@ -58,7 +58,7 @@ agent = client.create_agent(
     max_duration_seconds=900,
 )
 
-print(agent.id)
+print(agent["id"])
 ```
 
 To list, fetch, update, duplicate, or delete agents, use the matching
@@ -66,10 +66,10 @@ flat methods:
 
 ```python
 client.list_agents(limit=50)
-client.get_agent(agent.id)
-client.update_agent(agent.id, system_prompt="...updated prompt...")
-client.duplicate_agent(agent.id)
-client.delete_agent(agent.id)
+client.get_agent(agent["id"])
+client.update_agent(agent["id"], system_prompt="...updated prompt...")
+client.duplicate_agent(agent["id"])
+client.delete_agent(agent["id"])
 ```
 
 ## Managing the knowledge base
@@ -79,30 +79,30 @@ can retrieve from during a conversation.
 
 ```python
 # List what the agent already has
-docs = client.list_knowledge_docs(agent.id)
+docs = client.list_knowledge_docs(agent["id"])
 
 # Upload a document via multipart (e.g. a PDF or text file)
 with open("policies.pdf", "rb") as fh:
-    client.upload_knowledge_doc(agent.id, body=fh)
+    client.upload_knowledge_doc(agent["id"], body=fh)
 
 # Or attach a previously presigned upload (see client.create_upload(...))
 client.upload_knowledge_doc_by_upload(
-    agent.id,
+    agent["id"],
     upload_id="up_...",
     filename="policies.pdf",
 )
 
 # Re-run extraction/embedding on a doc that already exists
-client.process_knowledge_doc(agent.id, doc_id="doc_...")
+client.process_knowledge_doc(agent["id"], doc_id="doc_...")
 
 # Inspect the extracted text snippets
-client.get_knowledge_texts(agent.id)
+client.get_knowledge_texts(agent["id"])
 
 # Ad-hoc query the knowledge base outside a conversation
-client.query_knowledge_base(agent.id, query="What is your refund policy?")
+client.query_knowledge_base(agent["id"], query="What is your refund policy?")
 
 # Clean up
-client.delete_knowledge_doc(agent.id, doc_id="doc_...")
+client.delete_knowledge_doc(agent["id"], doc_id="doc_...")
 ```
 
 ## Managing tools
@@ -113,10 +113,10 @@ parameter spec; the runtime calls your endpoint when the LLM decides to use
 it, or it surfaces the call to your local code via the realtime channel.
 
 ```python
-client.list_agent_tools(agent.id)
+client.list_agent_tools(agent["id"])
 
 client.add_agent_tool(
-    agent.id,
+    agent["id"],
     name="book_appointment",
     description="Reserve a time slot for the caller.",
     tool_type="function",
@@ -132,8 +132,8 @@ client.add_agent_tool(
     headers={"Authorization": "Bearer ..."},
 )
 
-client.update_agent_tool(agent.id, tool_id="tl_...", description="...")
-client.delete_agent_tool(agent.id, tool_id="tl_...")
+client.update_agent_tool(agent["id"], tool_id="tl_...", description="...")
+client.delete_agent_tool(agent["id"], tool_id="tl_...")
 ```
 
 ## Triggering outbound calls
@@ -142,13 +142,13 @@ Once an agent exists, you can have it place a phone call:
 
 ```python
 call = client.trigger_call(
-    agent_id=agent.id,
+    agent_id=agent["id"],
     to_number="+15551234567",
     from_number="+15557654321",  # optional — defaults to a number on file
     metadata={"customer_id": "cu_42"},
 )
 
-print(call.id)
+print(call["id"])
 ```
 
 For high-volume scenarios use `client.batch_calls(...)` with a list of
@@ -168,7 +168,7 @@ async def main() -> None:
     client = AsyncAethexAI(api_key="ak_live_...")
     conv = Conversation(
         client,
-        agent_id=agent.id,
+        agent_id=agent["id"],
         callbacks=ConversationCallbacks(
             on_agent_audio=lambda pcm: speakers.write(pcm),
             on_agent_text=lambda text: print("agent:", text),
@@ -206,11 +206,11 @@ agent = client.create_agent(
 
 # 2. Give it knowledge about the company
 with open("returns_policy.md", "rb") as fh:
-    client.upload_knowledge_doc(agent.id, body=fh)
+    client.upload_knowledge_doc(agent["id"], body=fh)
 
 # 3. Give it a tool it can call
 client.add_agent_tool(
-    agent.id,
+    agent["id"],
     name="lookup_order",
     description="Fetch the status of a customer order by id.",
     parameters_schema={
@@ -223,7 +223,7 @@ client.add_agent_tool(
 
 # 4. Call a customer back
 client.trigger_call(
-    agent_id=agent.id,
+    agent_id=agent["id"],
     to_number="+15551234567",
     metadata={"order_id": "ord_98123"},
 )

@@ -29,7 +29,9 @@ def _get_kwargs(
 def _parse_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
 ) -> Any | HTTPValidationError | None:
-    if response.status_code == 204:
+    if 200 <= response.status_code < 300:
+        if not response.content:
+            return None
         response_204 = cast(Any, None)
         return response_204
 
@@ -62,9 +64,8 @@ def sync_detailed(
 ) -> Response[Any | HTTPValidationError]:
     r"""Detach Tenant Payment Method
 
-     Detach a payment method from the tenant's Stripe Customer.
-
-    Ownership is verified server-side BEFORE the detach call. Stripe's
+     Detach a payment method from the tenant's Stripe Customer. Ownership is verified server-side BEFORE
+    the detach call. Stripe's
     detach endpoint takes only the PM id (no customer scope), so a
     leaked ``pm_*`` id from logs / dashboard transcripts / accidental
     client-side console output would otherwise let any
@@ -73,16 +74,13 @@ def sync_detailed(
     tenant's ``stripe_customer_id``, and 404 on mismatch (same
     response as a non-existent id, so a probe can't distinguish
     \"wrong tenant\" from \"doesn't exist\"). One extra ~100ms Stripe
-    roundtrip on a user-initiated, infrequent path.
-
-    The ``has_payment_method`` cache flag is updated by the
+    roundtrip on a user-initiated, infrequent path. The ``has_payment_method`` cache flag is updated by
+    the
     ``payment_method.attached`` / ``.detached`` webhook handlers
     (which use Stripe's ``previous_attributes`` to resolve the owner
     when the post-detach event has ``customer=null``). The route does
     NOT touch the cache directly — Stripe is source of truth and
-    webhooks are how we mirror it.
-
-    On any Stripe-side error the route surfaces the SDK's curated
+    webhooks are how we mirror it. On any Stripe-side error the route surfaces the SDK's curated
     ``StripeError.user_message`` if present, falling back to a
     generic message. Programming bugs (TypeError, AttributeError,
     etc.) propagate to the global handler instead of being silently
@@ -117,9 +115,8 @@ def sync(
 ) -> Any | HTTPValidationError | None:
     r"""Detach Tenant Payment Method
 
-     Detach a payment method from the tenant's Stripe Customer.
-
-    Ownership is verified server-side BEFORE the detach call. Stripe's
+     Detach a payment method from the tenant's Stripe Customer. Ownership is verified server-side BEFORE
+    the detach call. Stripe's
     detach endpoint takes only the PM id (no customer scope), so a
     leaked ``pm_*`` id from logs / dashboard transcripts / accidental
     client-side console output would otherwise let any
@@ -128,16 +125,13 @@ def sync(
     tenant's ``stripe_customer_id``, and 404 on mismatch (same
     response as a non-existent id, so a probe can't distinguish
     \"wrong tenant\" from \"doesn't exist\"). One extra ~100ms Stripe
-    roundtrip on a user-initiated, infrequent path.
-
-    The ``has_payment_method`` cache flag is updated by the
+    roundtrip on a user-initiated, infrequent path. The ``has_payment_method`` cache flag is updated by
+    the
     ``payment_method.attached`` / ``.detached`` webhook handlers
     (which use Stripe's ``previous_attributes`` to resolve the owner
     when the post-detach event has ``customer=null``). The route does
     NOT touch the cache directly — Stripe is source of truth and
-    webhooks are how we mirror it.
-
-    On any Stripe-side error the route surfaces the SDK's curated
+    webhooks are how we mirror it. On any Stripe-side error the route surfaces the SDK's curated
     ``StripeError.user_message`` if present, falling back to a
     generic message. Programming bugs (TypeError, AttributeError,
     etc.) propagate to the global handler instead of being silently
@@ -167,9 +161,8 @@ async def asyncio_detailed(
 ) -> Response[Any | HTTPValidationError]:
     r"""Detach Tenant Payment Method
 
-     Detach a payment method from the tenant's Stripe Customer.
-
-    Ownership is verified server-side BEFORE the detach call. Stripe's
+     Detach a payment method from the tenant's Stripe Customer. Ownership is verified server-side BEFORE
+    the detach call. Stripe's
     detach endpoint takes only the PM id (no customer scope), so a
     leaked ``pm_*`` id from logs / dashboard transcripts / accidental
     client-side console output would otherwise let any
@@ -178,16 +171,13 @@ async def asyncio_detailed(
     tenant's ``stripe_customer_id``, and 404 on mismatch (same
     response as a non-existent id, so a probe can't distinguish
     \"wrong tenant\" from \"doesn't exist\"). One extra ~100ms Stripe
-    roundtrip on a user-initiated, infrequent path.
-
-    The ``has_payment_method`` cache flag is updated by the
+    roundtrip on a user-initiated, infrequent path. The ``has_payment_method`` cache flag is updated by
+    the
     ``payment_method.attached`` / ``.detached`` webhook handlers
     (which use Stripe's ``previous_attributes`` to resolve the owner
     when the post-detach event has ``customer=null``). The route does
     NOT touch the cache directly — Stripe is source of truth and
-    webhooks are how we mirror it.
-
-    On any Stripe-side error the route surfaces the SDK's curated
+    webhooks are how we mirror it. On any Stripe-side error the route surfaces the SDK's curated
     ``StripeError.user_message`` if present, falling back to a
     generic message. Programming bugs (TypeError, AttributeError,
     etc.) propagate to the global handler instead of being silently
@@ -220,9 +210,8 @@ async def asyncio(
 ) -> Any | HTTPValidationError | None:
     r"""Detach Tenant Payment Method
 
-     Detach a payment method from the tenant's Stripe Customer.
-
-    Ownership is verified server-side BEFORE the detach call. Stripe's
+     Detach a payment method from the tenant's Stripe Customer. Ownership is verified server-side BEFORE
+    the detach call. Stripe's
     detach endpoint takes only the PM id (no customer scope), so a
     leaked ``pm_*`` id from logs / dashboard transcripts / accidental
     client-side console output would otherwise let any
@@ -231,16 +220,13 @@ async def asyncio(
     tenant's ``stripe_customer_id``, and 404 on mismatch (same
     response as a non-existent id, so a probe can't distinguish
     \"wrong tenant\" from \"doesn't exist\"). One extra ~100ms Stripe
-    roundtrip on a user-initiated, infrequent path.
-
-    The ``has_payment_method`` cache flag is updated by the
+    roundtrip on a user-initiated, infrequent path. The ``has_payment_method`` cache flag is updated by
+    the
     ``payment_method.attached`` / ``.detached`` webhook handlers
     (which use Stripe's ``previous_attributes`` to resolve the owner
     when the post-detach event has ``customer=null``). The route does
     NOT touch the cache directly — Stripe is source of truth and
-    webhooks are how we mirror it.
-
-    On any Stripe-side error the route surfaces the SDK's curated
+    webhooks are how we mirror it. On any Stripe-side error the route surfaces the SDK's curated
     ``StripeError.user_message`` if present, falling back to a
     generic message. Programming bugs (TypeError, AttributeError,
     etc.) propagate to the global handler instead of being silently

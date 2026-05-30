@@ -22,11 +22,10 @@ T = TypeVar("T", bound="UsageTriggerFiringResponse")
 
 @_attrs_define
 class UsageTriggerFiringResponse:
-    """One row from ``GET /usage/triggers/{id}/firings``.
-
-    ``payload`` is the exact JSON we POSTed to the customer's URL so they
-    can replay it against their handler when debugging a missed event.
-    ``delivery_status`` reflects the final state after retries:
+    """One row from ``GET /usage/triggers/{id}/firings``. ``payload`` is the exact JSON we POSTed to the customer's URL so
+    they
+    can replay it against their handler when debugging a missed event. ``delivery_status`` reflects the final state
+    after retries:
     ``delivered`` / ``failed`` / ``pending``.
 
         Attributes:

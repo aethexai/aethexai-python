@@ -25,7 +25,6 @@ class VoiceResponse:
         gender (str | Unset):  Default: ''.
         is_cloned (bool | Unset):  Default: False.
         language (str | Unset):  Default: ''.
-        model_size (None | str | Unset):
         preview_url (None | str | Unset):
         supports_dialect_style (bool | Unset):  Default: False.
         tags (list[str] | Unset):
@@ -38,7 +37,6 @@ class VoiceResponse:
     gender: str | Unset = ""
     is_cloned: bool | Unset = False
     language: str | Unset = ""
-    model_size: None | str | Unset = UNSET
     preview_url: None | str | Unset = UNSET
     supports_dialect_style: bool | Unset = False
     tags: list[str] | Unset = UNSET
@@ -61,12 +59,6 @@ class VoiceResponse:
         is_cloned = self.is_cloned
 
         language = self.language
-
-        model_size: None | str | Unset
-        if isinstance(self.model_size, Unset):
-            model_size = UNSET
-        else:
-            model_size = self.model_size
 
         preview_url: None | str | Unset
         if isinstance(self.preview_url, Unset):
@@ -98,8 +90,6 @@ class VoiceResponse:
             field_dict["is_cloned"] = is_cloned
         if language is not UNSET:
             field_dict["language"] = language
-        if model_size is not UNSET:
-            field_dict["model_size"] = model_size
         if preview_url is not UNSET:
             field_dict["preview_url"] = preview_url
         if supports_dialect_style is not UNSET:
@@ -133,15 +123,6 @@ class VoiceResponse:
 
         language = d.pop("language", UNSET)
 
-        def _parse_model_size(data: object) -> None | str | Unset:
-            if data is None:
-                return data
-            if isinstance(data, Unset):
-                return data
-            return cast(None | str | Unset, data)
-
-        model_size = _parse_model_size(d.pop("model_size", UNSET))
-
         def _parse_preview_url(data: object) -> None | str | Unset:
             if data is None:
                 return data
@@ -164,7 +145,6 @@ class VoiceResponse:
             gender=gender,
             is_cloned=is_cloned,
             language=language,
-            model_size=model_size,
             preview_url=preview_url,
             supports_dialect_style=supports_dialect_style,
             tags=tags,

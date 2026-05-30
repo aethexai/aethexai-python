@@ -63,9 +63,6 @@ class AsyncAethexAI:
                 "API key is required. Pass api_key= or set the AETHEX_API_KEY env var.",
                 status_code=401,
             )
-        # NOTE: the API key is intentionally NOT stored as an instance attribute.
-        # See ``AethexAI.__init__`` for the rationale (finding A.5 of the
-        # 2026-05-17 pre-launch audit).
         self._base_url = base_url.rstrip("/")
         self._timeout = timeout
         self._max_retries = max_retries
@@ -84,10 +81,7 @@ class AsyncAethexAI:
         if httpx_client is not None:
             self._client.set_async_httpx_client(httpx_client)
 
-    # ── Lifecycle ──────────────────────────────────────────────────────
-
     def __repr__(self) -> str:
-        # See ``AethexAI.__repr__``.
         return f"{type(self).__name__}(base_url={self._base_url!r}, timeout={self._timeout!r})"
 
     async def close(self) -> None:
@@ -101,8 +95,6 @@ class AsyncAethexAI:
     async def __aexit__(self, *args: object) -> None:
         await self.close()
 
-    # ── Internal request runner ────────────────────────────────────────
-
     async def _call(self, op_func: Any, *args: Any, **kwargs: Any) -> Any:
         """Run a generated ``asyncio_detailed`` op, raise on non-2xx, return parsed."""
         try:
@@ -115,8 +107,6 @@ class AsyncAethexAI:
         if 200 <= status < 300:
             return response.parsed
         raise _map_status_to_exception(status, response.content, response.headers)
-
-    # ─── agents ────────────────────────────────────────────────────────
 
     async def list_agents(
         self, *, offset: int | Unset = 0, limit: int | Unset = 50
@@ -278,8 +268,6 @@ class AsyncAethexAI:
             body=build_body(KnowledgeQueryRequest, fields),
         )
 
-    # ─── api_keys ──────────────────────────────────────────────────────
-
     async def list_api_keys(self) -> Any:
         """List API keys."""
         from aethexai._generated.api.api_keys import list_api_keys_api_v1_api_keys_get as _op
@@ -308,13 +296,6 @@ class AsyncAethexAI:
         )
 
         return await self._call(_op.asyncio_detailed, UUID(str(key_id)))
-
-    # NOTE (2026-05-17, audit finding A.1): 8 billing methods removed —
-    # they require a developer JWT, not an API key. See
-    # ``aethexai.AsyncDeveloperClient`` (and the comment block in
-    # ``client.py``) for the migration path.
-
-    # ─── calls ─────────────────────────────────────────────────────────
 
     async def list_calls(
         self,
@@ -383,8 +364,6 @@ class AsyncAethexAI:
 
         return await self._call(_op.asyncio_detailed, UUID(str(batch_id)))
 
-    # ─── conversation (live session control) ───────────────────────────
-
     async def conversation_connect(self, **fields: Any) -> Any:
         """Establish a new conversation session."""
         from aethexai._generated.api.conversation import (
@@ -443,8 +422,6 @@ class AsyncAethexAI:
             _op.asyncio_detailed, session_id, body=build_body(ToolResultRequest, fields)
         )
 
-    # ─── conversations (historical) ────────────────────────────────────
-
     async def list_conversations(
         self, *, offset: int | Unset = 0, limit: int | Unset = 50
     ) -> PaginatedResponse[ConversationResponse]:
@@ -497,7 +474,7 @@ class AsyncAethexAI:
 
         The 200 response is ``audio/wav`` even though ``openapi.json`` declares it
         as ``application/json``; we bypass the generated parser to avoid a
-        ``UnicodeDecodeError`` (AET-1522). Mirrors :meth:`synthesize_speech`.
+        ``UnicodeDecodeError``. Mirrors :meth:`synthesize_speech`.
         """
         from urllib.parse import quote
 
@@ -557,15 +534,11 @@ class AsyncAethexAI:
 
         return await self._call(_op.asyncio_detailed, q=q, limit=limit)
 
-    # ─── models ────────────────────────────────────────────────────────
-
     async def list_models(self, *, include_unavailable: bool | Unset = False) -> Any:
         """List available LLM and voice models."""
         from aethexai._generated.api.models import list_models_api_v1_models_get as _op
 
         return await self._call(_op.asyncio_detailed, include_unavailable=include_unavailable)
-
-    # ─── phone_numbers ─────────────────────────────────────────────────
 
     async def list_phone_numbers(self, *, offset: int | Unset = 0, limit: int | Unset = 50) -> Any:
         """List provisioned phone numbers."""
@@ -635,8 +608,6 @@ class AsyncAethexAI:
             _op.asyncio_detailed, body=build_body(TwilioRegisterRequest, fields)
         )
 
-    # ─── twilio accounts ──────────────────────────────────────────────
-
     async def register_twilio_account(self, **fields: Any) -> Any:
         """Register a Bring-Your-Own Twilio account."""
         from aethexai._generated.api.twilio_accounts import (
@@ -672,8 +643,6 @@ class AsyncAethexAI:
 
         return await self._call(_op.asyncio_detailed, UUID(str(account_id)))
 
-    # ─── recordings ────────────────────────────────────────────────────
-
     async def list_recordings(self, *, offset: int | Unset = 0, limit: int | Unset = 50) -> Any:
         """List recordings."""
         from aethexai._generated.api.recordings import list_recordings_api_v1_recordings_get as _op
@@ -703,8 +672,6 @@ class AsyncAethexAI:
         )
 
         return await self._call(_op.asyncio_detailed, UUID(str(recording_id)))
-
-    # ─── transcription ─────────────────────────────────────────────────
 
     async def transcribe_audio(self, *, body: Any) -> Any:
         """Synchronously transcribe an audio file (multipart)."""
@@ -764,8 +731,6 @@ class AsyncAethexAI:
 
         return await self._call(_op.asyncio_detailed, UUID(str(job_id)))
 
-    # ─── tts ───────────────────────────────────────────────────────────
-
     async def synthesize_speech(self, **fields: Any) -> bytes:
         """Synthesize speech from text and return the raw audio bytes."""
         from aethexai._generated.models.tts_request import TTSRequest
@@ -824,8 +789,6 @@ class AsyncAethexAI:
 
         return await self._call(_op.asyncio_detailed, UUID(str(batch_id)))
 
-    # ─── uploads ───────────────────────────────────────────────────────
-
     async def presign_upload(self, **fields: Any) -> Any:
         """Request a presigned URL for direct file upload."""
         from aethexai._generated.api.uploads import (
@@ -834,8 +797,6 @@ class AsyncAethexAI:
         from aethexai._generated.models.presign_upload_request import PresignUploadRequest
 
         return await self._call(_op.asyncio_detailed, body=build_body(PresignUploadRequest, fields))
-
-    # ─── usage ─────────────────────────────────────────────────────────
 
     async def get_usage(self) -> Any:
         """Get usage details for the current period."""
@@ -909,8 +870,6 @@ class AsyncAethexAI:
 
         return await self._call(_op.asyncio_detailed)
 
-    # ─── voices ────────────────────────────────────────────────────────
-
     async def list_voices(
         self,
         *,
@@ -943,13 +902,10 @@ class AsyncAethexAI:
 
         The 200 response is ``audio/wav`` even though ``openapi.json`` declares it
         as ``application/json``; we bypass the generated parser to avoid a
-        ``UnicodeDecodeError`` (AET-1522). Mirrors :meth:`synthesize_speech`.
+        ``UnicodeDecodeError``. Mirrors :meth:`synthesize_speech`.
         """
         from aethexai._generated.models.voice_preview_request import VoicePreviewRequest
 
-        # build_body (AET-1524) gives a missing-field pre-flight ValidationError;
-        # inline httpx (AET-1522) avoids the generated parser's response.json()
-        # crash on the audio/wav body.
         body = build_body(VoicePreviewRequest, fields)
         httpx_client = self._client.get_async_httpx_client()
         try:

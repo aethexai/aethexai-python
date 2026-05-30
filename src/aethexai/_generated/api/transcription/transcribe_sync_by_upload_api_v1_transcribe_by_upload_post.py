@@ -36,7 +36,9 @@ def _get_kwargs(
 def _parse_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
 ) -> HTTPValidationError | TranscriptionResponse | None:
-    if response.status_code == 200:
+    if 200 <= response.status_code < 300:
+        if not response.content:
+            return None
         response_200 = TranscriptionResponse.from_dict(response.json())
 
         return response_200
@@ -72,8 +74,6 @@ def sync_detailed(
 
      Transcribe a file previously staged via /uploads/presign.
 
-    Bodies don't transit the ALB/WAF — only a small JSON reference does.
-
     Args:
         body (TranscribeByUploadRequest):
 
@@ -105,8 +105,6 @@ def sync(
 
      Transcribe a file previously staged via /uploads/presign.
 
-    Bodies don't transit the ALB/WAF — only a small JSON reference does.
-
     Args:
         body (TranscribeByUploadRequest):
 
@@ -132,8 +130,6 @@ async def asyncio_detailed(
     """Transcribe Sync By Upload
 
      Transcribe a file previously staged via /uploads/presign.
-
-    Bodies don't transit the ALB/WAF — only a small JSON reference does.
 
     Args:
         body (TranscribeByUploadRequest):
@@ -163,8 +159,6 @@ async def asyncio(
     """Transcribe Sync By Upload
 
      Transcribe a file previously staged via /uploads/presign.
-
-    Bodies don't transit the ALB/WAF — only a small JSON reference does.
 
     Args:
         body (TranscribeByUploadRequest):

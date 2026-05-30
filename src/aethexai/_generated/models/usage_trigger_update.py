@@ -17,9 +17,7 @@ T = TypeVar("T", bound="UsageTriggerUpdate")
 
 @_attrs_define
 class UsageTriggerUpdate:
-    """Partial update for ``PATCH /usage/triggers/{id}``.
-
-    Only fields a customer can re-tune in place are exposed: the
+    """Partial update for ``PATCH /usage/triggers/{id}``. Only fields a customer can re-tune in place are exposed: the
     ``is_active`` flag (deactivate to recover the per-tenant cap
     without losing audit history), the threshold value (re-tune the
     trip point as their volume scales), and the callback URL (rotate
@@ -27,12 +25,8 @@ class UsageTriggerUpdate:
     ``threshold_type``, ``period`` — is immutable; a different shape
     is logically a different trigger and should be created fresh so
     the firings audit table cleanly tracks one configuration over
-    time.
-
-    Every field is Optional; PATCH is partial. An empty body is a
-    valid no-op.
-
-    ``extra='forbid'`` rejects unknown keys with HTTP 422. This catches
+    time. Every field is Optional; PATCH is partial. An empty body is a
+    valid no-op. ``extra='forbid'`` rejects unknown keys with HTTP 422. This catches
     two real customer foot-guns at once: PATCHing an immutable shape
     field (``resource_type`` / ``threshold_type`` / ``period``) used
     to return 200 with the value silently dropped, and a misspelled

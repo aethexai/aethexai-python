@@ -171,11 +171,6 @@ class Kora:
         if not api_key:
             raise ValueError("api_key is required. Pass it positionally: Kora(base_url, api_key).")
         self._base_url = base_url
-        # NOTE: api_key is intentionally NOT stored as an instance attribute.
-        # See ``AethexAI.__init__`` for the rationale (finding A.5 of the
-        # 2026-05-17 pre-launch audit). Kora was the easiest leak vector
-        # because both ``Kora._api_key`` and ``AuthenticatedClient.token``
-        # carried the same secret.
         timeout_arg: httpx.Timeout | None = httpx.Timeout(timeout) if timeout is not None else None
         self._client = AuthenticatedClient(
             base_url=base_url,
@@ -187,10 +182,7 @@ class Kora:
             raise_on_unexpected_status=raise_on_unexpected_status,
         )
 
-    # ── Lifecycle ─────────────────────────────────────────────────────────
-
     def __repr__(self) -> str:
-        # See ``AethexAI.__repr__``.
         return f"{type(self).__name__}(base_url={self._base_url!r})"
 
     def close(self) -> None:
@@ -207,8 +199,6 @@ class Kora:
         """Exit the context manager and close the HTTP client."""
         self._client.__exit__(*args)
 
-    # ── Internal request runner ───────────────────────────────────────────
-
     def _call(self, op_func: Any, *args: Any, **kwargs: Any) -> Any:
         """Run a generated ``sync_detailed`` op, raise on non-2xx, return parsed."""
         response = op_func(*args, client=self._client, **kwargs)
@@ -216,8 +206,6 @@ class Kora:
         if 200 <= status < 300:
             return response.parsed
         raise _map_status_to_exception(status, response.content, response.headers)
-
-    # ── Agents ────────────────────────────────────────────────────────────
 
     def create_agent(
         self,
@@ -294,8 +282,6 @@ class Kora:
         """Clone an agent, returning the new duplicate."""
         return self._call(_duplicate_agent_op.sync_detailed, _to_uuid(agent_id))
 
-    # ── Calls (outbound voice) ────────────────────────────────────────────
-
     def trigger_call(
         self,
         agent_id: str | UUID,
@@ -342,8 +328,6 @@ class Kora:
         """Fetch the current status of a call."""
         return self._call(_get_call_status_op.sync_detailed, _to_uuid(call_id))
 
-    # ── Voices ────────────────────────────────────────────────────────────
-
     def list_voices(
         self,
         *,
@@ -374,7 +358,7 @@ class Kora:
 
         The 200 response is ``audio/wav`` even though ``openapi.json`` declares it
         as ``application/json``; we bypass the generated parser to avoid a
-        ``UnicodeDecodeError`` (AET-1522). Mirrors :meth:`synthesize_speech`.
+        ``UnicodeDecodeError``. Mirrors :meth:`synthesize_speech`.
         """
         body_kwargs: dict[str, Any] = {"voice_id": voice_id}
         if text is not None:
@@ -396,8 +380,6 @@ class Kora:
             return response.content
         raise _map_status_to_exception(status, response.content, response.headers)
 
-    # ── Text-to-speech (kora_speak) ───────────────────────────────────────
-
     def synthesize_speech(
         self,
         text: str,
@@ -410,7 +392,7 @@ class Kora:
 
         The 200 response is ``audio/wav`` even though ``openapi.json`` declares it
         as ``application/json``; we bypass the generated parser to avoid a
-        ``UnicodeDecodeError`` (AET-1522).
+        ``UnicodeDecodeError``.
 
         Returns the raw audio payload on success; raises a typed
         :class:`~aethexai.APIStatusError` subclass on any non-2xx response.
@@ -467,13 +449,9 @@ class Kora:
         ) as response:
             status = int(response.status_code)
             if not (200 <= status < 300):
-                # Materialize the (small) error body so we can build a typed
-                # exception consistent with every other Kora method.
                 response.read()
                 raise _map_status_to_exception(status, response.content, response.headers)
             yield from response.iter_bytes(chunk_size)
-
-    # ── Transcription (kora_read) ─────────────────────────────────────────
 
     def transcribe(
         self,
@@ -510,8 +488,6 @@ class Kora:
     def get_transcribe_job(self, job_id: str | UUID) -> Any:
         """Poll an async transcription job by id."""
         return self._call(_get_transcribe_job_op.sync_detailed, _to_uuid(job_id))
-
-    # ── Conversations (read-only) ─────────────────────────────────────────
 
     def get_conversation(self, conversation_id: str | UUID) -> Any:
         """Fetch a single conversation record by id."""
@@ -567,7 +543,7 @@ class Kora:
 
         The 200 response is ``audio/wav`` even though ``openapi.json`` declares it
         as ``application/json``; we bypass the generated parser to avoid a
-        ``UnicodeDecodeError`` (AET-1522). Mirrors :meth:`synthesize_speech`.
+        ``UnicodeDecodeError``. Mirrors :meth:`synthesize_speech`.
         """
         from urllib.parse import quote
 

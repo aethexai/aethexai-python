@@ -14,7 +14,6 @@ from typing import cast
 
 T = TypeVar("T", bound="PaginatedResponse")  # type: ignore[type-arg]
 
-# AETHEX-PATCH (AET-1598): generic type variable for typed .data items.
 _ItemT = TypeVar("_ItemT")
 
 
@@ -99,13 +98,6 @@ class PaginatedResponse(Generic[_ItemT]):
     def additional_keys(self) -> list[str]:
         return list(self.additional_properties.keys())
 
-    # AETHEX-PATCH (AET-1598): make PaginatedResponse indexable over
-    # .data so that agents[0]/calls[0]/conversations[0] work without raising
-    # KeyError. String-key access on additional_properties is preserved for
-    # backward compatibility. __iter__ and __len__ are intentionally NOT added
-    # — they silently operated on a single page. Use .data to iterate items on
-    # the current page, and loop while .has_more to consume all pages.
-    # Re-applied by scripts/sync_from_prod.py after every regeneration.
 
     @property
     def has_more(self) -> bool:
@@ -123,9 +115,6 @@ class PaginatedResponse(Generic[_ItemT]):
         return self.offset + len(self.data) < self.total
 
     def __getitem__(self, key: int | str) -> Any:
-        # Integer indexing operates on .data (e.g. agents[0]).
-        # String indexing falls through to additional_properties for
-        # backward-compatibility with the generated-client pattern.
         if isinstance(key, int):
             if isinstance(self.data, Unset) or self.data is None:
                 raise IndexError(key)

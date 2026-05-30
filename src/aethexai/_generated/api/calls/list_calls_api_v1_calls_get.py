@@ -8,12 +8,12 @@ from ...client import AuthenticatedClient, Client
 from ...types import Response, UNSET
 from ... import errors
 
-from ...models.call_response import CallResponse
 from ...models.http_validation_error import HTTPValidationError
 from ...models.list_calls_api_v1_calls_get_direction_type_0 import (
     ListCallsApiV1CallsGetDirectionType0,
 )
 from ...models.list_calls_api_v1_calls_get_status_type_0 import ListCallsApiV1CallsGetStatusType0
+from ...models.call_response import CallResponse
 from ...models.paginated_response import PaginatedResponse
 from ...types import UNSET, Unset
 from typing import cast
@@ -65,10 +65,10 @@ def _get_kwargs(
 def _parse_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
 ) -> HTTPValidationError | PaginatedResponse | None:
-    if response.status_code == 200:
+    if 200 <= response.status_code < 300:
+        if not response.content:
+            return None
         response_200 = PaginatedResponse.from_dict(response.json())
-        # Parse .data items into typed CallResponse models so that
-        # indexing (e.g. calls[0].id) and iteration return typed objects.
         if response_200.data is not UNSET and response_200.data is not None:
             response_200.data = [
                 CallResponse.from_dict(item) if isinstance(item, dict) else item

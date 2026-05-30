@@ -17,13 +17,9 @@ T = TypeVar("T", bound="PlanCatalogEntry")
 
 @_attrs_define
 class PlanCatalogEntry:
-    """A single tier in the public plan catalogue.
-
-    ``yearly_price_usd`` is null on tiers without a yearly variant
+    """A single tier in the public plan catalogue. ``yearly_price_usd`` is null on tiers without a yearly variant
     (the free trial). Portal toggles between monthly and yearly
-    pricing only on tiers where it's non-null.
-
-    ``is_trial`` flips the renewal-job behavior: trial plans grant
+    pricing only on tiers where it's non-null. ``is_trial`` flips the renewal-job behavior: trial plans grant
     credits once at signup and never refill. Currently only the free
     plan is a trial.
 

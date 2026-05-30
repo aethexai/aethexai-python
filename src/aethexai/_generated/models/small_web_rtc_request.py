@@ -17,14 +17,10 @@ T = TypeVar("T", bound="SmallWebRTCRequest")
 
 @_attrs_define
 class SmallWebRTCRequest:
-    """Small WebRTC transport session arguments for the runner.
-
-    Parameters:
-        sdp: The SDP string (Session Description Protocol).
-        type: The type of the SDP, either "offer" or "answer".
-        pc_id: Optional identifier for the peer connection.
-        restart_pc: Optional whether to restart the peer connection.
-        request_data: Optional custom data sent by the customer.
+    """Small WebRTC transport session arguments for the runner. Parameters:
+     sdp: The SDP string (Session Description Protocol). type: The type of the SDP, either "offer" or "answer". pc_id:
+    Optional identifier for the peer connection. restart_pc: Optional whether to restart the peer connection.
+    request_data: Optional custom data sent by the customer.
 
         Attributes:
             sdp (str):

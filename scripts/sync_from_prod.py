@@ -29,11 +29,13 @@ Exit codes:
 from __future__ import annotations
 
 import argparse
+import io
 import json
 import re
 import shutil
 import subprocess
 import sys
+import tokenize
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -216,6 +218,268 @@ def git_diff(old: Path, new: Path) -> str | None:
     return output.strip() or None
 
 
+_KEEP_COMMENT_RE = re.compile(r"#\s*(type:\s*ignore|noqa|pragma|coding[:=]|!)")
+
+
+def _strip_python_comments(source: str) -> str:
+    """Return ``source`` with ``#`` comments removed.
+
+    String/byte/f-string literals and docstrings are preserved (a ``#`` inside a
+    string is not a comment), as are functional directives the toolchain relies
+    on (``type: ignore`` / ``noqa`` / ``pragma`` / coding declarations /
+    shebangs). Comment-only lines are dropped entirely; trailing comments are
+    trimmed with their leading whitespace.
+    """
+    try:
+        tokens = list(tokenize.generate_tokens(io.StringIO(source).readline))
+    except (tokenize.TokenError, IndentationError):
+        return source
+    drop_col: dict[int, int] = {}
+    for tok in tokens:
+        if tok.type == tokenize.COMMENT and not _KEEP_COMMENT_RE.match(tok.string):
+            drop_col[tok.start[0]] = tok.start[1]
+    if not drop_col:
+        return source
+    out: list[str] = []
+    for lineno, line in enumerate(source.splitlines(), start=1):
+        if lineno in drop_col:
+            kept = line[: drop_col[lineno]].rstrip()
+            if kept:
+                out.append(kept)
+        else:
+            out.append(line)
+    text = "\n".join(out)
+    return text + "\n" if source.endswith("\n") else text
+
+
+def _strip_generated_comments() -> int:
+    """Strip ``#`` comments from the generated client (runs last, after every
+    other post-codegen patch has applied, so injected sentinel comments are
+    removed too while their functional code changes remain). Re-runs are a no-op
+    once a full regeneration starts from fresh codegen.
+    """
+    stripped = 0
+    for path in sorted(GENERATED_DIR.rglob("*.py")):
+        source = path.read_text()
+        cleaned = _strip_python_comments(source)
+        if cleaned != source:
+            path.write_text(cleaned)
+            stripped += 1
+    print(f"post-codegen patch: stripped # comments from {stripped} generated file(s)")
+    return 0
+
+
+_NON_PUBLIC_TAGS = frozenset({"internal", "internal-admin", "health", "metrics", "dashboard"})
+
+# Path prefixes that are internal regardless of tagging (belt-and-suspenders).
+_NON_PUBLIC_PATH_PREFIXES = ("/internal",)
+
+_HTTP_METHODS = frozenset({"get", "put", "post", "delete", "options", "head", "patch", "trace"})
+
+# Inline tokens that leak internal context into customer-facing text. Stripped
+# wherever they appear in any description / summary / title.
+_TEXT_SCRUB_PATTERNS = (
+    re.compile(r"\(?\bAET-\d+(?:\s*,\s*AET-\d+)*\)?:?"),  # ticket ids
+    re.compile(r"\(?\b(?:aethex\s+)?PR\s*#\d+\)?", re.IGNORECASE),  # PR refs
+    re.compile(r"\(#\d+\)"),  # bare (#123)
+    re.compile(r"\bmigration\s+\d+\b", re.IGNORECASE),  # migration numbers
+    re.compile(r"docs/audits/\S+"),  # internal audit docs
+    re.compile(r"X-Internal-[\w-]+"),  # internal auth header names
+    re.compile(r"\bvo_[a-z_]+\b"),  # internal DB table names
+    re.compile(r":(?:data|meth|class|func|attr|mod):`[^`]*`"),  # sphinx symbol refs
+    re.compile(r"\bAETHEX_[A-Z][A-Z0-9_]*\b"),  # internal env-var names
+)
+
+# A sentence mentioning any of these infra nouns is dropped wholesale — customers
+# don't need (and shouldn't see) our deployment internals.
+_INFRA_SENTENCE_TERMS = re.compile(
+    r"\b(redis|elasticache|postgres|clickhouse|langfuse|grafana|cloudwatch|kubernetes|"
+    r"k8s|kubectl|prestop|sigterm|alb|waf|nlb|karpenter|ecr|eks|pgbouncer|coturn|"
+    r"pipecat|vllm|omniasr|cloudflare|sentry|preStop)\b|app\.state",
+    re.IGNORECASE,
+)
+
+
+# Parenthetical asides that name infrastructure, e.g. "(no WAF body inspection)".
+# Dropped without losing the surrounding sentence.
+_INFRA_PARENTHETICAL = re.compile(
+    r"\s*\([^)]*(?:" + _INFRA_SENTENCE_TERMS.pattern + r")[^)]*\)", re.IGNORECASE
+)
+
+
+def _tidy_text(text: str) -> str:
+    """Collapse whitespace and orphaned punctuation left behind by scrubbing."""
+    text = re.sub(r"\s+([,.;:])", r"\1", text)
+    text = re.sub(r"\(\s*[,;]?\s*\)", "", text)
+    text = re.sub(r"[ \t]{2,}", " ", text)
+    text = re.sub(r"\n{3,}", "\n\n", text)
+    return text.strip()
+
+
+def _scrub_text(text: str) -> str:
+    """Remove internal references from a single customer-visible string.
+
+    Inline tokens (ticket ids, internal table names, env vars, ...) are stripped
+    everywhere; parenthetical asides that name infrastructure are dropped
+    without losing the surrounding sentence; any remaining infra-narrating
+    sentence is dropped whole. Safety net: scrubbing never turns a non-empty
+    description into an empty one — it falls back to a token-only scrub so real
+    customer documentation survives.
+    """
+    cleaned = text
+    for pattern in _TEXT_SCRUB_PATTERNS:
+        cleaned = pattern.sub("", cleaned)
+    cleaned = _INFRA_PARENTHETICAL.sub("", cleaned)
+    sentences = re.split(r"(?<=[.!?])\s+", cleaned)
+    cleaned = _tidy_text(" ".join(s for s in sentences if not _INFRA_SENTENCE_TERMS.search(s)))
+    if text.strip() and not cleaned.strip():
+        fallback = text
+        for pattern in _TEXT_SCRUB_PATTERNS:
+            fallback = pattern.sub("", fallback)
+        return _tidy_text(fallback)
+    return cleaned
+
+
+def _scrub_in_place(node: Any) -> None:
+    """Recursively scrub ``description`` / ``summary`` / ``title`` strings."""
+    if isinstance(node, dict):
+        for key, value in node.items():
+            if key in ("description", "summary", "title") and isinstance(value, str):
+                node[key] = _scrub_text(value)
+            else:
+                _scrub_in_place(value)
+    elif isinstance(node, list):
+        for item in node:
+            _scrub_in_place(item)
+
+
+def _collect_schema_refs(node: Any, out: set[str]) -> None:
+    """Collect every ``#/components/schemas/<Name>`` reference under ``node``."""
+    if isinstance(node, dict):
+        ref = node.get("$ref")
+        if isinstance(ref, str) and ref.startswith("#/components/schemas/"):
+            out.add(ref.rsplit("/", 1)[-1])
+        for value in node.values():
+            _collect_schema_refs(value, out)
+    elif isinstance(node, list):
+        for item in node:
+            _collect_schema_refs(item, out)
+
+
+def _prune_unused_schemas(spec: dict[str, Any]) -> int:
+    """Drop component schemas no longer reachable from the (sanitized) paths."""
+    components = spec.get("components") or {}
+    schemas = components.get("schemas") or {}
+    if not schemas:
+        return 0
+    reachable: set[str] = set()
+    _collect_schema_refs(spec.get("paths") or {}, reachable)
+    for key, value in components.items():
+        if key != "schemas":  # parameters / responses / requestBodies may ref schemas
+            _collect_schema_refs(value, reachable)
+    frontier = list(reachable)
+    while frontier:
+        name = frontier.pop()
+        if name not in schemas:
+            continue
+        deps: set[str] = set()
+        _collect_schema_refs(schemas[name], deps)
+        for dep in deps - reachable:
+            reachable.add(dep)
+            frontier.append(dep)
+    removed = [name for name in schemas if name not in reachable]
+    for name in removed:
+        del schemas[name]
+    return len(removed)
+
+
+def _sanitize_spec(spec: dict[str, Any]) -> dict[str, Any]:
+    """Strip internal surface and scrub internal commentary from an OpenAPI spec.
+
+    Idempotent and total: drops operations tagged internal/operational (and any
+    ``/internal`` path), removes the now-unreferenced component schemas, drops
+    the orphaned tag declarations, and scrubs ticket ids / internal table names /
+    infra narration from every customer-visible description. Mutates and returns
+    ``spec``.
+    """
+    paths = spec.get("paths") or {}
+    dropped_ops = 0
+    for path in list(paths):
+        ops = paths[path]
+        if not isinstance(ops, dict):
+            continue
+        if any(path.startswith(prefix) for prefix in _NON_PUBLIC_PATH_PREFIXES):
+            dropped_ops += sum(1 for m in ops if m.lower() in _HTTP_METHODS)
+            del paths[path]
+            continue
+        for method in list(ops):
+            if method.lower() not in _HTTP_METHODS:
+                continue
+            op = ops[method]
+            tags = set(op.get("tags") or []) if isinstance(op, dict) else set()
+            if _NON_PUBLIC_TAGS & tags:
+                del ops[method]
+                dropped_ops += 1
+        if not any(m.lower() in _HTTP_METHODS for m in ops):
+            del paths[path]
+    if isinstance(spec.get("tags"), list):
+        spec["tags"] = [
+            tag
+            for tag in spec["tags"]
+            if not (isinstance(tag, dict) and tag.get("name") in _NON_PUBLIC_TAGS)
+        ]
+    dropped_schemas = _prune_unused_schemas(spec)
+    _scrub_in_place(spec)
+    print(
+        f"sanitized spec: dropped {dropped_ops} internal/operational operation(s) "
+        f"and {dropped_schemas} orphaned schema(s)"
+    )
+    return spec
+
+
+def _apply_any_2xx_success_patch() -> int:
+    """Broaden each generated ``_parse_response`` success branch to accept any
+    2xx status.
+
+    openapi-python-client emits a single success branch keyed on the one status
+    code the spec documents (``if response.status_code == 200:`` or ``201``).
+    Resource-creation POSTs answer ``201`` on the current backend but ``200`` on
+    a backend that predates that change, so a wrapper hitting the undocumented
+    status would get ``response.parsed is None`` and silently drop the created
+    resource. Broadening the success check to ``200 <= response.status_code <
+    300`` returns the parsed body (typed model or raw dict, exactly as the spec
+    declares it) for either status — no per-endpoint list, and it composes with
+    typed response models. Idempotent via the range-check sentinel; the ``422``
+    and unexpected-status branches are untouched.
+    """
+    api_dir = GENERATED_DIR / "api"
+    if not api_dir.is_dir():
+        return 0
+    success_re = re.compile(r"^( {4})if response\.status_code == 2\d\d:", re.MULTILINE)
+    patched = 0
+    for path in sorted(api_dir.rglob("*.py")):
+        source = path.read_text()
+        if "200 <= response.status_code < 300" in source:
+            continue  # already broadened
+        match = success_re.search(source)
+        if match is None:
+            continue  # no success branch (e.g. a no-content op)
+        indent = match.group(1)
+        # Broaden the condition AND guard the body parse: a 2xx with no content
+        # (e.g. a 204 from DELETE) must return None, not crash in response.json().
+        new_source = (
+            source[: match.start()]
+            + f"{indent}if 200 <= response.status_code < 300:\n"
+            + f"{indent}    if not response.content:\n"
+            + f"{indent}        return None"
+            + source[match.end() :]
+        )
+        path.write_text(new_source)
+        patched += 1
+    print(f"post-codegen patch: broadened success branch to any-2xx in {patched} op(s)")
+    return 0
+
+
 def regenerate_client() -> int:
     """Re-run the OpenAPI client generator against the freshly-written spec.
 
@@ -249,7 +513,7 @@ def regenerate_client() -> int:
         "tool",
         "run",
         "--from",
-        "openapi-python-client",
+        "openapi-python-client==0.28.4",
         "openapi-python-client",
         "generate",
         "--path",
@@ -287,9 +551,16 @@ def regenerate_client() -> int:
     typed_agent_rc = _apply_typed_agent_response_patch()
     if typed_agent_rc != 0:
         return typed_agent_rc
+    any_2xx_rc = _apply_any_2xx_success_patch()
+    if any_2xx_rc != 0:
+        return any_2xx_rc
     storage_path_rc = _apply_recording_storage_path_optional_patch()
     if storage_path_rc != 0:
         return storage_path_rc
+    # Must run LAST: strips injected sentinel comments (including the AET-1599
+    # marker added just above) from the shipped package while leaving every
+    # functional code change in place.
+    _strip_generated_comments()
     return result.returncode
 
 
@@ -484,6 +755,8 @@ def _apply_http_validation_error_patch() -> int:
 # ``None``. Each path is relative to ``src/aethexai/_generated/api/``; keep it
 # in sync with the ``status_code=201`` resource-creation routes in the backend.
 _CREATED_201_ENDPOINTS = (
+    # Public resource-creation POSTs only; internal surfaces (e.g. the developer
+    # dashboard) are dropped by _sanitize_spec and intentionally absent here.
     "agents/create_agent_api_v1_agents_post.py",
     "agents/duplicate_agent_api_v1_agents_agent_id_duplicate_post.py",
     "agents/add_tool_api_v1_agents_agent_id_tools_post.py",
@@ -493,7 +766,6 @@ _CREATED_201_ENDPOINTS = (
     "calls/create_call_record_api_v1_calls_post.py",
     "calls/batch_calls_api_v1_calls_batch_post.py",
     "conversation/connect_api_v1_conversation_connect_post.py",
-    "dashboard/create_my_api_key_api_v1_dashboard_api_keys_post.py",
     "phone_numbers/register_twilio_api_v1_phone_numbers_twilio_register_post.py",
     "phone_numbers/register_sip_api_v1_phone_numbers_sip_register_post.py",
     "tts/batch_synthesize_api_v1_tts_batch_post.py",
@@ -904,6 +1176,7 @@ def _apply_paginated_list_ergonomics_patch() -> int:
     print(
         f"post-codegen patch: AET-1598 paginated-list ergonomics applied to {patched_count} file(s)"
     )
+    return 0
 
 
 def _patch_agent_response_source(source: str, success_codes: tuple[int, ...]) -> str | None:
@@ -1234,7 +1507,8 @@ def main(argv: list[str] | None = None) -> int:
         return 2
 
     old_spec = _load_json(SPEC_PATH)
-    new_spec = _load_json(NEW_SPEC_PATH)
+    new_spec = _sanitize_spec(_load_json(NEW_SPEC_PATH))
+    NEW_SPEC_PATH.write_text(json.dumps(new_spec, indent=2, sort_keys=True) + "\n")
     drift = compute_drift(old_spec, new_spec)
 
     # Show a textual stat alongside the structural drift.

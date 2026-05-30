@@ -30,7 +30,9 @@ def _get_kwargs(
 def _parse_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
 ) -> Any | HTTPValidationError | None:
-    if response.status_code == 200:
+    if 200 <= response.status_code < 300:
+        if not response.content:
+            return None
         response_200 = response.json()
         return response_200
 
@@ -63,9 +65,8 @@ def sync_detailed(
 ) -> Response[Any | HTTPValidationError]:
     """Get Knowledge Texts
 
-     Get extracted text from all processed knowledge base documents.
-
-    Returns the format expected by PipelineConfig.knowledge_documents for RAG.
+     Get extracted text from all processed knowledge base documents. Returns the agent's
+    knowledge_documents for RAG retrieval.
 
     Args:
         agent_id (UUID):
@@ -96,9 +97,8 @@ def sync(
 ) -> Any | HTTPValidationError | None:
     """Get Knowledge Texts
 
-     Get extracted text from all processed knowledge base documents.
-
-    Returns the format expected by PipelineConfig.knowledge_documents for RAG.
+     Get extracted text from all processed knowledge base documents. Returns the agent's
+    knowledge_documents for RAG retrieval.
 
     Args:
         agent_id (UUID):
@@ -124,9 +124,8 @@ async def asyncio_detailed(
 ) -> Response[Any | HTTPValidationError]:
     """Get Knowledge Texts
 
-     Get extracted text from all processed knowledge base documents.
-
-    Returns the format expected by PipelineConfig.knowledge_documents for RAG.
+     Get extracted text from all processed knowledge base documents. Returns the agent's
+    knowledge_documents for RAG retrieval.
 
     Args:
         agent_id (UUID):
@@ -155,9 +154,8 @@ async def asyncio(
 ) -> Any | HTTPValidationError | None:
     """Get Knowledge Texts
 
-     Get extracted text from all processed knowledge base documents.
-
-    Returns the format expected by PipelineConfig.knowledge_documents for RAG.
+     Get extracted text from all processed knowledge base documents. Returns the agent's
+    knowledge_documents for RAG retrieval.
 
     Args:
         agent_id (UUID):

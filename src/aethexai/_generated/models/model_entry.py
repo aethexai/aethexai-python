@@ -16,12 +16,8 @@ T = TypeVar("T", bound="ModelEntry")
 
 @_attrs_define
 class ModelEntry:
-    """One row of the public LLM catalog.
-
-    ``available`` reflects whether the deployment has the upstream API key
-    needed to route this model. The default catalog filters unavailable
-    entries so SDK pickers don't advertise something that will silently fall
-    through to local vLLM at call time. Pass ``?include_unavailable=true``
+    """One row of the public LLM catalog. ``available`` reflects whether the deployment has the upstream API key
+    needed to route this model. Pass ``?include_unavailable=true``
     to see every public name the platform knows about, regardless of
     deployment configuration.
 

@@ -17,9 +17,8 @@ T = TypeVar("T", bound="TwilioAccountResponse")
 
 @_attrs_define
 class TwilioAccountResponse:
-    """Response shape. ``auth_token`` is never returned.
-
-    ``tenant_id`` is ``None`` for platform-shared credentials (any tenant
+    """Response shape. ``auth_token`` is never returned. ``tenant_id`` is ``None`` for platform-shared credentials (any
+    tenant
     can attach numbers) and a UUID string for tenant-owned (BYO) rows.
 
         Attributes:

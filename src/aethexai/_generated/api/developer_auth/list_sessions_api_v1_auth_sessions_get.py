@@ -25,7 +25,9 @@ def _get_kwargs() -> dict[str, Any]:
 def _parse_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
 ) -> DeveloperSessionsResponse | None:
-    if response.status_code == 200:
+    if 200 <= response.status_code < 300:
+        if not response.content:
+            return None
         response_200 = DeveloperSessionsResponse.from_dict(response.json())
 
         return response_200
@@ -53,9 +55,8 @@ def sync_detailed(
 ) -> Response[DeveloperSessionsResponse]:
     r"""List Sessions
 
-     List active server-side sessions for the authenticated developer.
-
-    Surfaces the per-row state the portal uses to render a \"where you
+     List active server-side sessions for the authenticated developer. Surfaces the per-row state the
+    portal uses to render a \"where you
     are signed in\" inventory. ``is_current=true`` flags the row backing
     the caller's own JWT so the UI can label it and gray out the kill
     button for it (logout is the right action for the current session).
@@ -83,9 +84,8 @@ def sync(
 ) -> DeveloperSessionsResponse | None:
     r"""List Sessions
 
-     List active server-side sessions for the authenticated developer.
-
-    Surfaces the per-row state the portal uses to render a \"where you
+     List active server-side sessions for the authenticated developer. Surfaces the per-row state the
+    portal uses to render a \"where you
     are signed in\" inventory. ``is_current=true`` flags the row backing
     the caller's own JWT so the UI can label it and gray out the kill
     button for it (logout is the right action for the current session).
@@ -109,9 +109,8 @@ async def asyncio_detailed(
 ) -> Response[DeveloperSessionsResponse]:
     r"""List Sessions
 
-     List active server-side sessions for the authenticated developer.
-
-    Surfaces the per-row state the portal uses to render a \"where you
+     List active server-side sessions for the authenticated developer. Surfaces the per-row state the
+    portal uses to render a \"where you
     are signed in\" inventory. ``is_current=true`` flags the row backing
     the caller's own JWT so the UI can label it and gray out the kill
     button for it (logout is the right action for the current session).
@@ -137,9 +136,8 @@ async def asyncio(
 ) -> DeveloperSessionsResponse | None:
     r"""List Sessions
 
-     List active server-side sessions for the authenticated developer.
-
-    Surfaces the per-row state the portal uses to render a \"where you
+     List active server-side sessions for the authenticated developer. Surfaces the per-row state the
+    portal uses to render a \"where you
     are signed in\" inventory. ``is_current=true`` flags the row backing
     the caller's own JWT so the UI can label it and gray out the kill
     button for it (logout is the right action for the current session).

@@ -25,7 +25,9 @@ def _get_kwargs() -> dict[str, Any]:
 def _parse_response(
     *, client: AuthenticatedClient | Client, response: httpx.Response
 ) -> LogoutAllResponse | None:
-    if response.status_code == 200:
+    if 200 <= response.status_code < 300:
+        if not response.content:
+            return None
         response_200 = LogoutAllResponse.from_dict(response.json())
 
         return response_200
@@ -53,9 +55,8 @@ def sync_detailed(
 ) -> Response[LogoutAllResponse]:
     """Logout All
 
-     Revoke every active session for the developer.
-
-    Rate-limited per-developer so a stolen access token cannot be used
+     Revoke every active session for the developer. Rate-limited per-developer so a stolen access token
+    cannot be used
     to repeatedly burn the legitimate user's recovery path. The cookies
     on this response are cleared because the caller's own session is
     among those revoked.
@@ -83,9 +84,8 @@ def sync(
 ) -> LogoutAllResponse | None:
     """Logout All
 
-     Revoke every active session for the developer.
-
-    Rate-limited per-developer so a stolen access token cannot be used
+     Revoke every active session for the developer. Rate-limited per-developer so a stolen access token
+    cannot be used
     to repeatedly burn the legitimate user's recovery path. The cookies
     on this response are cleared because the caller's own session is
     among those revoked.
@@ -109,9 +109,8 @@ async def asyncio_detailed(
 ) -> Response[LogoutAllResponse]:
     """Logout All
 
-     Revoke every active session for the developer.
-
-    Rate-limited per-developer so a stolen access token cannot be used
+     Revoke every active session for the developer. Rate-limited per-developer so a stolen access token
+    cannot be used
     to repeatedly burn the legitimate user's recovery path. The cookies
     on this response are cleared because the caller's own session is
     among those revoked.
@@ -137,9 +136,8 @@ async def asyncio(
 ) -> LogoutAllResponse | None:
     """Logout All
 
-     Revoke every active session for the developer.
-
-    Rate-limited per-developer so a stolen access token cannot be used
+     Revoke every active session for the developer. Rate-limited per-developer so a stolen access token
+    cannot be used
     to repeatedly burn the legitimate user's recovery path. The cookies
     on this response are cleared because the caller's own session is
     among those revoked.
