@@ -14,4 +14,6 @@ htmlcov/
 .mypy_cache/
 .ruff_cache/
 .pytest_cache/
-.claude/
+# Ignore local Claude Code state (worktrees, settings) but track committed skills.
+.claude/*
+!.claude/skills/
