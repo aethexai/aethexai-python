@@ -27,6 +27,7 @@ Example::
 
 from __future__ import annotations
 
+import time
 from collections.abc import Iterator
 from io import BytesIO
 from typing import Any, BinaryIO, cast
@@ -37,6 +38,7 @@ import httpx
 from aethexai._exceptions import (
     APIConnectionError,
     APITimeoutError,
+    InternalServerError,
     _map_status_to_exception,
 )
 from aethexai._generated.api.agents import (
@@ -488,6 +490,45 @@ class Kora:
     def get_transcribe_job(self, job_id: str | UUID) -> Any:
         """Poll an async transcription job by id."""
         return self._call(_get_transcribe_job_op.sync_detailed, _to_uuid(job_id))
+
+    def transcribe_long(
+        self,
+        file: bytes | BinaryIO | File,
+        *,
+        language: str | None = None,
+        file_name: str | None = None,
+        mime_type: str | None = None,
+        poll_interval: float = 2.0,
+        timeout: float = 600.0,
+    ) -> Any:
+        """Transcribe a recording of any length, blocking until the transcript is ready.
+
+        Use this for multi-minute audio. The synchronous :meth:`transcribe`
+        endpoint processes the file inline and fails (provider ``HTTP 500``) on
+        long recordings, so this submits an async job instead, polls it every
+        ``poll_interval`` seconds until it reaches a terminal state, and returns
+        the completed job (read ``.text``).
+
+        Raises :class:`~aethexai.APITimeoutError` if the job is still running
+        after ``timeout`` seconds, or :class:`~aethexai.InternalServerError`
+        (carrying the job's ``error_message``) if it ends ``failed`` /
+        ``cancelled``.
+        """
+        job = self.transcribe_async(
+            file, language=language, file_name=file_name, mime_type=mime_type
+        )
+        deadline = time.monotonic() + timeout
+        while job.status not in ("completed", "failed", "cancelled"):
+            if time.monotonic() >= deadline:
+                raise APITimeoutError(f"Transcription job {job.id} unfinished after {timeout}s")
+            time.sleep(poll_interval)
+            job = self.get_transcribe_job(job.id)
+        if job.status != "completed":
+            raise InternalServerError(
+                message=job.error_message or f"Transcription job {job.status}",
+                code="transcription_failed",
+            )
+        return job
 
     def get_conversation(self, conversation_id: str | UUID) -> Any:
         """Fetch a single conversation record by id."""

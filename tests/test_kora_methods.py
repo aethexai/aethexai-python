@@ -22,7 +22,7 @@ import httpx
 import pytest
 import respx
 
-from aethexai import Kora
+from aethexai import InternalServerError, Kora
 
 BASE_URL = "https://api.test.aethexai.com"
 
@@ -290,6 +290,54 @@ def test_kora_transcribe_uses_multipart(kora: Kora) -> None:
     # The body must be a multipart form, not application/json.
     ctype = req.headers.get("content-type", "")
     assert ctype.startswith("multipart/form-data")
+
+
+@respx.mock
+def test_kora_transcribe_long_submits_async_then_polls(kora: Kora) -> None:
+    # Long audio uses the async lifecycle (the sync endpoint 500s past ~1 min).
+    job_id = "11111111-1111-1111-1111-111111111111"
+    submit = respx.post(f"{BASE_URL}/api/v1/transcribe/async").mock(
+        return_value=httpx.Response(200, json={"id": job_id, "status": "pending"})
+    )
+    poll = respx.get(f"{BASE_URL}/api/v1/transcribe/{job_id}").mock(
+        side_effect=[
+            httpx.Response(200, json={"id": job_id, "status": "processing"}),
+            httpx.Response(200, json={"id": job_id, "status": "completed", "text": "the minutes"}),
+        ]
+    )
+
+    job = kora.transcribe_long(
+        b"fake-audio-bytes",
+        file_name="meeting.wav",
+        mime_type="audio/wav",
+        poll_interval=0,  # don't actually sleep in tests
+    )
+
+    assert submit.called
+    assert submit.calls.last.request.headers.get("content-type", "").startswith(
+        "multipart/form-data"
+    )
+    assert poll.call_count == 2  # polled until terminal
+    assert job.status == "completed"
+    assert job.text == "the minutes"
+
+
+@respx.mock
+def test_kora_transcribe_long_raises_on_failed_job(kora: Kora) -> None:
+    job_id = "22222222-2222-2222-2222-222222222222"
+    respx.post(f"{BASE_URL}/api/v1/transcribe/async").mock(
+        return_value=httpx.Response(200, json={"id": job_id, "status": "pending"})
+    )
+    respx.get(f"{BASE_URL}/api/v1/transcribe/{job_id}").mock(
+        return_value=httpx.Response(
+            200,
+            json={"id": job_id, "status": "failed", "error_message": "circuit breaker open"},
+        )
+    )
+
+    with pytest.raises(InternalServerError) as exc:
+        kora.transcribe_long(b"fake-audio-bytes", file_name="m.wav", poll_interval=0)
+    assert "circuit breaker open" in str(exc.value)
 
 
 # ─── conversations ──────────────────────────────────────────────────────────

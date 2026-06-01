@@ -4,6 +4,10 @@ All notable changes to this project are documented here. Format based on [Keep a
 
 ## [Unreleased]
 
+### Added
+
+- `Kora.transcribe_long(file, *, language=None, file_name=None, mime_type=None, poll_interval=2.0, timeout=600.0)` — a blocking submit-and-poll helper for transcribing multi-minute recordings. The synchronous `Kora.transcribe` endpoint processes audio inline and fails with an opaque provider `HTTP 500` on long recordings (roughly past a minute); `transcribe_long` submits an async job, polls it to completion, and returns the completed job (read `.text`). It raises `APITimeoutError` if the job is still running after `timeout` seconds, or `InternalServerError` carrying the job's `error_message` if the job ends `failed`/`cancelled` (e.g. `"circuit breaker open"`) — a clear, typed signal instead of the confusing sync 500.
+
 ## [0.3.0]
 
 ### Added
