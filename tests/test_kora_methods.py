@@ -292,6 +292,56 @@ def test_kora_transcribe_uses_multipart(kora: Kora) -> None:
     assert ctype.startswith("multipart/form-data")
 
 
+# ─── transcription — raw bytes without file_name (AET-1588) ─────────────────
+
+_TRANSCRIBE_SUCCESS = {"id": "t1", "text": "hello", "language": "english"}
+_TRANSCRIBE_ASYNC_SUCCESS = {"id": "j1", "status": "queued"}
+
+
+@respx.mock
+def test_kora_transcribe_bytes_without_file_name(kora: Kora) -> None:
+    route = respx.post(f"{BASE_URL}/api/v1/transcribe").mock(
+        return_value=httpx.Response(200, json=_TRANSCRIBE_SUCCESS)
+    )
+
+    kora.transcribe(b"RIFF\x24\x00\x00\x00WAVEfmt ")
+
+    assert route.called
+    body = route.calls.last.request.content.decode("latin-1")
+    assert "audio.bin" not in body
+    assert 'filename="audio"' in body
+    assert "application/octet-stream" in body
+
+
+@respx.mock
+def test_kora_transcribe_async_bytes_without_file_name(kora: Kora) -> None:
+    route = respx.post(f"{BASE_URL}/api/v1/transcribe/async").mock(
+        return_value=httpx.Response(200, json=_TRANSCRIBE_ASYNC_SUCCESS)
+    )
+
+    kora.transcribe_async(b"fLaC\x00\x00\x00\x22stream")
+
+    assert route.called
+    body = route.calls.last.request.content.decode("latin-1")
+    assert "audio.bin" not in body
+    assert 'filename="audio"' in body
+    assert "application/octet-stream" in body
+
+
+@respx.mock
+def test_kora_transcribe_explicit_metadata_is_preserved(kora: Kora) -> None:
+    route = respx.post(f"{BASE_URL}/api/v1/transcribe").mock(
+        return_value=httpx.Response(200, json=_TRANSCRIBE_SUCCESS)
+    )
+
+    kora.transcribe(b"OggS\x00\x02\x00\x00", file_name="recording.ogg", mime_type="audio/ogg")
+
+    assert route.called
+    body = route.calls.last.request.content.decode("latin-1")
+    assert "recording.ogg" in body
+    assert "audio/ogg" in body
+
+
 # ─── conversations ──────────────────────────────────────────────────────────
 
 

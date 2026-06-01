@@ -135,7 +135,7 @@ def _as_file(
     if isinstance(file, (bytes, bytearray)):
         return File(
             payload=BytesIO(bytes(file)),
-            file_name=file_name or "audio.bin",
+            file_name=file_name or "audio",
             mime_type=mime_type or "application/octet-stream",
         )
     return File(payload=file, file_name=file_name, mime_type=mime_type)
