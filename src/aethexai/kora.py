@@ -119,20 +119,6 @@ def _to_uuid(value: str | UUID) -> UUID:
     return value if isinstance(value, UUID) else UUID(str(value))
 
 
-def _detect_audio_format(data: bytes) -> tuple[str, str]:
-    """Pick ``(file_name, mime_type)`` from the leading magic bytes.
-
-    Detects WAV, FLAC and OGG; unrecognised input falls back to WAV.
-    """
-    if data[:4] == b"RIFF" and data[8:12] == b"WAVE":
-        return "audio.wav", "audio/wav"
-    if data[:4] == b"fLaC":
-        return "audio.flac", "audio/flac"
-    if data[:4] == b"OggS":
-        return "audio.ogg", "audio/ogg"
-    return "audio.wav", "audio/wav"
-
-
 def _as_file(
     file: bytes | BinaryIO | File,
     *,
@@ -143,12 +129,11 @@ def _as_file(
     if isinstance(file, File):
         return file
     if isinstance(file, (bytes, bytearray)):
-        raw = bytes(file)
-        if not file_name or not mime_type:
-            detected_name, detected_mime = _detect_audio_format(raw)
-            file_name = file_name or detected_name
-            mime_type = mime_type or detected_mime
-        return File(payload=BytesIO(raw), file_name=file_name, mime_type=mime_type)
+        return File(
+            payload=BytesIO(bytes(file)),
+            file_name=file_name or "audio",
+            mime_type=mime_type or "application/octet-stream",
+        )
     return File(payload=file, file_name=file_name, mime_type=mime_type)
 
 
