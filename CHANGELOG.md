@@ -4,8 +4,17 @@ All notable changes to this project are documented here. Format based on [Keep a
 
 ## [Unreleased]
 
+### Changed
+
+- **Unknown keyword arguments to `**fields` create/update wrappers are now rejected** with a typed `aethexai.ValidationError` that names the offending key, instead of being silently absorbed into `additional_properties` (where the server ignored them, so a typo'd field name silently did nothing). `create_agent` and `update_agent` (on both `AethexAI`/`AsyncAethexAI` and `Kora`) continue to tolerate and forward extra fields for forward-compatibility.
+
 ### Fixed
 
+- Invalid input now raises a typed `aethexai.ValidationError` *before the request goes out*, instead of a stdlib `ValueError`/`TypeError` that escaped `except aethexai.AethexError`:
+  - **Malformed path-parameter UUIDs** — `get_agent("bad-uuid")`, `get_call(...)`, and every other id-by-path method across `AethexAI`, `AsyncAethexAI`, and `Kora` now raise `ValidationError` (422, `code="validation_error"`) naming the path field.
+  - **Malformed request bodies** that previously failed deep inside the generated `from_dict` — wrong nested shapes (`batch_calls(recipients=["+1555..."])`), body UUIDs (`conversation_connect(agent_id="bad-uuid")`), and wrong container types (`batch_synthesize(items="notalist")`) — now surface as `ValidationError`.
+  - `Kora.create_agent` / `Kora.update_agent` no longer raise a raw `TypeError` on an unknown keyword argument; they route through the same `build_body` path as `AethexAI` and forward extras for parity.
+- A **whitespace-only `api_key`** is now rejected at construction like an empty one: `AethexAI` / `AsyncAethexAI` raise `AuthenticationError` (401) and `Kora` raises `ValueError`, instead of constructing successfully and later failing with an opaque `APIConnectionError`.
 - `Kora.transcribe` now transcribes WAV recordings longer than 35s. When WAV audio is passed as `bytes` and exceeds 35s it is split into ≤35s chunks, transcribed per chunk, and the transcripts are concatenated (`.segments` reflect only the first chunk). Non-WAV bytes and stream/`File` inputs are unchanged.
 
 ## [0.3.0]
