@@ -29,7 +29,13 @@ Optional extras:
 
 ```bash
 pip install "aethexai[realtime]"   # WebRTC conversations (Conversation class)
+pip install "aethexai[audio]"      # audio format conversion for transcription (PyAV)
 ```
+
+The `[audio]` extra installs `av` (PyAV) for client-side audio conversion in the
+sync transcription paths: with it, any input (mp3, m4a, stereo or 48kHz WAV, etc.)
+is normalized to canonical 24kHz mono 16-bit WAV before being split into ≤30s
+chunks; without it those paths handle WAV only and send non-canonical input as-is.
 
 The `[realtime]` extra installs `aiortc` and `av` (PyAV). PyAV ships prebuilt
 binary wheels (with FFmpeg bundled) for **manylinux** (glibc) Linux, macOS, and
