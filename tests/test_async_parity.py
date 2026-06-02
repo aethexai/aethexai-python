@@ -12,14 +12,24 @@ between the sync and async clients shows up here.
 
 from __future__ import annotations
 
+import io
 import json
+import wave
 from uuid import uuid4
 
 import httpx
 import pytest
 import respx
 
+import aethexai
 from aethexai import AethexAI, AsyncAethexAI
+from aethexai._generated.models.body_transcribe_async_api_v1_transcribe_async_post import (
+    BodyTranscribeAsyncApiV1TranscribeAsyncPost,
+)
+from aethexai._generated.models.body_transcribe_sync_api_v1_transcribe_post import (
+    BodyTranscribeSyncApiV1TranscribePost,
+)
+from aethexai._generated.types import File
 
 BASE_URL = "https://api.test.aethexai.com"
 
@@ -295,3 +305,114 @@ async def test_parity_upload_knowledge_doc(
         body = call.request.content
         assert b'name="text"' in body and b"kb body" in body
         assert b'name="filename"' in body and b"Doc" in body
+
+
+# ─── transcribe_audio (WAV chunking) ────────────────────────────────────────
+
+
+def _make_wav(seconds: float, rate: int = 8000) -> bytes:
+    """A mono 16-bit silent WAV of the given duration."""
+    buffer = io.BytesIO()
+    with wave.open(buffer, "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(rate)
+        w.writeframes(b"\x00\x00" * int(seconds * rate))
+    return buffer.getvalue()
+
+
+def _wav_body(seconds: float) -> BodyTranscribeSyncApiV1TranscribePost:
+    """A sync-transcribe body wrapping a silent WAV of the given duration."""
+    return BodyTranscribeSyncApiV1TranscribePost(
+        file=File(payload=io.BytesIO(_make_wav(seconds)), file_name="a.wav", mime_type="audio/wav"),
+        language="english",
+    )
+
+
+@respx.mock
+async def test_parity_transcribe_audio_chunks_long_wav(
+    sync_client: AethexAI, async_client: AsyncAethexAI
+) -> None:
+    """Sync and async wrappers chunk a long WAV into identical merged transcripts."""
+    respx.post(f"{BASE_URL}/api/v1/transcribe").mock(
+        side_effect=[
+            httpx.Response(200, json={"id": "t1", "text": "alpha"}),
+            httpx.Response(200, json={"id": "t2", "text": "beta"}),
+            httpx.Response(200, json={"id": "t3", "text": "gamma"}),
+            httpx.Response(200, json={"id": "t1", "text": "alpha"}),
+            httpx.Response(200, json={"id": "t2", "text": "beta"}),
+            httpx.Response(200, json={"id": "t3", "text": "gamma"}),
+        ]
+    )
+
+    sync_out = sync_client.transcribe_audio(body=_wav_body(80))
+    async_out = await async_client.transcribe_audio(body=_wav_body(80))
+
+    assert sync_out.text == async_out.text == "alpha beta gamma"
+
+
+def _async_wav_body(seconds: float) -> BodyTranscribeAsyncApiV1TranscribeAsyncPost:
+    """An async-transcribe body wrapping a silent WAV of the given duration."""
+    return BodyTranscribeAsyncApiV1TranscribeAsyncPost(
+        file=File(payload=io.BytesIO(_make_wav(seconds)), file_name="a.wav", mime_type="audio/wav"),
+        language="english",
+    )
+
+
+@respx.mock
+async def test_parity_transcribe_audio_async_rejects_over_limit_wav(
+    sync_client: AethexAI, async_client: AsyncAethexAI
+) -> None:
+    """Sync and async wrappers both pre-flight reject a >35s WAV async body."""
+    respx.post(f"{BASE_URL}/api/v1/transcribe/async").mock(
+        return_value=httpx.Response(200, json={"id": "j1", "status": "queued"})
+    )
+
+    with pytest.raises(aethexai.ValidationError):
+        sync_client.transcribe_audio_async(body=_async_wav_body(60))
+    with pytest.raises(aethexai.ValidationError):
+        await async_client.transcribe_audio_async(body=_async_wav_body(60))
+
+
+def _make_stereo_wav(seconds: float, rate: int = 48000) -> bytes:
+    """A stereo 16-bit silent WAV of the given duration."""
+    buffer = io.BytesIO()
+    with wave.open(buffer, "wb") as w:
+        w.setnchannels(2)
+        w.setsampwidth(2)
+        w.setframerate(rate)
+        w.writeframes(b"\x00\x00\x00\x00" * int(seconds * rate))
+    return buffer.getvalue()
+
+
+def _stereo_wav_body(seconds: float, rate: int = 48000) -> BodyTranscribeSyncApiV1TranscribePost:
+    """A sync-transcribe body wrapping a stereo 16-bit WAV of the given duration."""
+    return BodyTranscribeSyncApiV1TranscribePost(
+        file=File(
+            payload=io.BytesIO(_make_stereo_wav(seconds, rate)),
+            file_name="a.wav",
+            mime_type="audio/wav",
+        ),
+        language="english",
+    )
+
+
+@respx.mock
+async def test_parity_transcribe_audio_normalizes_stereo_48k(
+    sync_client: AethexAI, async_client: AsyncAethexAI
+) -> None:
+    """Sync and async wrappers normalize + chunk a stereo/48k WAV into identical transcripts."""
+    pytest.importorskip("av")
+    respx.post(f"{BASE_URL}/api/v1/transcribe").mock(
+        side_effect=[
+            httpx.Response(200, json={"id": "t1", "text": "alpha"}),
+            httpx.Response(200, json={"id": "t2", "text": "beta"}),
+            httpx.Response(200, json={"id": "t1", "text": "alpha"}),
+            httpx.Response(200, json={"id": "t2", "text": "beta"}),
+        ]
+    )
+
+    sync_out = sync_client.transcribe_audio(body=_stereo_wav_body(40))
+    async_out = await async_client.transcribe_audio(body=_stereo_wav_body(40))
+
+    assert sync_out.text == async_out.text == "alpha beta"
