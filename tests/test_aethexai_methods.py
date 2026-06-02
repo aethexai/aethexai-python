@@ -15,13 +15,23 @@ multi-arg path, binary response, paginated list).
 
 from __future__ import annotations
 
+import io
+import wave
 from uuid import uuid4
 
 import httpx
 import pytest
 import respx
 
+import aethexai
 from aethexai import AethexAI
+from aethexai._generated.models.body_transcribe_async_api_v1_transcribe_async_post import (
+    BodyTranscribeAsyncApiV1TranscribeAsyncPost,
+)
+from aethexai._generated.models.body_transcribe_sync_api_v1_transcribe_post import (
+    BodyTranscribeSyncApiV1TranscribePost,
+)
+from aethexai._generated.types import File
 
 BASE_URL = "https://api.test.aethexai.com"
 
@@ -316,6 +326,167 @@ def test_cancel_transcription_job_returns_typed_model(client: AethexAI) -> None:
     assert isinstance(result, CancelTranscriptionJobResponse)
     assert result.id == str(job_uuid)
     assert result.status == "cancelled"
+
+
+def _make_wav(seconds: float, rate: int = 8000) -> bytes:
+    """A mono 16-bit silent WAV of the given duration."""
+    buffer = io.BytesIO()
+    with wave.open(buffer, "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(rate)
+        w.writeframes(b"\x00\x00" * int(seconds * rate))
+    return buffer.getvalue()
+
+
+def _wav_body(seconds: float) -> BodyTranscribeSyncApiV1TranscribePost:
+    """A sync-transcribe body wrapping a silent WAV of the given duration."""
+    return BodyTranscribeSyncApiV1TranscribePost(
+        file=File(payload=io.BytesIO(_make_wav(seconds)), file_name="a.wav", mime_type="audio/wav"),
+        language="english",
+    )
+
+
+@respx.mock
+def test_transcribe_audio_chunks_long_wav(client: AethexAI) -> None:
+    route = respx.post(f"{BASE_URL}/api/v1/transcribe").mock(
+        side_effect=[
+            httpx.Response(200, json={"id": "t1", "text": "alpha"}),
+            httpx.Response(200, json={"id": "t2", "text": "beta"}),
+            httpx.Response(200, json={"id": "t3", "text": "gamma"}),
+        ]
+    )
+
+    result = client.transcribe_audio(body=_wav_body(80))
+
+    assert route.call_count == 3
+    assert result.text == "alpha beta gamma"
+
+
+@respx.mock
+def test_transcribe_audio_single_call_for_short_wav(client: AethexAI) -> None:
+    route = respx.post(f"{BASE_URL}/api/v1/transcribe").mock(
+        return_value=httpx.Response(200, json={"id": "t1", "text": "short"})
+    )
+
+    result = client.transcribe_audio(body=_wav_body(5))
+
+    assert route.call_count == 1
+    assert result.text == "short"
+    assert len(route.calls.last.request.content) > len(_make_wav(5)) // 2
+
+
+def _async_wav_body(seconds: float) -> BodyTranscribeAsyncApiV1TranscribeAsyncPost:
+    """An async-transcribe body wrapping a silent WAV of the given duration."""
+    return BodyTranscribeAsyncApiV1TranscribeAsyncPost(
+        file=File(payload=io.BytesIO(_make_wav(seconds)), file_name="a.wav", mime_type="audio/wav"),
+        language="english",
+    )
+
+
+@respx.mock
+def test_transcribe_audio_async_rejects_over_limit_wav(client: AethexAI) -> None:
+    route = respx.post(f"{BASE_URL}/api/v1/transcribe/async").mock(
+        return_value=httpx.Response(200, json={"id": "j1", "status": "queued"})
+    )
+
+    with pytest.raises(aethexai.ValidationError):
+        client.transcribe_audio_async(body=_async_wav_body(60))
+
+    assert not route.called
+
+
+@respx.mock
+def test_transcribe_audio_async_rebuilds_from_read_bytes(client: AethexAI) -> None:
+    route = respx.post(f"{BASE_URL}/api/v1/transcribe/async").mock(
+        return_value=httpx.Response(200, json={"id": "j1", "status": "queued"})
+    )
+
+    client.transcribe_audio_async(body=_async_wav_body(5))
+
+    assert route.call_count == 1
+    assert len(route.calls.last.request.content) > len(_make_wav(5)) // 2
+
+
+def _make_stereo_wav(seconds: float, rate: int = 48000) -> bytes:
+    """A stereo 16-bit silent WAV of the given duration."""
+    buffer = io.BytesIO()
+    with wave.open(buffer, "wb") as w:
+        w.setnchannels(2)
+        w.setsampwidth(2)
+        w.setframerate(rate)
+        w.writeframes(b"\x00\x00\x00\x00" * int(seconds * rate))
+    return buffer.getvalue()
+
+
+def _stereo_wav_body(seconds: float, rate: int = 48000) -> BodyTranscribeSyncApiV1TranscribePost:
+    """A sync-transcribe body wrapping a stereo 16-bit WAV of the given duration."""
+    return BodyTranscribeSyncApiV1TranscribePost(
+        file=File(
+            payload=io.BytesIO(_make_stereo_wav(seconds, rate)),
+            file_name="a.wav",
+            mime_type="audio/wav",
+        ),
+        language="english",
+    )
+
+
+def _wav_meta(content: bytes) -> tuple[int, int, int]:
+    """Decode the WAV file in a multipart request body, returning (channels, sampwidth, rate)."""
+    blob = content[content.index(b"RIFF") :]
+    with wave.open(io.BytesIO(blob)) as w:
+        return w.getnchannels(), w.getsampwidth(), w.getframerate()
+
+
+@respx.mock
+def test_transcribe_audio_normalizes_stereo_48k(client: AethexAI) -> None:
+    pytest.importorskip("av")
+    route = respx.post(f"{BASE_URL}/api/v1/transcribe").mock(
+        side_effect=[
+            httpx.Response(200, json={"id": "t1", "text": "alpha"}),
+            httpx.Response(200, json={"id": "t2", "text": "beta"}),
+        ]
+    )
+
+    result = client.transcribe_audio(body=_stereo_wav_body(40))
+
+    assert route.call_count == 2
+    assert result.text == "alpha beta"
+    for call in route.calls:
+        assert _wav_meta(call.request.content) == (1, 2, 24000)
+
+
+@respx.mock
+def test_transcribe_audio_short_stereo_normalized_single_call(client: AethexAI) -> None:
+    pytest.importorskip("av")
+    route = respx.post(f"{BASE_URL}/api/v1/transcribe").mock(
+        return_value=httpx.Response(200, json={"id": "t1", "text": "short"})
+    )
+
+    result = client.transcribe_audio(body=_stereo_wav_body(5))
+
+    assert route.call_count == 1
+    assert result.text == "short"
+    assert _wav_meta(route.calls.last.request.content) == (1, 2, 24000)
+
+
+@respx.mock
+def test_transcribe_audio_chunks_when_av_absent(
+    client: AethexAI, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr("aethexai._transcription.av", None, raising=False)
+    route = respx.post(f"{BASE_URL}/api/v1/transcribe").mock(
+        side_effect=[
+            httpx.Response(200, json={"id": "t1", "text": "alpha"}),
+            httpx.Response(200, json={"id": "t2", "text": "beta"}),
+            httpx.Response(200, json={"id": "t3", "text": "gamma"}),
+        ]
+    )
+
+    result = client.transcribe_audio(body=_wav_body(80))
+
+    assert route.call_count == 3
+    assert result.text == "alpha beta gamma"
 
 
 # ─── calls ──────────────────────────────────────────────────────────────────
