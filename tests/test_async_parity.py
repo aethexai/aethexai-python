@@ -304,6 +304,48 @@ async def test_parity_cancel_transcription_job(
     assert sync_out.status == async_out.status == "cancelled"
 
 
+# ─── transcribe_audio raw bytes without file_name (AET-1630) ─────────────────
+
+
+@respx.mock
+async def test_parity_transcribe_audio_bytes_without_file_name(
+    sync_client: AethexAI, async_client: AsyncAethexAI
+) -> None:
+    """Both wrappers default raw bytes to an extension-less ``"audio"`` filename.
+
+    Regression for AET-1630: the AET-1588 default was only applied in
+    ``Kora.transcribe``, so the low-level sync/async wrappers emitted a nameless
+    multipart part and the server returned HTTP 422.
+    """
+    from io import BytesIO
+
+    from aethexai._generated.models.body_transcribe_sync_api_v1_transcribe_post import (
+        BodyTranscribeSyncApiV1TranscribePost,
+    )
+    from aethexai._generated.types import File
+
+    route = respx.post(f"{BASE_URL}/api/v1/transcribe").mock(
+        return_value=httpx.Response(200, json={"id": "t1", "text": "hi", "language": "english"})
+    )
+
+    sync_client.transcribe_audio(
+        body=BodyTranscribeSyncApiV1TranscribePost(
+            file=File(payload=BytesIO(b"RIFF\x24\x00\x00\x00WAVEfmt "))
+        )
+    )
+    sync_wire = route.calls.last.request.content.decode("latin-1")
+
+    await async_client.transcribe_audio(
+        body=BodyTranscribeSyncApiV1TranscribePost(
+            file=File(payload=BytesIO(b"RIFF\x24\x00\x00\x00WAVEfmt "))
+        )
+    )
+    async_wire = route.calls.last.request.content.decode("latin-1")
+
+    assert 'filename="audio"' in sync_wire
+    assert 'filename="audio"' in async_wire
+
+
 # ─── upload_knowledge_doc (multipart from friendly kwargs) ──────────────────
 
 

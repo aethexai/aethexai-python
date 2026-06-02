@@ -20,7 +20,12 @@ from uuid import UUID
 
 import httpx
 
-from aethexai._body import build_body, build_knowledge_doc_body, coerce_uuid
+from aethexai._body import (
+    build_body,
+    build_knowledge_doc_body,
+    coerce_uuid,
+    ensure_multipart_file_name,
+)
 from aethexai._exceptions import (
     APIConnectionError,
     APITimeoutError,
@@ -759,6 +764,7 @@ class AsyncAethexAI:
             prepare_chunks,
         )
 
+        ensure_multipart_file_name(body)
         data = coerce_to_bytes(getattr(body, "file", None))
         if data is None:
             return await self._call(_op.asyncio_detailed, body=body)
@@ -810,7 +816,9 @@ class AsyncAethexAI:
         )
         from aethexai._transcription import guard_async_body
 
-        return await self._call(_op.asyncio_detailed, body=guard_async_body(body))
+        return await self._call(
+            _op.asyncio_detailed, body=guard_async_body(ensure_multipart_file_name(body))
+        )
 
     async def transcribe_audio_async_by_upload(self, **fields: Any) -> Any:
         """Submit an async transcription job for a previously uploaded file."""

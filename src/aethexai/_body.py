@@ -41,6 +41,35 @@ if TYPE_CHECKING:
 
 T = TypeVar("T")
 
+# Raw audio bytes sent without an explicit file name must still carry *some*
+# filename on the multipart part, otherwise the server parses the part as a
+# plain form field (not a file upload) and the transcription endpoint returns
+# HTTP 422. An extension-less "audio" satisfies that parsing and lets the server
+# detect the real format from the leading magic bytes. Shared with ``kora.py``
+# so the Kora helper and the low-level transcribe wrappers default identically.
+_DEFAULT_AUDIO_FILE_NAME = "audio"
+
+
+def ensure_multipart_file_name(body: T) -> T:
+    """Default ``body.file.file_name`` to ``"audio"`` when the caller left it unset.
+
+    The low-level ``transcribe_audio``/``transcribe_audio_async`` wrappers accept
+    a pre-built request body whose ``file`` is a ``File``. When that ``File`` was
+    constructed from raw bytes without a ``file_name``, ``File.to_tuple()`` emits
+    a nameless multipart part and the server rejects it with HTTP 422. This
+    mirrors the default already applied in ``kora._as_file``.
+
+    A ``file`` whose ``file_name`` is already set is left untouched, so callers
+    that pass a real filename keep their exact behaviour.
+
+    Mutates the passed ``File``/body in place — sets ``file.file_name`` to the
+    default when unset, rather than returning a copy — and returns the same body.
+    """
+    file = getattr(body, "file", None)
+    if file is not None and not getattr(file, "file_name", None):
+        file.file_name = _DEFAULT_AUDIO_FILE_NAME
+    return body
+
 
 def _wire_name(attr_name: str) -> str:
     """Map a generated attribute name back to its JSON wire key.
