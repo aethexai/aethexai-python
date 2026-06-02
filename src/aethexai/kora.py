@@ -27,6 +27,7 @@ Example::
 
 from __future__ import annotations
 
+import wave
 from collections.abc import Iterator
 from io import BytesIO
 from typing import Any, BinaryIO, cast
@@ -139,6 +140,46 @@ def _as_file(
             mime_type=mime_type or "application/octet-stream",
         )
     return File(payload=file, file_name=file_name, mime_type=mime_type)
+
+
+_TRANSCRIBE_CHUNK_SECONDS = 35
+
+
+def _split_wav(audio: bytes, chunk_seconds: int) -> list[bytes] | None:
+    """Split WAV ``audio`` into ``chunk_seconds``-long chunks, or ``None`` if not a long WAV."""
+    try:
+        with wave.open(BytesIO(audio)) as wav:
+            nchannels, sampwidth = wav.getnchannels(), wav.getsampwidth()
+            framerate, total = wav.getframerate(), wav.getnframes()
+            step = framerate * chunk_seconds
+            if step <= 0 or total <= step:
+                return None
+            chunks: list[bytes] = []
+            for start in range(0, total, step):
+                wav.setpos(start)
+                buffer = BytesIO()
+                with wave.open(buffer, "wb") as out:
+                    out.setnchannels(nchannels)
+                    out.setsampwidth(sampwidth)
+                    out.setframerate(framerate)
+                    out.writeframes(wav.readframes(min(step, total - start)))
+                chunks.append(buffer.getvalue())
+            return chunks
+    except (wave.Error, EOFError):
+        return None
+
+
+def _merge_transcriptions(results: list[Any]) -> Any:
+    """Merge per-chunk transcription responses into the first (joined text, summed duration)."""
+    merged = results[0]
+    texts = [(r.text or "").strip() for r in results]
+    merged.text = " ".join(text for text in texts if text)
+    durations = [
+        r.duration_seconds for r in results if isinstance(r.duration_seconds, (int, float))
+    ]
+    if durations:
+        merged.duration_seconds = sum(durations)
+    return merged
 
 
 class Kora:
@@ -461,7 +502,27 @@ class Kora:
         file_name: str | None = None,
         mime_type: str | None = None,
     ) -> Any:
-        """Transcribe an audio file synchronously, returning the full transcript."""
+        """Transcribe an audio file synchronously, returning the full transcript.
+
+        WAV ``bytes`` longer than 35s are split into <=35s chunks and the per-chunk
+        transcripts are concatenated (``.segments`` reflect only the first chunk).
+        Non-WAV bytes and streams are sent as a single request.
+        """
+        if isinstance(file, (bytes, bytearray)):
+            chunks = _split_wav(bytes(file), _TRANSCRIBE_CHUNK_SECONDS)
+            if chunks is not None:
+                return _merge_transcriptions(
+                    [self._transcribe_one(c, language, "audio.wav", "audio/wav") for c in chunks]
+                )
+        return self._transcribe_one(file, language, file_name, mime_type)
+
+    def _transcribe_one(
+        self,
+        file: bytes | BinaryIO | File,
+        language: str | None,
+        file_name: str | None,
+        mime_type: str | None,
+    ) -> Any:
         body = BodyTranscribeSyncApiV1TranscribePost(
             file=_as_file(file, file_name=file_name, mime_type=mime_type),
             language=language if language is not None else UNSET,
