@@ -4,14 +4,14 @@ All notable changes to this project are documented here. Format based on [Keep a
 
 ## [Unreleased]
 
+### Changed
+
+- `send_ice_candidate()` (sync and async) now documents that the request body takes a `candidates` **list** plus a `pc_id`, not a singular `candidate` — the method name is singular but the wire contract is plural. Passing `candidate=` raises `ValidationError` naming the required `candidates` / `pc_id` fields. The wire contract is unchanged.
+
 ### Fixed
 
 - `Kora.transcribe` now transcribes WAV recordings longer than 35s. When WAV audio is passed as `bytes` and exceeds 35s it is split into ≤35s chunks, transcribed per chunk, and the transcripts are concatenated (`.segments` reflect only the first chunk). Non-WAV bytes and stream/`File` inputs are unchanged.
 - Constructing a client without an API key (`AethexAI(api_key="")` / `AsyncAethexAI()` with no `AETHEX_API_KEY`) now raises `AuthenticationError` with `code="authentication_error"` instead of the mislabeled `code="internal_error"`. The `status_code` was already `401`; only the `code` was wrong, and it now matches the slug the server returns for a 401 so a single error handler keyed on `code` works for both.
-
-### Documentation
-
-- `send_ice_candidate()` (sync and async) now documents that the request body takes a `candidates` **list** plus a `pc_id`, not a singular `candidate` — the method name is singular but the wire contract is plural. Passing `candidate=` raises `ValidationError` naming the required `candidates` / `pc_id` fields. The wire contract is unchanged.
 
 ## [0.3.0]
 
