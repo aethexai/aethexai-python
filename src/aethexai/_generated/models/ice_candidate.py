@@ -14,14 +14,11 @@ T = TypeVar("T", bound="IceCandidate")
 
 @_attrs_define
 class IceCandidate:
-    """The remote ice candidate object received from the peer connection. Parameters:
-     candidate: The ice candidate patch SDP string (Session Description Protocol). sdp_mid: The SDP mid for the
-    candidate patch. sdp_mline_index: The SDP mline index for the candidate patch.
-
-        Attributes:
-            candidate (str):
-            sdp_mid (str):
-            sdp_mline_index (int):
+    """
+    Attributes:
+        candidate (str):
+        sdp_mid (str):
+        sdp_mline_index (int):
     """
 
     candidate: str

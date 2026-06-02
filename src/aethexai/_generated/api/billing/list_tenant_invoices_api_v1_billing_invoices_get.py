@@ -89,14 +89,21 @@ def sync_detailed(
     next_cursor: None | str | Unset = UNSET,
     page_size: int | Unset = 25,
 ) -> Response[HTTPValidationError | InvoiceListResponse]:
-    """List Tenant Invoices
+    r"""List Tenant Invoices
 
-     List the account's invoices, newest-first, with cursor pagination: pass ``next_cursor`` from the
-    previous response back as ``?cursor=`` (or its ``?next_cursor=`` alias). Each row carries a
-    ``hosted_invoice_url`` (the full invoice page) and an ``invoice_pdf`` (direct PDF download). Returns
-    an empty list when no invoices exist yet — for example an account that has never started a paid
-    plan, or one that has just started and has not yet been billed. Returns 503 when billing is not
-    configured.
+     List the tenant's Stripe invoices, newest-first. Cursor pagination via Stripe's ``starting_after``:
+    pass
+    ``next_cursor`` from the previous response back as ``?cursor=``
+    (canonical) or ``?next_cursor=`` (alias). Each row carries
+    Stripe-hosted ``hosted_invoice_url`` (full
+    invoice page) and ``invoice_pdf`` (direct PDF download). We do
+    not render PDFs ourselves: Stripe handles invoice generation,
+    branding, and tax line items. Returns an empty list when:
+     * No Stripe Customer has been created for this tenant yet
+     (free trial that never picked a paid plan). * The tenant has a Customer but no invoices yet (rare;
+    happens
+     only between Customer create and the first invoice cycle). 503 when ```` is unset; the portal
+    surfaces this as \"billing isn't configured for this environment\".
 
     Args:
         cursor (None | str | Unset): Stripe invoice id to page after (received as ``next_cursor``
@@ -135,14 +142,21 @@ def sync(
     next_cursor: None | str | Unset = UNSET,
     page_size: int | Unset = 25,
 ) -> HTTPValidationError | InvoiceListResponse | None:
-    """List Tenant Invoices
+    r"""List Tenant Invoices
 
-     List the account's invoices, newest-first, with cursor pagination: pass ``next_cursor`` from the
-    previous response back as ``?cursor=`` (or its ``?next_cursor=`` alias). Each row carries a
-    ``hosted_invoice_url`` (the full invoice page) and an ``invoice_pdf`` (direct PDF download). Returns
-    an empty list when no invoices exist yet — for example an account that has never started a paid
-    plan, or one that has just started and has not yet been billed. Returns 503 when billing is not
-    configured.
+     List the tenant's Stripe invoices, newest-first. Cursor pagination via Stripe's ``starting_after``:
+    pass
+    ``next_cursor`` from the previous response back as ``?cursor=``
+    (canonical) or ``?next_cursor=`` (alias). Each row carries
+    Stripe-hosted ``hosted_invoice_url`` (full
+    invoice page) and ``invoice_pdf`` (direct PDF download). We do
+    not render PDFs ourselves: Stripe handles invoice generation,
+    branding, and tax line items. Returns an empty list when:
+     * No Stripe Customer has been created for this tenant yet
+     (free trial that never picked a paid plan). * The tenant has a Customer but no invoices yet (rare;
+    happens
+     only between Customer create and the first invoice cycle). 503 when ```` is unset; the portal
+    surfaces this as \"billing isn't configured for this environment\".
 
     Args:
         cursor (None | str | Unset): Stripe invoice id to page after (received as ``next_cursor``
@@ -176,14 +190,21 @@ async def asyncio_detailed(
     next_cursor: None | str | Unset = UNSET,
     page_size: int | Unset = 25,
 ) -> Response[HTTPValidationError | InvoiceListResponse]:
-    """List Tenant Invoices
+    r"""List Tenant Invoices
 
-     List the account's invoices, newest-first, with cursor pagination: pass ``next_cursor`` from the
-    previous response back as ``?cursor=`` (or its ``?next_cursor=`` alias). Each row carries a
-    ``hosted_invoice_url`` (the full invoice page) and an ``invoice_pdf`` (direct PDF download). Returns
-    an empty list when no invoices exist yet — for example an account that has never started a paid
-    plan, or one that has just started and has not yet been billed. Returns 503 when billing is not
-    configured.
+     List the tenant's Stripe invoices, newest-first. Cursor pagination via Stripe's ``starting_after``:
+    pass
+    ``next_cursor`` from the previous response back as ``?cursor=``
+    (canonical) or ``?next_cursor=`` (alias). Each row carries
+    Stripe-hosted ``hosted_invoice_url`` (full
+    invoice page) and ``invoice_pdf`` (direct PDF download). We do
+    not render PDFs ourselves: Stripe handles invoice generation,
+    branding, and tax line items. Returns an empty list when:
+     * No Stripe Customer has been created for this tenant yet
+     (free trial that never picked a paid plan). * The tenant has a Customer but no invoices yet (rare;
+    happens
+     only between Customer create and the first invoice cycle). 503 when ```` is unset; the portal
+    surfaces this as \"billing isn't configured for this environment\".
 
     Args:
         cursor (None | str | Unset): Stripe invoice id to page after (received as ``next_cursor``
@@ -220,14 +241,21 @@ async def asyncio(
     next_cursor: None | str | Unset = UNSET,
     page_size: int | Unset = 25,
 ) -> HTTPValidationError | InvoiceListResponse | None:
-    """List Tenant Invoices
+    r"""List Tenant Invoices
 
-     List the account's invoices, newest-first, with cursor pagination: pass ``next_cursor`` from the
-    previous response back as ``?cursor=`` (or its ``?next_cursor=`` alias). Each row carries a
-    ``hosted_invoice_url`` (the full invoice page) and an ``invoice_pdf`` (direct PDF download). Returns
-    an empty list when no invoices exist yet — for example an account that has never started a paid
-    plan, or one that has just started and has not yet been billed. Returns 503 when billing is not
-    configured.
+     List the tenant's Stripe invoices, newest-first. Cursor pagination via Stripe's ``starting_after``:
+    pass
+    ``next_cursor`` from the previous response back as ``?cursor=``
+    (canonical) or ``?next_cursor=`` (alias). Each row carries
+    Stripe-hosted ``hosted_invoice_url`` (full
+    invoice page) and ``invoice_pdf`` (direct PDF download). We do
+    not render PDFs ourselves: Stripe handles invoice generation,
+    branding, and tax line items. Returns an empty list when:
+     * No Stripe Customer has been created for this tenant yet
+     (free trial that never picked a paid plan). * The tenant has a Customer but no invoices yet (rare;
+    happens
+     only between Customer create and the first invoice cycle). 503 when ```` is unset; the portal
+    surfaces this as \"billing isn't configured for this environment\".
 
     Args:
         cursor (None | str | Unset): Stripe invoice id to page after (received as ``next_cursor``

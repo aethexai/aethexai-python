@@ -9,14 +9,14 @@ from ...types import Response, UNSET
 from ... import errors
 
 from ...models.http_validation_error import HTTPValidationError
-from ...models.small_web_rtc_request import SmallWebRTCRequest
+from ...models.offer_request import OfferRequest
 from typing import cast
 
 
 def _get_kwargs(
     session_id: str,
     *,
-    body: SmallWebRTCRequest,
+    body: OfferRequest,
 ) -> dict[str, Any]:
     headers: dict[str, Any] = {}
 
@@ -70,7 +70,7 @@ def sync_detailed(
     session_id: str,
     *,
     client: AuthenticatedClient,
-    body: SmallWebRTCRequest,
+    body: OfferRequest,
 ) -> Response[Any | HTTPValidationError]:
     """Offer
 
@@ -82,12 +82,7 @@ def sync_detailed(
 
     Args:
         session_id (str):
-        body (SmallWebRTCRequest): Small WebRTC transport session arguments for the runner.
-            Parameters:
-             sdp: The SDP string (Session Description Protocol). type: The type of the SDP, either
-            "offer" or "answer". pc_id: Optional identifier for the peer connection. restart_pc:
-            Optional whether to restart the peer connection. request_data: Optional custom data sent
-            by the customer.
+        body (OfferRequest):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -113,7 +108,7 @@ def sync(
     session_id: str,
     *,
     client: AuthenticatedClient,
-    body: SmallWebRTCRequest,
+    body: OfferRequest,
 ) -> Any | HTTPValidationError | None:
     """Offer
 
@@ -125,12 +120,7 @@ def sync(
 
     Args:
         session_id (str):
-        body (SmallWebRTCRequest): Small WebRTC transport session arguments for the runner.
-            Parameters:
-             sdp: The SDP string (Session Description Protocol). type: The type of the SDP, either
-            "offer" or "answer". pc_id: Optional identifier for the peer connection. restart_pc:
-            Optional whether to restart the peer connection. request_data: Optional custom data sent
-            by the customer.
+        body (OfferRequest):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -151,7 +141,7 @@ async def asyncio_detailed(
     session_id: str,
     *,
     client: AuthenticatedClient,
-    body: SmallWebRTCRequest,
+    body: OfferRequest,
 ) -> Response[Any | HTTPValidationError]:
     """Offer
 
@@ -163,12 +153,7 @@ async def asyncio_detailed(
 
     Args:
         session_id (str):
-        body (SmallWebRTCRequest): Small WebRTC transport session arguments for the runner.
-            Parameters:
-             sdp: The SDP string (Session Description Protocol). type: The type of the SDP, either
-            "offer" or "answer". pc_id: Optional identifier for the peer connection. restart_pc:
-            Optional whether to restart the peer connection. request_data: Optional custom data sent
-            by the customer.
+        body (OfferRequest):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -192,7 +177,7 @@ async def asyncio(
     session_id: str,
     *,
     client: AuthenticatedClient,
-    body: SmallWebRTCRequest,
+    body: OfferRequest,
 ) -> Any | HTTPValidationError | None:
     """Offer
 
@@ -204,12 +189,7 @@ async def asyncio(
 
     Args:
         session_id (str):
-        body (SmallWebRTCRequest): Small WebRTC transport session arguments for the runner.
-            Parameters:
-             sdp: The SDP string (Session Description Protocol). type: The type of the SDP, either
-            "offer" or "answer". pc_id: Optional identifier for the peer connection. restart_pc:
-            Optional whether to restart the peer connection. request_data: Optional custom data sent
-            by the customer.
+        body (OfferRequest):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.

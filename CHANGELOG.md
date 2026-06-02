@@ -4,14 +4,13 @@ All notable changes to this project are documented here. Format based on [Keep a
 
 ## [Unreleased]
 
-### Fixed
+## [0.4.0] — 2026-06-02
 
-- `Kora.transcribe` now transcribes WAV recordings longer than 35s. When WAV audio is passed as `bytes` and exceeds 35s it is split into ≤35s chunks, transcribed per chunk, and the transcripts are concatenated (`.segments` reflect only the first chunk). Non-WAV bytes and stream/`File` inputs are unchanged.
-
-## [0.3.0]
+Synced to the current backend OpenAPI contract and adds a voice-catalog helper.
 
 ### Added
 
+- `AethexAI.list_countries()` / `AsyncAethexAI.list_countries()` — wrapper for `GET /api/v1/voices/countries`. Returns the closed set of ISO 3166-1 alpha-2 country codes (as `{"code", "name"}` items) accepted by the `country` filter on `list_voices`, so a country picker can be rendered without hardcoding the list.
 - `AethexAI.list_tag_vocabulary()` / `AsyncAethexAI.list_tag_vocabulary()` — wrapper for `GET /api/v1/voices/tag-vocabulary`. Returns the closed-vocabulary tag set (tone, voice_texture, delivery_style, business_persona) used by voice tagging and accepted by `GET /voices?tag=...`.
 
 ### Changed
@@ -23,6 +22,7 @@ All notable changes to this project are documented here. Format based on [Keep a
 - `create_agent`, `update_agent`, and `duplicate_agent` now return a typed `AgentResponse` instead of a raw `dict`, so code can use attribute access (`agent.id`) instead of `agent["id"]`. The typed parsing is durable across SDK regenerations, including `update_agent` (PATCH 200).
 
 ### Fixed
+- `Kora.transcribe` now transcribes WAV recordings longer than 35s. When WAV audio is passed as `bytes` and exceeds 35s it is split into ≤35s chunks, transcribed per chunk, and the transcripts are concatenated (`.segments` reflect only the first chunk). Non-WAV bytes and stream/`File` inputs are unchanged.
 - `send_offer()` / `send_ice_candidate()` no longer raise a false `Missing required field` error. `build_body` compared required fields by the generated Python attribute name (`type_`) instead of the JSON wire name (`type`), so the WebRTC signalling wrappers always rejected valid input before the request went out.
 - `[realtime]` extra now installs from a binary wheel on supported Pythons instead of forcing a from-source PyAV build. Pinned to `av>=14.0.0,!=14.4.0,<15` so it resolves to `av==14.2.0` — the newest 14.x with cp310–cp313 wheels (FFmpeg bundled) — so no system FFmpeg is needed on manylinux, macOS, or Windows. (Alpine/musl has no `av` 14.x musllinux wheel and still builds from source.)
 - Removed the public `get_conversation_diagnostics` wrapper from `AethexAI` / `AsyncAethexAI`. The endpoint is not callable with a public API key, so the wrapper is removed rather than repointed.

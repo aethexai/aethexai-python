@@ -407,11 +407,9 @@ class AethexAI:
         from aethexai._generated.api.conversation import (
             offer_api_v1_conversation_session_id_offer_post as _op,
         )
-        from aethexai._generated.models.small_web_rtc_request import SmallWebRTCRequest
+        from aethexai._generated.models.offer_request import OfferRequest
 
-        return self._call(
-            _op.sync_detailed, session_id, body=build_body(SmallWebRTCRequest, fields)
-        )
+        return self._call(_op.sync_detailed, session_id, body=build_body(OfferRequest, fields))
 
     def send_tool_result(self, session_id: str, **fields: Any) -> Any:
         """Return a tool-call result to a live conversation. See https://developers.aethexai.com/docs/api-reference/conversation."""
@@ -931,6 +929,22 @@ class AethexAI:
         """
         from aethexai._generated.api.voices import (
             list_tag_vocabulary_api_v1_voices_tag_vocabulary_get as _op,
+        )
+
+        return self._call(_op.sync_detailed)
+
+    def list_countries(self) -> Any:
+        """List the country codes accepted by the ``country`` voice filter.
+
+        Returns the closed set of ISO 3166-1 alpha-2 country codes as
+        ``{"code", "name"}`` items (e.g. ``{"code": "NG", "name": "Nigeria"}``),
+        the same values accepted by ``list_voices(country=...)``. Use it to
+        populate a country picker without hardcoding the list.
+
+        See https://developers.aethexai.com/docs/api-reference/voices.
+        """
+        from aethexai._generated.api.voices import (
+            list_countries_api_v1_voices_countries_get as _op,
         )
 
         return self._call(_op.sync_detailed)

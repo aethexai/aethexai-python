@@ -64,8 +64,11 @@ def sync_detailed(
 ) -> Response[Any | HTTPValidationError]:
     """End Session
 
-     Gracefully end an active WebRTC session via REST, triggering a clean shutdown of the session.
-    Accepts either ``X-API-Key`` or a developer JWT — see ``connect`` for the rationale.
+     Gracefully end an active WebRTC session via REST. Looks up the running PipelineTask by session_id
+    and queues a
+    CancelTaskFrame to trigger a clean shutdown. Accepts either ``X-API-Key`` or a developer JWT — see
+    ``connect`` for
+    the rationale.
 
     Args:
         session_id (str):
@@ -96,8 +99,11 @@ def sync(
 ) -> Any | HTTPValidationError | None:
     """End Session
 
-     Gracefully end an active WebRTC session via REST, triggering a clean shutdown of the session.
-    Accepts either ``X-API-Key`` or a developer JWT — see ``connect`` for the rationale.
+     Gracefully end an active WebRTC session via REST. Looks up the running PipelineTask by session_id
+    and queues a
+    CancelTaskFrame to trigger a clean shutdown. Accepts either ``X-API-Key`` or a developer JWT — see
+    ``connect`` for
+    the rationale.
 
     Args:
         session_id (str):
@@ -123,8 +129,11 @@ async def asyncio_detailed(
 ) -> Response[Any | HTTPValidationError]:
     """End Session
 
-     Gracefully end an active WebRTC session via REST, triggering a clean shutdown of the session.
-    Accepts either ``X-API-Key`` or a developer JWT — see ``connect`` for the rationale.
+     Gracefully end an active WebRTC session via REST. Looks up the running PipelineTask by session_id
+    and queues a
+    CancelTaskFrame to trigger a clean shutdown. Accepts either ``X-API-Key`` or a developer JWT — see
+    ``connect`` for
+    the rationale.
 
     Args:
         session_id (str):
@@ -153,8 +162,11 @@ async def asyncio(
 ) -> Any | HTTPValidationError | None:
     """End Session
 
-     Gracefully end an active WebRTC session via REST, triggering a clean shutdown of the session.
-    Accepts either ``X-API-Key`` or a developer JWT — see ``connect`` for the rationale.
+     Gracefully end an active WebRTC session via REST. Looks up the running PipelineTask by session_id
+    and queues a
+    CancelTaskFrame to trigger a clean shutdown. Accepts either ``X-API-Key`` or a developer JWT — see
+    ``connect`` for
+    the rationale.
 
     Args:
         session_id (str):
