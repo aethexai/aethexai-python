@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Iterator, Mapping
 from typing import Any, Generic, TypeVar, BinaryIO, TextIO, TYPE_CHECKING
 
 from attrs import define as _attrs_define
@@ -114,18 +114,37 @@ class PaginatedResponse(Generic[_ItemT]):
             return False
         return self.offset + len(self.data) < self.total
 
-    def __getitem__(self, key: int | str) -> Any:
-        if isinstance(key, int):
-            if isinstance(self.data, Unset) or self.data is None:
-                raise IndexError(key)
-            return self.data[key]
-        return self.additional_properties[key]
+    def __getitem__(self, key: int | slice | str) -> Any:
+        if isinstance(key, str):
+            return self.additional_properties[key]
+        if isinstance(self.data, Unset) or self.data is None:
+            raise IndexError(key)
+        return self.data[key]
 
     def __setitem__(self, key: str, value: Any) -> None:
         self.additional_properties[key] = value
 
-    def __delitem__(self, key: str) -> None:
-        del self.additional_properties[key]
+    def __delitem__(self, key: int | slice) -> None:
+        if isinstance(self.data, Unset) or self.data is None:
+            raise IndexError(key)
+        del self.data[key]
 
-    def __contains__(self, key: str) -> bool:
-        return key in self.additional_properties
+    def __contains__(self, item: object) -> bool:
+        if isinstance(self.data, Unset) or self.data is None:
+            return False
+        return item in self.data
+
+    def __len__(self) -> int:
+        if isinstance(self.data, Unset) or self.data is None:
+            return 0
+        return len(self.data)
+
+    def __iter__(self) -> Iterator[_ItemT]:
+        """Iterate the items on this page (e.g. ``for a in client.list_agents()``).
+
+        Yields items from the CURRENT page only; loop while ``.has_more`` to
+        consume every page.
+        """
+        if isinstance(self.data, Unset) or self.data is None:
+            return iter(())
+        return iter(self.data)

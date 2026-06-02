@@ -18,12 +18,12 @@ from __future__ import annotations
 
 import os
 from collections.abc import Iterator
-from typing import Any, cast
+from typing import Any, BinaryIO, cast
 from uuid import UUID
 
 import httpx
 
-from aethexai._body import build_body
+from aethexai._body import build_body, build_knowledge_doc_body
 from aethexai._exceptions import (
     APIConnectionError,
     APITimeoutError,
@@ -35,7 +35,7 @@ from aethexai._generated.models.agent_response import AgentResponse
 from aethexai._generated.models.call_response import CallResponse
 from aethexai._generated.models.conversation_response import ConversationResponse
 from aethexai._generated.models.paginated_response import PaginatedResponse
-from aethexai._generated.types import UNSET, Unset
+from aethexai._generated.types import UNSET, File, Unset
 
 _DEFAULT_BASE_URL = "https://api.aethexai.com"
 
@@ -64,6 +64,7 @@ class AethexAI:
         if not resolved_key:
             raise AuthenticationError(
                 "API key is required. Pass api_key= or set the AETHEX_API_KEY env var.",
+                code="authentication_error",
                 status_code=401,
             )
         self._base_url = base_url.rstrip("/")
@@ -214,12 +215,37 @@ class AethexAI:
 
         return self._call(_op.sync_detailed, UUID(str(agent_id)))
 
-    def upload_knowledge_doc(self, agent_id: str | UUID, *, body: Any | Unset = UNSET) -> Any:
-        """Upload a knowledge-base document (multipart). See https://developers.aethexai.com/docs/concepts/knowledge-base."""
+    def upload_knowledge_doc(
+        self,
+        agent_id: str | UUID,
+        *,
+        text: str | None = None,
+        file: bytes | BinaryIO | File | None = None,
+        filename: str | None = None,
+        file_name: str | None = None,
+        mime_type: str | None = None,
+        body: Any | Unset = UNSET,
+    ) -> Any:
+        """Upload a knowledge-base document (multipart). See https://developers.aethexai.com/docs/concepts/knowledge-base.
+
+        Provide inline ``text`` or an uploaded ``file`` (raw bytes, a binary
+        stream, or a pre-built ``File``). ``filename`` is the stored document
+        name; ``file_name`` / ``mime_type`` set the uploaded part's metadata.
+        Power users may pass a pre-built ``body`` instead, which takes
+        precedence over the keyword arguments.
+        """
         from aethexai._generated.api.agents import (
             upload_knowledge_doc_api_v1_agents_agent_id_knowledge_base_post as _op,
         )
 
+        if isinstance(body, Unset):
+            body = build_knowledge_doc_body(
+                text=text,
+                file=file,
+                filename=filename,
+                file_name=file_name,
+                mime_type=mime_type,
+            )
         return self._call(_op.sync_detailed, UUID(str(agent_id)), body=body)
 
     def upload_knowledge_doc_by_upload(self, agent_id: str | UUID, **fields: Any) -> Any:
@@ -392,7 +418,35 @@ class AethexAI:
         return self._call(_op.sync_detailed, session_id)
 
     def send_ice_candidate(self, session_id: str, **fields: Any) -> Any:
-        """Send an ICE candidate for a WebRTC session. See https://developers.aethexai.com/docs/api-reference/conversation."""
+        """Send trickle-ICE candidates for a WebRTC session. See https://developers.aethexai.com/docs/api-reference/conversation.
+
+        Despite the singular method name, the request body takes a **list**
+        of candidates plus the peer-connection id — there is no singular
+        ``candidate`` field. Pass these keyword arguments:
+
+        * ``candidates`` (``list[dict]``, required): one or more ICE candidate
+          patches. Each dict needs ``candidate`` (the SDP candidate string),
+          ``sdp_mid`` (``str``), and ``sdp_mline_index`` (``int``).
+        * ``pc_id`` (``str``, required): the peer-connection id returned when
+          the session was established.
+
+        Example::
+
+            client.send_ice_candidate(
+                session_id,
+                pc_id="pc-123",
+                candidates=[
+                    {
+                        "candidate": "candidate:1 1 udp 2122260223 10.0.0.1 54321 typ host",
+                        "sdp_mid": "0",
+                        "sdp_mline_index": 0,
+                    }
+                ],
+            )
+
+        Passing a singular ``candidate=`` keyword raises ``ValidationError``
+        for the missing required ``candidates`` / ``pc_id`` fields.
+        """
         from aethexai._generated.api.conversation import (
             ice_candidate_api_v1_conversation_session_id_ice_patch as _op,
         )
@@ -672,8 +726,43 @@ class AethexAI:
         from aethexai._generated.api.transcription import (
             transcribe_sync_api_v1_transcribe_post as _op,
         )
+        from aethexai._transcription import (
+            build_sync_body,
+            coerce_to_bytes,
+            merge_transcriptions,
+            prepare_chunks,
+        )
 
-        return self._call(_op.sync_detailed, body=body)
+        data = coerce_to_bytes(getattr(body, "file", None))
+        if data is None:
+            return self._call(_op.sync_detailed, body=body)
+        chunks = prepare_chunks(data)
+        if chunks is None:
+            single = build_sync_body(
+                data,
+                file_name=body.file.file_name,
+                mime_type=body.file.mime_type,
+                language=body.language,
+            )
+            return self._call(_op.sync_detailed, body=single)
+        if len(chunks) == 1:
+            return self._call(
+                _op.sync_detailed,
+                body=build_sync_body(
+                    chunks[0], file_name="audio.wav", mime_type="audio/wav", language=body.language
+                ),
+            )
+        return merge_transcriptions(
+            [
+                self._call(
+                    _op.sync_detailed,
+                    body=build_sync_body(
+                        chunk, file_name="audio.wav", mime_type="audio/wav", language=body.language
+                    ),
+                )
+                for chunk in chunks
+            ]
+        )
 
     def transcribe_audio_by_upload(self, **fields: Any) -> Any:
         """Synchronously transcribe a previously uploaded file. See https://developers.aethexai.com/docs/api-reference/transcription."""
@@ -691,8 +780,9 @@ class AethexAI:
         from aethexai._generated.api.transcription import (
             transcribe_async_api_v1_transcribe_async_post as _op,
         )
+        from aethexai._transcription import guard_async_body
 
-        return self._call(_op.sync_detailed, body=body)
+        return self._call(_op.sync_detailed, body=guard_async_body(body))
 
     def transcribe_audio_async_by_upload(self, **fields: Any) -> Any:
         """Submit an async transcription job for a previously uploaded file. See https://developers.aethexai.com/docs/api-reference/transcription."""

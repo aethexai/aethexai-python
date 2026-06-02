@@ -4,6 +4,22 @@ All notable changes to this project are documented here. Format based on [Keep a
 
 ## [Unreleased]
 
+### Added
+
+- New optional `audio` extra (`pip install "aethexai[audio]"`) installs PyAV (`av`) for client-side audio format conversion / normalization in transcription. With it installed, the sync transcription paths decode any input (mp3, m4a, stereo or 48kHz WAV, etc.) to canonical 24kHz mono 16-bit PCM WAV before chunking; without it the paths fall back to WAV-only handling and send non-canonical input as-is. Same `av` pin as the `realtime` extra, so it resolves to a binary wheel with no system FFmpeg required on supported platforms.
+
+### Changed
+
+- `send_ice_candidate()` (sync and async) now documents that the request body takes a `candidates` **list** plus a `pc_id`, not a singular `candidate` — the method name is singular but the wire contract is plural. Passing `candidate=` raises `ValidationError` naming the required `candidates` / `pc_id` fields. The wire contract is unchanged.
+
+### Fixed
+
+- Constructing a client without an API key (`AethexAI(api_key="")` / `AsyncAethexAI()` with no `AETHEX_API_KEY`) now raises `AuthenticationError` with `code="authentication_error"` instead of the mislabeled `code="internal_error"`. The `status_code` was already `401`; only the `code` was wrong, and it now matches the slug the server returns for a 401 so a single error handler keyed on `code` works for both.
+- `upload_knowledge_doc` (sync and async) now accepts friendly keyword arguments — `text=`, `file=` (raw `bytes`, a binary stream, or a `File`), `filename=`, plus `file_name=` / `mime_type=` for the uploaded part — and builds the multipart request internally. Previously the only working call required passing a pre-built internal request model, so the intuitive `upload_knowledge_doc(agent_id, text="...")` raised `AttributeError`. Calling it with neither `text` nor `file` now raises a typed `aethexai.ValidationError` before the request goes out. Passing a pre-built `body=` is still supported and takes precedence.
+- `Kora.transcribe`, `AethexAI.transcribe_audio`, and `AsyncAethexAI.transcribe_audio` now transcribe recordings longer than 35s. Audio passed as `bytes`, a stream, or a `File` is normalized to canonical 24kHz mono 16-bit WAV (via the optional `audio` extra; WAV-only fallback otherwise) and split on silence at ≤30s boundaries — a margin under the ~35s per-request cap that avoids cutting words mid-syllable — then transcribed per chunk and concatenated as space-joined text. The merge is text-based because the backend returns no segments (chunks are contiguous and non-overlapping, so no seam de-duplication is needed). The async-job / by-upload paths are unchanged.
+- The inline async transcription routes (`transcribe_async`, `transcribe_audio_async`) now raise a typed `aethexai.ValidationError` client-side when handed a WAV longer than the ~35s per-request limit, pointing callers at the auto-chunking `Kora.transcribe` / `AethexAI.transcribe_audio` paths instead of failing with the opaque server "Audio too long" error. The by-upload routes only receive an `upload_id` (no local bytes) and remain server-bound.
+- `PaginatedResponse` now implements a consistent sequence protocol over `.data`. `len(page)` works (previously raised `TypeError: object of type 'PaginatedResponse' has no len()`); `len`, integer/slice indexing, iteration, `in`, and `del` all operate on the page's items. Previously the protocol was mixed — `page[0]` returned a typed item while `x in page` and `del page[...]` silently targeted `additional_properties`. Note that `x in page` now tests membership against the page items (`.data`) rather than `additional_properties` keys. Forward-compat extra fields remain reachable via the `additional_properties` attribute, `additional_keys`, and string-key subscript (`page["key"]` / `page["key"] = ...`). Each `PaginatedResponse` still holds one page — loop while `page.has_more` to consume every page.
+
 ## [0.4.0] — 2026-06-02
 
 Synced to the current backend OpenAPI contract and adds a voice-catalog helper.
