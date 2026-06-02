@@ -7,6 +7,7 @@ All notable changes to this project are documented here. Format based on [Keep a
 ### Fixed
 
 - `Kora.transcribe` now transcribes WAV recordings longer than 35s. When WAV audio is passed as `bytes` and exceeds 35s it is split into ≤35s chunks, transcribed per chunk, and the transcripts are concatenated (`.segments` reflect only the first chunk). Non-WAV bytes and stream/`File` inputs are unchanged.
+- `PaginatedResponse` now implements a consistent sequence protocol over `.data`. `len(page)` works (previously raised `TypeError: object of type 'PaginatedResponse' has no len()`); `len`, integer/slice indexing, iteration, `in`, and `del` all operate on the page's items. Previously the protocol was mixed — `page[0]` returned a typed item while `x in page` and `del page[...]` silently targeted `additional_properties`. Forward-compat extra fields remain reachable via the `additional_properties` attribute, `additional_keys`, and string-key subscript (`page["key"]` / `page["key"] = ...`). Each `PaginatedResponse` still holds one page — loop while `page.has_more` to consume every page.
 
 ## [0.3.0]
 

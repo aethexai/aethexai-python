@@ -92,11 +92,59 @@ def test_patch_produces_has_more_property() -> None:
 
 def test_patch_produces_integer_getitem() -> None:
     """B1: the patch must replace the stock string-only __getitem__ with the
-    integer-over-``.data`` variant."""
+    integer/slice-over-``.data`` variant."""
     result = _patch_paginated_response_source(_STOCK_PRE_1598)
     assert result is not None
-    assert "def __getitem__(self, key: int | str) -> Any:" in result
-    assert "isinstance(key, int)" in result
+    assert "def __getitem__(self, key: int | slice | str) -> Any:" in result
+    assert "isinstance(key, str)" in result
+    assert "return self.data[key]" in result
+
+
+def test_patch_produces_len_over_data() -> None:
+    """AET-1628: the patch must add ``__len__`` returning ``len(self.data)``."""
+    result = _patch_paginated_response_source(_STOCK_PRE_1598)
+    assert result is not None
+    assert "def __len__(self) -> int:" in result
+    assert "return len(self.data)" in result
+
+
+def test_patch_produces_iter_over_data() -> None:
+    """AET-1628: the patch must add ``__iter__`` iterating ``.data`` and import Iterator."""
+    result = _patch_paginated_response_source(_STOCK_PRE_1598)
+    assert result is not None
+    assert "from collections.abc import Iterator, Mapping" in result
+    assert "def __iter__(self) -> Iterator[_ItemT]:" in result
+    assert "return iter(self.data)" in result
+
+
+def test_patch_realigns_contains_onto_data() -> None:
+    """AET-1628: ``__contains__`` must test membership against ``.data``, not
+    ``additional_properties``."""
+    result = _patch_paginated_response_source(_STOCK_PRE_1598)
+    assert result is not None
+    assert "def __contains__(self, item: object) -> bool:" in result
+    assert "return item in self.data" in result
+    # The stock additional_properties membership must be gone.
+    assert "return key in self.additional_properties" not in result
+
+
+def test_patch_realigns_delitem_onto_data() -> None:
+    """AET-1628: ``__delitem__`` must delete from ``.data`` by index, not from
+    ``additional_properties`` by string key."""
+    result = _patch_paginated_response_source(_STOCK_PRE_1598)
+    assert result is not None
+    assert "def __delitem__(self, key: int | slice) -> None:" in result
+    assert "del self.data[key]" in result
+    assert "del self.additional_properties[key]" not in result
+
+
+def test_patch_preserves_setitem_for_forward_compat() -> None:
+    """AET-1628: string-key ``__setitem__`` into additional_properties is kept
+    so forward-compat extra fields remain writable."""
+    result = _patch_paginated_response_source(_STOCK_PRE_1598)
+    assert result is not None
+    assert "def __setitem__(self, key: str, value: Any) -> None:" in result
+    assert "self.additional_properties[key] = value" in result
 
 
 def test_patch_produces_list_item_t_field() -> None:

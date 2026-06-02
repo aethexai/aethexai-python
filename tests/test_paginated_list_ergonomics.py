@@ -340,6 +340,109 @@ def test_paginated_response_integer_indexing_returns_correct_item() -> None:
     assert r[2] == "c"
 
 
+# ─── AET-1628: consistent sequence protocol over .data ────────────────────────
+
+
+def test_paginated_response_len_matches_data() -> None:
+    """AET-1628: ``len(resp)`` equals ``len(resp.data)`` (the original bug raised
+    ``TypeError: object of type 'PaginatedResponse' has no len()``)."""
+    r = PaginatedResponse(data=["a", "b", "c"], total=10, limit=3, offset=0)
+    assert len(r) == 3
+    assert len(r) == len(r.data)
+
+
+def test_paginated_response_len_unset_data_is_zero() -> None:
+    r = PaginatedResponse()
+    assert r.data is UNSET
+    assert len(r) == 0
+
+
+def test_paginated_response_len_none_data_is_zero() -> None:
+    r = PaginatedResponse(data=None, total=0, limit=50, offset=0)  # type: ignore[arg-type]
+    assert len(r) == 0
+
+
+def test_paginated_response_iter_yields_data_items() -> None:
+    """AET-1628: iteration walks ``.data`` items, in order."""
+    r = PaginatedResponse(data=["a", "b", "c"], total=3, limit=3, offset=0)
+    assert list(r) == ["a", "b", "c"]
+    assert [item for item in r] == ["a", "b", "c"]
+
+
+def test_paginated_response_iter_unset_data_is_empty() -> None:
+    r = PaginatedResponse()
+    assert list(r) == []
+
+
+def test_paginated_response_iter_none_data_is_empty() -> None:
+    r = PaginatedResponse(data=None, total=0, limit=50, offset=0)  # type: ignore[arg-type]
+    assert list(r) == []
+
+
+def test_paginated_response_slice_indexing_targets_data() -> None:
+    r = PaginatedResponse(data=["a", "b", "c", "d"], total=4, limit=4, offset=0)
+    assert r[1:3] == ["b", "c"]
+    assert r[-1] == "d"
+
+
+def test_paginated_response_contains_targets_data_items() -> None:
+    """AET-1628: ``in`` tests membership against ``.data`` items, not
+    ``additional_properties`` keys (the original bug made ``item in resp`` False
+    while ``del``/``in`` operated on additional_properties)."""
+    r = PaginatedResponse(data=["a", "b", "c"], total=3, limit=3, offset=0)
+    assert "a" in r
+    assert "z" not in r
+
+
+def test_paginated_response_contains_unset_data_is_false() -> None:
+    r = PaginatedResponse()
+    assert "anything" not in r
+
+
+def test_paginated_response_delitem_removes_data_item() -> None:
+    """AET-1628: ``del resp[i]`` removes an item from ``.data`` (the original bug
+    deleted from additional_properties by string key, raising KeyError on ints)."""
+    r = PaginatedResponse(data=["a", "b", "c"], total=3, limit=3, offset=0)
+    del r[1]
+    assert r.data == ["a", "c"]
+    assert len(r) == 2
+
+
+def test_paginated_response_delitem_slice_removes_data_items() -> None:
+    r = PaginatedResponse(data=["a", "b", "c", "d"], total=4, limit=4, offset=0)
+    del r[1:3]
+    assert r.data == ["a", "d"]
+
+
+def test_paginated_response_delitem_unset_data_raises_index_error() -> None:
+    r = PaginatedResponse()
+    with pytest.raises(IndexError):
+        del r[0]
+
+
+def test_paginated_response_forward_compat_field_access_preserved() -> None:
+    """AET-1628: forward-compat extra fields stay reachable via string-key
+    subscript, the ``additional_properties`` attribute, and ``additional_keys`` —
+    these are NOT affected by the sequence protocol realignment onto ``.data``."""
+    r = PaginatedResponse(data=["a"], total=1, limit=50, offset=0)
+    r["new_field"] = "value"  # __setitem__ -> additional_properties
+    assert r["new_field"] == "value"  # str __getitem__ -> additional_properties
+    assert r.additional_properties == {"new_field": "value"}
+    assert r.additional_keys == ["new_field"]
+    # The forward-compat key is a field, not a sequence item: ``in`` is over .data.
+    assert "new_field" not in r
+    assert "a" in r
+
+
+def test_paginated_response_str_and_int_getitem_target_different_containers() -> None:
+    """AET-1628: ``resp[int]`` -> .data item; ``resp[str]`` -> additional_properties.
+    Both coexist on the same instance without collision."""
+    r = PaginatedResponse(data=["item0", "item1"], total=2, limit=50, offset=0)
+    r["meta"] = {"k": "v"}
+    assert r[0] == "item0"  # int -> .data
+    assert r["meta"] == {"k": "v"}  # str -> additional_properties
+
+
 # ─── Static typing: PaginatedResponse[T] delivers per-item types ─────────────
 
 
