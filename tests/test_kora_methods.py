@@ -15,7 +15,9 @@ streamed bytes).
 
 from __future__ import annotations
 
+import io
 import json
+import wave
 from uuid import uuid4
 
 import httpx
@@ -340,6 +342,45 @@ def test_kora_transcribe_explicit_metadata_is_preserved(kora: Kora) -> None:
     body = route.calls.last.request.content.decode("latin-1")
     assert "recording.ogg" in body
     assert "audio/ogg" in body
+
+
+def _make_wav(seconds: float, rate: int = 8000) -> bytes:
+    """A mono 16-bit silent WAV of the given duration."""
+    buffer = io.BytesIO()
+    with wave.open(buffer, "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(rate)
+        w.writeframes(b"\x00\x00" * int(seconds * rate))
+    return buffer.getvalue()
+
+
+@respx.mock
+def test_kora_transcribe_chunks_long_wav(kora: Kora) -> None:
+    route = respx.post(f"{BASE_URL}/api/v1/transcribe").mock(
+        side_effect=[
+            httpx.Response(200, json={"id": "t1", "text": "alpha"}),
+            httpx.Response(200, json={"id": "t2", "text": "beta"}),
+            httpx.Response(200, json={"id": "t3", "text": "gamma"}),
+        ]
+    )
+
+    result = kora.transcribe(_make_wav(80), mime_type="audio/wav")
+
+    assert route.call_count == 3
+    assert result.text == "alpha beta gamma"
+
+
+@respx.mock
+def test_kora_transcribe_single_call_for_short_wav(kora: Kora) -> None:
+    route = respx.post(f"{BASE_URL}/api/v1/transcribe").mock(
+        return_value=httpx.Response(200, json={"id": "t1", "text": "short"})
+    )
+
+    result = kora.transcribe(_make_wav(5), mime_type="audio/wav")
+
+    assert route.call_count == 1
+    assert result.text == "short"
 
 
 # ─── conversations ──────────────────────────────────────────────────────────
