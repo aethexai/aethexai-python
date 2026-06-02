@@ -43,6 +43,9 @@ def ensure_multipart_file_name(body: T) -> T:
 
     A ``file`` whose ``file_name`` is already set is left untouched, so callers
     that pass a real filename keep their exact behaviour.
+
+    Mutates the passed ``File``/body in place — sets ``file.file_name`` to the
+    default when unset, rather than returning a copy — and returns the same body.
     """
     file = getattr(body, "file", None)
     if file is not None and not getattr(file, "file_name", None):
