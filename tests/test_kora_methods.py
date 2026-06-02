@@ -24,6 +24,7 @@ import httpx
 import pytest
 import respx
 
+import aethexai
 from aethexai import Kora
 
 BASE_URL = "https://api.test.aethexai.com"
@@ -372,6 +373,22 @@ def test_kora_transcribe_chunks_long_wav(kora: Kora) -> None:
 
 
 @respx.mock
+def test_kora_transcribe_chunks_long_wav_stream(kora: Kora) -> None:
+    route = respx.post(f"{BASE_URL}/api/v1/transcribe").mock(
+        side_effect=[
+            httpx.Response(200, json={"id": "t1", "text": "alpha"}),
+            httpx.Response(200, json={"id": "t2", "text": "beta"}),
+            httpx.Response(200, json={"id": "t3", "text": "gamma"}),
+        ]
+    )
+
+    result = kora.transcribe(io.BytesIO(_make_wav(80)), mime_type="audio/wav")
+
+    assert route.call_count == 3
+    assert result.text == "alpha beta gamma"
+
+
+@respx.mock
 def test_kora_transcribe_single_call_for_short_wav(kora: Kora) -> None:
     route = respx.post(f"{BASE_URL}/api/v1/transcribe").mock(
         return_value=httpx.Response(200, json={"id": "t1", "text": "short"})
@@ -381,6 +398,168 @@ def test_kora_transcribe_single_call_for_short_wav(kora: Kora) -> None:
 
     assert route.call_count == 1
     assert result.text == "short"
+
+
+@respx.mock
+def test_kora_transcribe_async_rejects_over_limit_wav(kora: Kora) -> None:
+    route = respx.post(f"{BASE_URL}/api/v1/transcribe/async").mock(
+        return_value=httpx.Response(200, json=_TRANSCRIBE_ASYNC_SUCCESS)
+    )
+
+    with pytest.raises(aethexai.ValidationError):
+        kora.transcribe_async(_make_wav(60), mime_type="audio/wav")
+
+    assert not route.called
+
+
+@respx.mock
+def test_kora_transcribe_async_allows_under_limit_wav(kora: Kora) -> None:
+    route = respx.post(f"{BASE_URL}/api/v1/transcribe/async").mock(
+        return_value=httpx.Response(200, json=_TRANSCRIBE_ASYNC_SUCCESS)
+    )
+
+    kora.transcribe_async(_make_wav(30), mime_type="audio/wav")
+
+    assert route.call_count == 1
+
+
+def _make_wav_pcm(samples: list[int], rate: int = 24000) -> bytes:
+    """A mono 16-bit WAV built from raw int16 samples."""
+    import struct
+
+    buffer = io.BytesIO()
+    with wave.open(buffer, "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(rate)
+        w.writeframes(b"".join(struct.pack("<h", s) for s in samples))
+    return buffer.getvalue()
+
+
+def _make_wav_with_silence(rate: int = 24000) -> bytes:
+    """A ~62s WAV: loud tone with short silent gaps straddling each 30s boundary."""
+    import math
+
+    total = int(62 * rate)
+    samples = []
+    for i in range(total):
+        sec = i / rate
+        if abs(sec % 30.0) < 0.25 or abs((sec % 30.0) - 30.0) < 0.25:
+            samples.append(0)
+        else:
+            samples.append(int(8000 * math.sin(2 * math.pi * 220 * sec)))
+    return _make_wav_pcm(samples, rate)
+
+
+def _wav_meta(content: bytes) -> tuple[int, int, int]:
+    """Decode the WAV file in a multipart request body, returning (channels, sampwidth, rate)."""
+    marker = b"RIFF"
+    blob = content[content.index(marker) :]
+    with wave.open(io.BytesIO(blob)) as w:
+        return w.getnchannels(), w.getsampwidth(), w.getframerate()
+
+
+@respx.mock
+def test_kora_transcribe_silence_split_chunks_and_merges(kora: Kora) -> None:
+    route = respx.post(f"{BASE_URL}/api/v1/transcribe").mock(
+        side_effect=[
+            httpx.Response(200, json={"id": "t1", "text": "alpha"}),
+            httpx.Response(200, json={"id": "t2", "text": "beta"}),
+            httpx.Response(200, json={"id": "t3", "text": "gamma"}),
+        ]
+    )
+
+    result = kora.transcribe(_make_wav_with_silence(), mime_type="audio/wav")
+
+    assert route.call_count >= 2
+    assert "alpha" in result.text and "beta" in result.text
+    for call in route.calls:
+        channels, sampwidth, _ = _wav_meta(call.request.content)
+        assert channels == 1 and sampwidth == 2
+
+
+@respx.mock
+def test_kora_transcribe_normalizes_stereo_48k(kora: Kora) -> None:
+    pytest.importorskip("av")
+    route = respx.post(f"{BASE_URL}/api/v1/transcribe").mock(
+        side_effect=[
+            httpx.Response(200, json={"id": "t1", "text": "alpha"}),
+            httpx.Response(200, json={"id": "t2", "text": "beta"}),
+        ]
+    )
+
+    buffer = io.BytesIO()
+    with wave.open(buffer, "wb") as w:
+        w.setnchannels(2)
+        w.setsampwidth(2)
+        w.setframerate(48000)
+        w.writeframes(b"\x00\x00\x00\x00" * (40 * 48000))
+
+    result = kora.transcribe(buffer.getvalue(), mime_type="audio/wav")
+
+    assert route.call_count == 2
+    assert result.text == "alpha beta"
+    for call in route.calls:
+        channels, sampwidth, rate = _wav_meta(call.request.content)
+        assert (channels, sampwidth, rate) == (1, 2, 24000)
+
+
+@respx.mock
+def test_kora_transcribe_short_stereo_normalized_single_call(kora: Kora) -> None:
+    pytest.importorskip("av")
+    route = respx.post(f"{BASE_URL}/api/v1/transcribe").mock(
+        return_value=httpx.Response(200, json={"id": "t1", "text": "short"})
+    )
+
+    buffer = io.BytesIO()
+    with wave.open(buffer, "wb") as w:
+        w.setnchannels(2)
+        w.setsampwidth(2)
+        w.setframerate(48000)
+        w.writeframes(b"\x00\x00\x00\x00" * (5 * 48000))
+
+    result = kora.transcribe(buffer.getvalue(), mime_type="audio/wav")
+
+    assert route.call_count == 1
+    assert result.text == "short"
+    channels, sampwidth, rate = _wav_meta(route.calls.last.request.content)
+    assert (channels, sampwidth, rate) == (1, 2, 24000)
+
+
+@respx.mock
+def test_kora_transcribe_chunks_when_av_absent(kora: Kora, monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr("aethexai._transcription.av", None, raising=False)
+    route = respx.post(f"{BASE_URL}/api/v1/transcribe").mock(
+        side_effect=[
+            httpx.Response(200, json={"id": "t1", "text": "alpha"}),
+            httpx.Response(200, json={"id": "t2", "text": "beta"}),
+            httpx.Response(200, json={"id": "t3", "text": "gamma"}),
+        ]
+    )
+
+    result = kora.transcribe(_make_wav(80), mime_type="audio/wav")
+
+    assert route.call_count == 3
+    assert result.text == "alpha beta gamma"
+
+
+@respx.mock
+def test_kora_transcribe_non_wav_sent_raw_when_av_absent(
+    kora: Kora, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr("aethexai._transcription.av", None, raising=False)
+    route = respx.post(f"{BASE_URL}/api/v1/transcribe").mock(
+        return_value=httpx.Response(200, json={"id": "t1", "text": "raw"})
+    )
+
+    payload = b"OggS\x00\x02\x00\x00rawaudio"
+    result = kora.transcribe(payload, file_name="rec.ogg", mime_type="audio/ogg")
+
+    assert route.call_count == 1
+    assert result.text == "raw"
+    body = route.calls.last.request.content
+    assert payload in body
+    assert b"rec.ogg" in body
 
 
 # ─── conversations ──────────────────────────────────────────────────────────
