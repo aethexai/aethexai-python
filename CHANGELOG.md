@@ -4,6 +4,10 @@ All notable changes to this project are documented here. Format based on [Keep a
 
 ## [Unreleased]
 
+### Added
+
+- New optional `audio` extra (`pip install "aethexai[audio]"`) installs PyAV (`av`) for client-side audio format conversion / normalization in transcription. With it installed, the sync transcription paths decode any input (mp3, m4a, stereo or 48kHz WAV, etc.) to canonical 24kHz mono 16-bit PCM WAV before chunking; without it the paths fall back to WAV-only handling and send non-canonical input as-is. Same `av` pin as the `realtime` extra, so it resolves to a binary wheel with no system FFmpeg required on supported platforms.
+
 ### Changed
 
 - **Unknown keyword arguments to `**fields` create/update wrappers are now rejected** with a typed `aethexai.ValidationError` that names the offending key, instead of being silently absorbed into `additional_properties` (where the server ignored them, so a typo'd field name silently did nothing). `create_agent` and `update_agent` (on both `AethexAI`/`AsyncAethexAI` and `Kora`) are the deliberate exception — they continue to tolerate and forward extra fields, because extra-kwarg passthrough was already part of their documented contract (so rejecting it would be a behavior regression). The other wrappers never promised field-passthrough, so there a clear typo error is the better default.
@@ -15,7 +19,8 @@ All notable changes to this project are documented here. Format based on [Keep a
   - **Malformed request bodies** that previously failed deep inside the generated `from_dict` — wrong nested shapes (`batch_calls(recipients=["+1555..."])`), body UUIDs (`conversation_connect(agent_id="bad-uuid")`), and wrong container types (`batch_synthesize(items="notalist")`) — now surface as `ValidationError`.
   - `Kora.create_agent` / `Kora.update_agent` no longer raise a raw `TypeError` on an unknown keyword argument; they route through the same `build_body` path as `AethexAI` and forward extras for parity.
 - A **whitespace-only `api_key`** is now rejected at construction like an empty one: `AethexAI` / `AsyncAethexAI` raise `AuthenticationError` (401) and `Kora` raises `ValueError`, instead of constructing successfully and later failing with an opaque `APIConnectionError`.
-- `Kora.transcribe` now transcribes WAV recordings longer than 35s. When WAV audio is passed as `bytes` and exceeds 35s it is split into ≤35s chunks, transcribed per chunk, and the transcripts are concatenated (`.segments` reflect only the first chunk). Non-WAV bytes and stream/`File` inputs are unchanged.
+- `Kora.transcribe`, `AethexAI.transcribe_audio`, and `AsyncAethexAI.transcribe_audio` now transcribe recordings longer than 35s. Audio passed as `bytes`, a stream, or a `File` is normalized to canonical 24kHz mono 16-bit WAV (via the optional `audio` extra; WAV-only fallback otherwise) and split on silence at ≤30s boundaries — a margin under the ~35s per-request cap that avoids cutting words mid-syllable — then transcribed per chunk and concatenated as space-joined text. The merge is text-based because the backend returns no segments (chunks are contiguous and non-overlapping, so no seam de-duplication is needed). The async-job / by-upload paths are unchanged.
+- The inline async transcription routes (`transcribe_async`, `transcribe_audio_async`) now raise a typed `aethexai.ValidationError` client-side when handed a WAV longer than the ~35s per-request limit, pointing callers at the auto-chunking `Kora.transcribe` / `AethexAI.transcribe_audio` paths instead of failing with the opaque server "Audio too long" error. The by-upload routes only receive an `upload_id` (no local bytes) and remain server-bound.
 
 ## [0.3.0]
 
