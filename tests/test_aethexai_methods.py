@@ -354,7 +354,14 @@ def test_upload_knowledge_doc_requires_text_or_file(client: AethexAI) -> None:
 
     with pytest.raises(ValidationError) as excinfo:
         client.upload_knowledge_doc(uuid4())
-    assert excinfo.value.status_code == 422
+    err = excinfo.value
+    assert err.status_code == 422
+    # The 422 envelope matches the canonical validation-error shape used across
+    # the SDK, so ``err.response["fields"]`` works on the knowledge-doc path too.
+    assert err.response["error"] == "Validation failed"
+    assert err.response["code"] == "validation_error"
+    assert err.response["request_id"] is None
+    assert err.response["fields"] == err.response["detail"]
 
 
 # ─── transcription ──────────────────────────────────────────────────────────

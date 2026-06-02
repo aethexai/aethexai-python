@@ -127,14 +127,22 @@ def build_knowledge_doc_body(
 ) -> BodyUploadKnowledgeDocApiV1AgentsAgentIdKnowledgeBasePost:
     """Build the multipart knowledge-doc body from friendly keyword arguments.
 
-    Exactly one source is expected: inline ``text`` or an uploaded ``file``
-    (raw bytes, a binary stream, or a pre-built ``File``). ``filename`` is the
-    stored document name; ``file_name`` / ``mime_type`` set the uploaded part's
-    metadata. Raises :class:`aethexai.ValidationError` when neither ``text`` nor
-    ``file`` is supplied, so callers never need to construct the request model
-    themselves.
+    Provide at least one of inline ``text`` or an uploaded ``file`` (raw bytes,
+    a binary stream, or a pre-built ``File``); if both are given the server
+    decides which to use. ``filename`` is the stored document name; ``file_name``
+    / ``mime_type`` set the uploaded part's metadata. Raises
+    :class:`aethexai.ValidationError` when neither ``text`` nor ``file`` is
+    supplied, so callers never need to construct the request model themselves.
     """
     if text is None and file is None:
+        detail = [
+            {
+                "type": "missing",
+                "loc": ["body", "text"],
+                "msg": "Provide 'text' or 'file'.",
+                "input": None,
+            }
+        ]
         raise ValidationError(
             message="Provide 'text' or 'file' to upload a knowledge-base document.",
             code="validation_error",
@@ -143,14 +151,8 @@ def build_knowledge_doc_body(
                 "error": "Validation failed",
                 "code": "validation_error",
                 "request_id": None,
-                "detail": [
-                    {
-                        "type": "missing",
-                        "loc": ["body", "text"],
-                        "msg": "Provide 'text' or 'file'.",
-                        "input": None,
-                    }
-                ],
+                "detail": detail,
+                "fields": detail,
             },
         )
     file_field: File | Unset = (
