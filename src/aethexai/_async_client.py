@@ -15,12 +15,12 @@ from __future__ import annotations
 
 import os
 from collections.abc import AsyncIterator
-from typing import Any, cast
+from typing import Any, BinaryIO, cast
 from uuid import UUID
 
 import httpx
 
-from aethexai._body import build_body
+from aethexai._body import build_body, build_knowledge_doc_body
 from aethexai._exceptions import (
     APIConnectionError,
     APITimeoutError,
@@ -32,7 +32,7 @@ from aethexai._generated.models.agent_response import AgentResponse
 from aethexai._generated.models.call_response import CallResponse
 from aethexai._generated.models.conversation_response import ConversationResponse
 from aethexai._generated.models.paginated_response import PaginatedResponse
-from aethexai._generated.types import UNSET, Unset
+from aethexai._generated.types import UNSET, File, Unset
 
 _DEFAULT_BASE_URL = "https://api.aethexai.com"
 
@@ -208,12 +208,37 @@ class AsyncAethexAI:
 
         return await self._call(_op.asyncio_detailed, UUID(str(agent_id)))
 
-    async def upload_knowledge_doc(self, agent_id: str | UUID, *, body: Any | Unset = UNSET) -> Any:
-        """Upload a knowledge-base document (multipart)."""
+    async def upload_knowledge_doc(
+        self,
+        agent_id: str | UUID,
+        *,
+        text: str | None = None,
+        file: bytes | BinaryIO | File | None = None,
+        filename: str | None = None,
+        file_name: str | None = None,
+        mime_type: str | None = None,
+        body: Any | Unset = UNSET,
+    ) -> Any:
+        """Upload a knowledge-base document (multipart).
+
+        Provide inline ``text`` or an uploaded ``file`` (raw bytes, a binary
+        stream, or a pre-built ``File``). ``filename`` is the stored document
+        name; ``file_name`` / ``mime_type`` set the uploaded part's metadata.
+        Power users may pass a pre-built ``body`` instead, which takes
+        precedence over the keyword arguments.
+        """
         from aethexai._generated.api.agents import (
             upload_knowledge_doc_api_v1_agents_agent_id_knowledge_base_post as _op,
         )
 
+        if isinstance(body, Unset):
+            body = build_knowledge_doc_body(
+                text=text,
+                file=file,
+                filename=filename,
+                file_name=file_name,
+                mime_type=mime_type,
+            )
         return await self._call(_op.asyncio_detailed, UUID(str(agent_id)), body=body)
 
     async def upload_knowledge_doc_by_upload(self, agent_id: str | UUID, **fields: Any) -> Any:
