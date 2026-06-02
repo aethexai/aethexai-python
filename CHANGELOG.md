@@ -4,10 +4,15 @@ All notable changes to this project are documented here. Format based on [Keep a
 
 ## [Unreleased]
 
+### Added
+
+- New optional `audio` extra (`pip install "aethexai[audio]"`) installs PyAV (`av`) for client-side audio format conversion / normalization in transcription. With it installed, the sync transcription paths decode any input (mp3, m4a, stereo or 48kHz WAV, etc.) to canonical 24kHz mono 16-bit PCM WAV before chunking; without it the paths fall back to WAV-only handling and send non-canonical input as-is. Same `av` pin as the `realtime` extra, so it resolves to a binary wheel with no system FFmpeg required on supported platforms.
+
 ### Fixed
 
 - `AethexAI.transcribe_audio` / `transcribe_audio_async` (and their async equivalents) no longer fail with HTTP 422 when the request body carries a `File` built from raw `bytes` without a `file_name`. They now default the multipart part to an extension-less `audio` filename, matching `Kora.transcribe`. Bodies that already set a `file_name` are unchanged.
-- `Kora.transcribe` now transcribes WAV recordings longer than 35s. When WAV audio is passed as `bytes` and exceeds 35s it is split into ≤35s chunks, transcribed per chunk, and the transcripts are concatenated (`.segments` reflect only the first chunk). Non-WAV bytes and stream/`File` inputs are unchanged.
+- `Kora.transcribe`, `AethexAI.transcribe_audio`, and `AsyncAethexAI.transcribe_audio` now transcribe recordings longer than 35s. Audio passed as `bytes`, a stream, or a `File` is normalized to canonical 24kHz mono 16-bit WAV (via the optional `audio` extra; WAV-only fallback otherwise) and split on silence at ≤30s boundaries — a margin under the ~35s per-request cap that avoids cutting words mid-syllable — then transcribed per chunk and concatenated as space-joined text. The merge is text-based because the backend returns no segments (chunks are contiguous and non-overlapping, so no seam de-duplication is needed). The async-job / by-upload paths are unchanged.
+- The inline async transcription routes (`transcribe_async`, `transcribe_audio_async`) now raise a typed `aethexai.ValidationError` client-side when handed a WAV longer than the ~35s per-request limit, pointing callers at the auto-chunking `Kora.transcribe` / `AethexAI.transcribe_audio` paths instead of failing with the opaque server "Audio too long" error. The by-upload routes only receive an `upload_id` (no local bytes) and remain server-bound.
 
 ## [0.3.0]
 

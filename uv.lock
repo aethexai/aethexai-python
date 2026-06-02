@@ -18,6 +18,9 @@ dependencies = [
 ]
 
 [package.optional-dependencies]
+audio = [
+    { name = "av" },
+]
 dev = [
     { name = "mypy" },
     { name = "pytest" },
@@ -42,6 +45,7 @@ requires-dist = [
     { name = "aioice", marker = "extra == 'realtime'", specifier = ">=0.9.0,<0.10" },
     { name = "aiortc", marker = "extra == 'realtime'", specifier = ">=1.9.0" },
     { name = "attrs", specifier = ">=21.3.0" },
+    { name = "av", marker = "extra == 'audio'", specifier = ">=14.0.0,!=14.4.0,<15" },
     { name = "av", marker = "extra == 'realtime'", specifier = ">=14.0.0,!=14.4.0,<15" },
     { name = "httpx", specifier = ">=0.24.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.10" },
@@ -53,7 +57,7 @@ requires-dist = [
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.4" },
     { name = "types-python-dateutil", marker = "extra == 'dev'" },
 ]
-provides-extras = ["realtime", "dev"]
+provides-extras = ["realtime", "audio", "dev"]
 
 [package.metadata.requires-dev]
 dev = [{ name = "respx", specifier = ">=0.23.1" }]
