@@ -61,6 +61,7 @@ class AsyncAethexAI:
         if not resolved_key:
             raise AuthenticationError(
                 "API key is required. Pass api_key= or set the AETHEX_API_KEY env var.",
+                code="authentication_error",
                 status_code=401,
             )
         self._base_url = base_url.rstrip("/")
@@ -415,7 +416,35 @@ class AsyncAethexAI:
         return await self._call(_op.asyncio_detailed, session_id)
 
     async def send_ice_candidate(self, session_id: str, **fields: Any) -> Any:
-        """Send an ICE candidate for a WebRTC session."""
+        """Send trickle-ICE candidates for a WebRTC session.
+
+        Despite the singular method name, the request body takes a **list**
+        of candidates plus the peer-connection id — there is no singular
+        ``candidate`` field. Pass these keyword arguments:
+
+        * ``candidates`` (``list[dict]``, required): one or more ICE candidate
+          patches. Each dict needs ``candidate`` (the SDP candidate string),
+          ``sdp_mid`` (``str``), and ``sdp_mline_index`` (``int``).
+        * ``pc_id`` (``str``, required): the peer-connection id returned when
+          the session was established.
+
+        Example::
+
+            await client.send_ice_candidate(
+                session_id,
+                pc_id="pc-123",
+                candidates=[
+                    {
+                        "candidate": "candidate:1 1 udp 2122260223 10.0.0.1 54321 typ host",
+                        "sdp_mid": "0",
+                        "sdp_mline_index": 0,
+                    }
+                ],
+            )
+
+        Passing a singular ``candidate=`` keyword raises ``ValidationError``
+        for the missing required ``candidates`` / ``pc_id`` fields.
+        """
         from aethexai._generated.api.conversation import (
             ice_candidate_api_v1_conversation_session_id_ice_patch as _op,
         )
