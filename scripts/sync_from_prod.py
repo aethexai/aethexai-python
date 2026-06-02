@@ -921,13 +921,16 @@ def _patch_paginated_response_source(source: str) -> str | None:
     Patches applied (in order):
 
     1a. Replace the ``Generator`` import with ``Generic``.
+    1a-bis. Add ``Iterator`` to the ``collections.abc`` import (AET-1628).
     1b. Inject ``_ItemT = TypeVar("_ItemT")`` after the ``T`` TypeVar.
     1c. Make the class subclass ``Generic[_ItemT]``.
     1d. Replace the minimal codegen docstring with the single-page warning
         and the ``while .has_more`` paging example.
     1e. Change the ``data`` field type from ``list[Any]`` to ``list[_ItemT]``.
     1f. Replace the stock string-only ``__getitem__`` with the
-        integer-over-``.data`` variant plus the ``has_more`` property.
+        integer/slice-over-``.data`` variant plus the ``has_more`` property.
+    1g. AET-1628: realign ``__delitem__`` / ``__contains__`` onto ``.data`` and
+        add ``__len__`` / ``__iter__`` so the sequence protocol is consistent.
     """
     if _PAGINATED_ERGONOMICS_SENTINEL in source:
         return None  # already patched
@@ -941,6 +944,17 @@ def _patch_paginated_response_source(source: str) -> str | None:
             "openapi-python-client may have changed its output shape."
         )
     source = source.replace(old_import, new_import)
+
+    # ── 1a-bis. AET-1628: add ``Iterator`` to the collections.abc import for
+    #            the ``__iter__`` return annotation. ──────────────────────
+    old_abc_import = "from collections.abc import Mapping\n"
+    new_abc_import = "from collections.abc import Iterator, Mapping\n"
+    if old_abc_import not in source:
+        raise ValueError(
+            "AET-1628 paginated_response patch could not locate the collections.abc import; "
+            "openapi-python-client may have changed its output shape."
+        )
+    source = source.replace(old_abc_import, new_abc_import)
 
     # ── 1b. Inject _ItemT TypeVar after the existing T TypeVar ──────────
     old_t_var = 'T = TypeVar("T", bound="PaginatedResponse")\n'
@@ -1024,13 +1038,19 @@ def _patch_paginated_response_source(source: str) -> str | None:
         "        return self.additional_properties[key]\n"
     )
     new_getitem = (
-        f"    {_PAGINATED_ERGONOMICS_SENTINEL}: make PaginatedResponse indexable over\n"
-        "    # .data so that agents[0]/calls[0]/conversations[0] work without raising\n"
-        "    # KeyError. String-key access on additional_properties is preserved for\n"
-        "    # backward compatibility. __iter__ and __len__ are intentionally NOT added\n"
-        "    # — they silently operated on a single page. Use .data to iterate items on\n"
-        "    # the current page, and loop while .has_more to consume all pages.\n"
-        "    # Re-applied by scripts/sync_from_prod.py after every regeneration.\n"
+        f"    {_PAGINATED_ERGONOMICS_SENTINEL}: make the sequence protocol (len, index,\n"
+        "    # iter, ``in``, del) operate consistently on ``.data`` so that the page\n"
+        "    # behaves like the list of items it holds — ``agents[0]``, ``len(agents)``,\n"
+        "    # ``for a in agents``, ``a in agents``, ``del agents[0]`` all target items.\n"
+        "    # AET-1628 added ``__len__`` / ``__iter__`` and realigned ``__contains__`` /\n"
+        "    # ``__delitem__`` from additional_properties to ``.data`` (the original\n"
+        "    # mixed protocol was a bug: ``resp[0]`` returned a typed item while\n"
+        "    # ``len(resp)`` raised and ``x in resp`` / ``del resp[...]`` silently hit\n"
+        "    # additional_properties). Forward-compat extra fields stay reachable via the\n"
+        "    # ``additional_properties`` attribute, ``additional_keys``, and string-key\n"
+        "    # ``__getitem__`` / ``__setitem__`` (the codegen round-trip pattern). Each\n"
+        "    # page holds ONE page of results — loop while ``.has_more`` to consume all\n"
+        "    # pages. Re-applied by scripts/sync_from_prod.py after every regeneration.\n"
         "\n"
         "    @property\n"
         "    def has_more(self) -> bool:\n"
@@ -1047,15 +1067,15 @@ def _patch_paginated_response_source(source: str) -> str | None:
         "            return False\n"
         "        return self.offset + len(self.data) < self.total\n"
         "\n"
-        "    def __getitem__(self, key: int | str) -> Any:\n"
-        "        # Integer indexing operates on .data (e.g. agents[0]).\n"
+        "    def __getitem__(self, key: int | slice | str) -> Any:\n"
+        "        # Integer/slice indexing operates on .data (e.g. agents[0], agents[:2]).\n"
         "        # String indexing falls through to additional_properties for\n"
-        "        # backward-compatibility with the generated-client pattern.\n"
-        "        if isinstance(key, int):\n"
-        "            if isinstance(self.data, Unset) or self.data is None:\n"
-        "                raise IndexError(key)\n"
-        "            return self.data[key]\n"
-        "        return self.additional_properties[key]\n"
+        "        # forward-compat field access (the generated-client pattern).\n"
+        "        if isinstance(key, str):\n"
+        "            return self.additional_properties[key]\n"
+        "        if isinstance(self.data, Unset) or self.data is None:\n"
+        "            raise IndexError(key)\n"
+        "        return self.data[key]\n"
     )
     if old_getitem not in source:
         raise ValueError(
@@ -1063,6 +1083,51 @@ def _patch_paginated_response_source(source: str) -> str | None:
             "openapi-python-client may have changed its output shape."
         )
     source = source.replace(old_getitem, new_getitem)
+
+    # ── 1g. AET-1628: realign __delitem__ / __contains__ onto ``.data`` and add
+    #        ``__len__`` / ``__iter__`` so the sequence protocol is consistent. ──
+    old_del_contains = (
+        "    def __delitem__(self, key: str) -> None:\n"
+        "        del self.additional_properties[key]\n"
+        "\n"
+        "    def __contains__(self, key: str) -> bool:\n"
+        "        return key in self.additional_properties\n"
+    )
+    new_del_contains = (
+        "    def __delitem__(self, key: int | slice) -> None:\n"
+        "        # AET-1628: delete items from .data by index (sequence semantics).\n"
+        "        if isinstance(self.data, Unset) or self.data is None:\n"
+        "            raise IndexError(key)\n"
+        "        del self.data[key]\n"
+        "\n"
+        "    def __contains__(self, item: object) -> bool:\n"
+        "        # AET-1628: membership tests against the .data items on this page.\n"
+        "        if isinstance(self.data, Unset) or self.data is None:\n"
+        "            return False\n"
+        "        return item in self.data\n"
+        "\n"
+        "    def __len__(self) -> int:\n"
+        "        # AET-1628: number of items on this page (0 when data is Unset/None).\n"
+        "        if isinstance(self.data, Unset) or self.data is None:\n"
+        "            return 0\n"
+        "        return len(self.data)\n"
+        "\n"
+        "    def __iter__(self) -> Iterator[_ItemT]:\n"
+        '        """Iterate the items on this page (e.g. ``for a in client.list_agents()``).\n'
+        "\n"
+        "        Yields items from the CURRENT page only; loop while ``.has_more`` to\n"
+        "        consume every page.\n"
+        '        """\n'
+        "        if isinstance(self.data, Unset) or self.data is None:\n"
+        "            return iter(())\n"
+        "        return iter(self.data)\n"
+    )
+    if old_del_contains not in source:
+        raise ValueError(
+            "AET-1628 paginated_response patch could not locate __delitem__/__contains__; "
+            "openapi-python-client may have changed its output shape."
+        )
+    source = source.replace(old_del_contains, new_del_contains)
     return source
 
 
@@ -1076,10 +1141,12 @@ def _apply_paginated_list_ergonomics_patch() -> int:
        ``Generic[_ItemT]`` and change ``data`` from ``list[Any]`` to
        ``list[_ItemT]``, (c) replace the minimal codegen docstring with the
        single-page warning + ``while .has_more`` paging example, (d) replace
-       the stock string-only ``__getitem__`` with the integer-over-``.data``
-       variant plus the ``has_more`` property.  ``__iter__`` and ``__len__``
-       are intentionally NOT re-added — they silently truncated to a single
-       page.
+       the stock string-only ``__getitem__`` with the integer/slice-over-``.data``
+       variant plus the ``has_more`` property, and (e, AET-1628) realign
+       ``__delitem__`` / ``__contains__`` onto ``.data`` and add ``__len__`` /
+       ``__iter__`` so the whole sequence protocol (len, index, iter, ``in``,
+       del) targets the page's items. Forward-compat extra fields stay reachable
+       via the ``additional_properties`` attribute and string-key subscript.
 
     2. Three list-op files (``list_agents``, ``list_calls``,
        ``list_conversations``): parse ``.data`` items into their typed models
