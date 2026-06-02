@@ -6,6 +6,7 @@ All notable changes to this project are documented here. Format based on [Keep a
 
 ### Fixed
 
+- `AethexAI.transcribe_audio` / `transcribe_audio_async` (and their async equivalents) no longer fail with HTTP 422 when the request body carries a `File` built from raw `bytes` without a `file_name`. They now default the multipart part to an extension-less `audio` filename, matching `Kora.transcribe`. Bodies that already set a `file_name` are unchanged.
 - `Kora.transcribe` now transcribes WAV recordings longer than 35s. When WAV audio is passed as `bytes` and exceeds 35s it is split into ≤35s chunks, transcribed per chunk, and the transcripts are concatenated (`.segments` reflect only the first chunk). Non-WAV bytes and stream/`File` inputs are unchanged.
 
 ## [0.3.0]

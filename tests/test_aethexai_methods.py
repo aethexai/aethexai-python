@@ -15,6 +15,7 @@ multi-arg path, binary response, paginated list).
 
 from __future__ import annotations
 
+from io import BytesIO
 from uuid import uuid4
 
 import httpx
@@ -22,6 +23,13 @@ import pytest
 import respx
 
 from aethexai import AethexAI
+from aethexai._generated.models.body_transcribe_async_api_v1_transcribe_async_post import (
+    BodyTranscribeAsyncApiV1TranscribeAsyncPost,
+)
+from aethexai._generated.models.body_transcribe_sync_api_v1_transcribe_post import (
+    BodyTranscribeSyncApiV1TranscribePost,
+)
+from aethexai._generated.types import File
 
 BASE_URL = "https://api.test.aethexai.com"
 
@@ -588,3 +596,72 @@ def test_get_transcript_path(client: AethexAI) -> None:
     assert route.called
     req = route.calls.last.request
     assert req.url.path == f"/api/v1/conversations/{conv_uuid}/transcript"
+
+
+# ─── transcription — raw bytes without file_name (AET-1630) ──────────────────
+#
+# AET-1588 defaulted ``Kora.transcribe`` to an extension-less ``"audio"``
+# filename for raw bytes, but the low-level typed wrappers
+# (``transcribe_audio`` / ``transcribe_audio_async``) still forwarded a
+# ``File(payload=...)`` with no ``file_name`` — so ``File.to_tuple()`` emitted a
+# nameless multipart part and the server rejected it with HTTP 422. These guard
+# that both wrappers now inject the same default while leaving an explicitly
+# supplied filename untouched.
+
+_TRANSCRIBE_SUCCESS = {"id": "t1", "text": "hello", "language": "english"}
+_TRANSCRIBE_ASYNC_SUCCESS = {"id": "j1", "status": "queued"}
+
+
+@respx.mock
+def test_transcribe_audio_bytes_without_file_name(client: AethexAI) -> None:
+    route = respx.post(f"{BASE_URL}/api/v1/transcribe").mock(
+        return_value=httpx.Response(200, json=_TRANSCRIBE_SUCCESS)
+    )
+
+    body = BodyTranscribeSyncApiV1TranscribePost(
+        file=File(payload=BytesIO(b"RIFF\x24\x00\x00\x00WAVEfmt "))
+    )
+    client.transcribe_audio(body=body)
+
+    assert route.called
+    wire = route.calls.last.request.content.decode("latin-1")
+    assert 'filename="audio"' in wire
+    assert "audio.bin" not in wire
+
+
+@respx.mock
+def test_transcribe_audio_async_bytes_without_file_name(client: AethexAI) -> None:
+    route = respx.post(f"{BASE_URL}/api/v1/transcribe/async").mock(
+        return_value=httpx.Response(200, json=_TRANSCRIBE_ASYNC_SUCCESS)
+    )
+
+    body = BodyTranscribeAsyncApiV1TranscribeAsyncPost(
+        file=File(payload=BytesIO(b"fLaC\x00\x00\x00\x22stream"))
+    )
+    client.transcribe_audio_async(body=body)
+
+    assert route.called
+    wire = route.calls.last.request.content.decode("latin-1")
+    assert 'filename="audio"' in wire
+    assert "audio.bin" not in wire
+
+
+@respx.mock
+def test_transcribe_audio_preserves_explicit_file_name(client: AethexAI) -> None:
+    route = respx.post(f"{BASE_URL}/api/v1/transcribe").mock(
+        return_value=httpx.Response(200, json=_TRANSCRIBE_SUCCESS)
+    )
+
+    body = BodyTranscribeSyncApiV1TranscribePost(
+        file=File(
+            payload=BytesIO(b"OggS\x00\x02\x00\x00"),
+            file_name="recording.ogg",
+            mime_type="audio/ogg",
+        )
+    )
+    client.transcribe_audio(body=body)
+
+    assert route.called
+    wire = route.calls.last.request.content.decode("latin-1")
+    assert 'filename="recording.ogg"' in wire
+    assert 'filename="audio"' not in wire

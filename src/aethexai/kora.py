@@ -35,6 +35,7 @@ from uuid import UUID
 
 import httpx
 
+from aethexai._body import _DEFAULT_AUDIO_FILE_NAME
 from aethexai._exceptions import (
     APIConnectionError,
     APITimeoutError,
@@ -136,7 +137,7 @@ def _as_file(
     if isinstance(file, (bytes, bytearray)):
         return File(
             payload=BytesIO(bytes(file)),
-            file_name=file_name or "audio",
+            file_name=file_name or _DEFAULT_AUDIO_FILE_NAME,
             mime_type=mime_type or "application/octet-stream",
         )
     return File(payload=file, file_name=file_name, mime_type=mime_type)
