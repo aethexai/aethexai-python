@@ -678,8 +678,43 @@ class AsyncAethexAI:
         from aethexai._generated.api.transcription import (
             transcribe_sync_api_v1_transcribe_post as _op,
         )
+        from aethexai._transcription import (
+            build_sync_body,
+            coerce_to_bytes,
+            merge_transcriptions,
+            prepare_chunks,
+        )
 
-        return await self._call(_op.asyncio_detailed, body=body)
+        data = coerce_to_bytes(getattr(body, "file", None))
+        if data is None:
+            return await self._call(_op.asyncio_detailed, body=body)
+        chunks = prepare_chunks(data)
+        if chunks is None:
+            single = build_sync_body(
+                data,
+                file_name=body.file.file_name,
+                mime_type=body.file.mime_type,
+                language=body.language,
+            )
+            return await self._call(_op.asyncio_detailed, body=single)
+        if len(chunks) == 1:
+            return await self._call(
+                _op.asyncio_detailed,
+                body=build_sync_body(
+                    chunks[0], file_name="audio.wav", mime_type="audio/wav", language=body.language
+                ),
+            )
+        return merge_transcriptions(
+            [
+                await self._call(
+                    _op.asyncio_detailed,
+                    body=build_sync_body(
+                        chunk, file_name="audio.wav", mime_type="audio/wav", language=body.language
+                    ),
+                )
+                for chunk in chunks
+            ]
+        )
 
     async def transcribe_audio_by_upload(self, **fields: Any) -> Any:
         """Synchronously transcribe a previously uploaded file."""
@@ -699,8 +734,9 @@ class AsyncAethexAI:
         from aethexai._generated.api.transcription import (
             transcribe_async_api_v1_transcribe_async_post as _op,
         )
+        from aethexai._transcription import guard_async_body
 
-        return await self._call(_op.asyncio_detailed, body=body)
+        return await self._call(_op.asyncio_detailed, body=guard_async_body(body))
 
     async def transcribe_audio_async_by_upload(self, **fields: Any) -> Any:
         """Submit an async transcription job for a previously uploaded file."""
