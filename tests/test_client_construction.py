@@ -44,7 +44,20 @@ def test_aethex_missing_api_key_raises_authentication_error(monkeypatch: pytest.
     with pytest.raises(AuthenticationError) as info:
         AethexAI()
     assert info.value.status_code == 401
+    # The code must describe the auth failure, not default to the generic
+    # ``internal_error`` slug — it mirrors the ``authentication_error`` slug
+    # the server sends for a 401 so one error handler keyed on ``code``
+    # works for both client-side and server-side auth failures.
+    assert info.value.code == "authentication_error"
     assert "API key is required" in str(info.value)
+
+
+def test_aethex_empty_string_api_key_raises_authentication_error(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.delenv("AETHEX_API_KEY", raising=False)
+    with pytest.raises(AuthenticationError) as info:
+        AethexAI(api_key="")
+    assert info.value.status_code == 401
+    assert info.value.code == "authentication_error"
 
 
 def test_aethex_arg_overrides_env_var(monkeypatch: pytest.MonkeyPatch):
@@ -122,8 +135,10 @@ def test_async_construct_with_env_var(monkeypatch: pytest.MonkeyPatch):
 
 def test_async_missing_api_key_raises(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.delenv("AETHEX_API_KEY", raising=False)
-    with pytest.raises(AuthenticationError):
+    with pytest.raises(AuthenticationError) as info:
         AsyncAethexAI()
+    assert info.value.status_code == 401
+    assert info.value.code == "authentication_error"
 
 
 def test_async_timeout_and_max_retries_stored():
