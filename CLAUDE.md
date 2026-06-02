@@ -61,7 +61,7 @@ The only optional extras that exist are `realtime` and `dev`.
 - **`bytes`** for audio (`synthesize_speech`, `preview_voice`, `stream_audio`, `Kora.get_conversation_audio`).
 - **`create_agent` returns a typed `AgentResponse`** — use attribute access `agent.id`, never `agent["id"]`. Guarded by `tests/test_typed_agent_responses.py` and durable across regen.
 - **Bare lists:** `list_voices` and `list_api_keys` return plain lists.
-- **Paginated** (`{data, total, limit, offset}`): `list_agents`, `list_calls`, `list_conversations`, `list_phone_numbers`, `list_twilio_accounts`. `PaginatedResponse` has a `.has_more` property and integer indexing; iterate `.data` and loop while `.has_more` to consume every page (it has no `__iter__`/`__len__`).
+- **Paginated** (`{data, total, limit, offset}`): `list_agents`, `list_calls`, `list_conversations`, `list_phone_numbers`, `list_twilio_accounts`. `PaginatedResponse` supports `len()`, iteration, integer/slice indexing, and `in`/`del` over its page items, plus a `.has_more` property; each instance is one page — loop while `.has_more` to consume all pages.
 
 ## Errors
 

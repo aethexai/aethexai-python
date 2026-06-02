@@ -362,6 +362,11 @@ def test_paginated_response_len_none_data_is_zero() -> None:
     assert len(r) == 0
 
 
+def test_paginated_response_empty_page_is_falsy() -> None:
+    """An empty page is falsy via ``__len__`` (standard sequence truthiness)."""
+    assert not PaginatedResponse(data=[], total=0, limit=50, offset=0)
+
+
 def test_paginated_response_iter_yields_data_items() -> None:
     """AET-1628: iteration walks ``.data`` items, in order."""
     r = PaginatedResponse(data=["a", "b", "c"], total=3, limit=3, offset=0)
