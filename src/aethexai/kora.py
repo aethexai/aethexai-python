@@ -34,6 +34,7 @@ from uuid import UUID
 
 import httpx
 
+from aethexai._body import build_body, coerce_uuid
 from aethexai._exceptions import (
     APIConnectionError,
     APITimeoutError,
@@ -124,11 +125,6 @@ from aethexai._transcription import (
 _DEFAULT_BASE_URL = "https://api.aethexai.com"
 
 
-def _to_uuid(value: str | UUID) -> UUID:
-    """Coerce a stringified UUID into a ``UUID`` instance for path templating."""
-    return value if isinstance(value, UUID) else UUID(str(value))
-
-
 def _as_file(
     file: bytes | BinaryIO | File,
     *,
@@ -174,7 +170,7 @@ class Kora:
             raise_on_unexpected_status: Raise ``UnexpectedStatus`` for
                 undocumented status codes instead of returning ``None``.
         """
-        if not api_key:
+        if not api_key.strip():
             raise ValueError("api_key is required. Pass it positionally: Kora(base_url, api_key).")
         self._base_url = base_url
         timeout_arg: httpx.Timeout | None = httpx.Timeout(timeout) if timeout is not None else None
@@ -246,11 +242,14 @@ class Kora:
         if tts_model is not None:
             body_kwargs["tts_model"] = tts_model
         body_kwargs.update(kwargs)
-        return self._call(_create_agent_op.sync_detailed, body=AgentCreate(**body_kwargs))
+        return self._call(
+            _create_agent_op.sync_detailed,
+            body=build_body(AgentCreate, body_kwargs, allow_extra=True),
+        )
 
     def get_agent(self, agent_id: str | UUID) -> Any:
         """Fetch a single agent by id."""
-        return self._call(_get_agent_op.sync_detailed, _to_uuid(agent_id))
+        return self._call(_get_agent_op.sync_detailed, coerce_uuid(agent_id, "agent_id"))
 
     def list_agents(
         self,
@@ -276,17 +275,17 @@ class Kora:
         """Partially update an agent's configuration."""
         return self._call(
             _update_agent_op.sync_detailed,
-            _to_uuid(agent_id),
-            body=AgentUpdate(**kwargs),
+            coerce_uuid(agent_id, "agent_id"),
+            body=build_body(AgentUpdate, kwargs, allow_extra=True),
         )
 
     def delete_agent(self, agent_id: str | UUID) -> Any:
         """Permanently delete an agent."""
-        return self._call(_delete_agent_op.sync_detailed, _to_uuid(agent_id))
+        return self._call(_delete_agent_op.sync_detailed, coerce_uuid(agent_id, "agent_id"))
 
     def duplicate_agent(self, agent_id: str | UUID) -> Any:
         """Clone an agent, returning the new duplicate."""
-        return self._call(_duplicate_agent_op.sync_detailed, _to_uuid(agent_id))
+        return self._call(_duplicate_agent_op.sync_detailed, coerce_uuid(agent_id, "agent_id"))
 
     def trigger_call(
         self,
@@ -308,7 +307,7 @@ class Kora:
 
     def get_call(self, call_id: str | UUID) -> Any:
         """Fetch a call record by id."""
-        return self._call(_get_call_op.sync_detailed, _to_uuid(call_id))
+        return self._call(_get_call_op.sync_detailed, coerce_uuid(call_id, "call_id"))
 
     def list_calls(
         self,
@@ -332,7 +331,7 @@ class Kora:
 
     def get_call_status(self, call_id: str | UUID) -> Any:
         """Fetch the current status of a call."""
-        return self._call(_get_call_status_op.sync_detailed, _to_uuid(call_id))
+        return self._call(_get_call_status_op.sync_detailed, coerce_uuid(call_id, "call_id"))
 
     def list_voices(
         self,
@@ -523,11 +522,13 @@ class Kora:
 
     def get_transcribe_job(self, job_id: str | UUID) -> Any:
         """Poll an async transcription job by id."""
-        return self._call(_get_transcribe_job_op.sync_detailed, _to_uuid(job_id))
+        return self._call(_get_transcribe_job_op.sync_detailed, coerce_uuid(job_id, "job_id"))
 
     def get_conversation(self, conversation_id: str | UUID) -> Any:
         """Fetch a single conversation record by id."""
-        return self._call(_get_conversation_op.sync_detailed, _to_uuid(conversation_id))
+        return self._call(
+            _get_conversation_op.sync_detailed, coerce_uuid(conversation_id, "conversation_id")
+        )
 
     def list_conversations(
         self,
@@ -572,7 +573,9 @@ class Kora:
 
     def get_conversation_transcript(self, conversation_id: str | UUID) -> Any:
         """Fetch the per-turn transcript for a conversation."""
-        return self._call(_get_transcript_op.sync_detailed, _to_uuid(conversation_id))
+        return self._call(
+            _get_transcript_op.sync_detailed, coerce_uuid(conversation_id, "conversation_id")
+        )
 
     def get_conversation_audio(self, conversation_id: str | UUID) -> bytes:
         """Fetch the raw audio bytes for a conversation recording (WAV).
@@ -584,7 +587,7 @@ class Kora:
         from urllib.parse import quote
 
         url = "/api/v1/conversations/{conversation_id}/audio.wav".format(
-            conversation_id=quote(str(_to_uuid(conversation_id)), safe=""),
+            conversation_id=quote(str(coerce_uuid(conversation_id, "conversation_id")), safe=""),
         )
         httpx_client = self._client.get_httpx_client()
         try:
@@ -600,7 +603,9 @@ class Kora:
 
     def get_conversation_audio_url(self, conversation_id: str | UUID) -> Any:
         """Fetch a short-lived signed URL pointing to the conversation audio."""
-        return self._call(_get_audio_url_op.sync_detailed, _to_uuid(conversation_id))
+        return self._call(
+            _get_audio_url_op.sync_detailed, coerce_uuid(conversation_id, "conversation_id")
+        )
 
 
 __all__ = ["Kora"]
