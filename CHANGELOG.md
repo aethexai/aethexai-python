@@ -6,7 +6,7 @@ All notable changes to this project are documented here. Format based on [Keep a
 
 ### Changed
 
-- **Unknown keyword arguments to `**fields` create/update wrappers are now rejected** with a typed `aethexai.ValidationError` that names the offending key, instead of being silently absorbed into `additional_properties` (where the server ignored them, so a typo'd field name silently did nothing). `create_agent` and `update_agent` (on both `AethexAI`/`AsyncAethexAI` and `Kora`) continue to tolerate and forward extra fields for forward-compatibility.
+- **Unknown keyword arguments to `**fields` create/update wrappers are now rejected** with a typed `aethexai.ValidationError` that names the offending key, instead of being silently absorbed into `additional_properties` (where the server ignored them, so a typo'd field name silently did nothing). `create_agent` and `update_agent` (on both `AethexAI`/`AsyncAethexAI` and `Kora`) are the deliberate exception — they continue to tolerate and forward extra fields, because extra-kwarg passthrough was already part of their documented contract (so rejecting it would be a behavior regression). The other wrappers never promised field-passthrough, so there a clear typo error is the better default.
 
 ### Fixed
 

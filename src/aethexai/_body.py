@@ -95,7 +95,7 @@ def coerce_uuid(value: Any, field_name: str) -> UUID:
         return value
     try:
         return UUID(str(value))
-    except (ValueError, TypeError, AttributeError) as exc:
+    except (ValueError, TypeError) as exc:
         detail = [
             {
                 "type": "uuid_parsing",
@@ -116,67 +116,55 @@ def build_body(model_cls: type[T], fields: dict[str, Any], *, allow_extra: bool 
     :class:`aethexai.ValidationError` (instead of a stdlib ``KeyError`` /
     ``ValueError`` / ``TypeError``) when input is invalid:
 
-    * **Missing required fields** are reported all at once with field names.
-    * **Unknown keys** are rejected by default (so a typo'd kwarg fails loudly
+    * **Missing required fields and unknown keys** are reported together in one
+      error — each listed in ``detail`` — mirroring the server's 422 (which
+      lists every problem at once) rather than surfacing only the first
+      category. (Coercion failures below can only be detected by attempting
+      construction, so they remain a separate error.)
+    * **Unknown keys** are rejected by default, so a typo'd kwarg fails loudly
       instead of being silently absorbed into ``additional_properties`` and
-      ignored by the server). Pass ``allow_extra=True`` for wrappers that
-      intentionally forward unrecognized fields for forward-compat
-      (``create_agent`` / ``update_agent``).
+      ignored by the server. ``create_agent`` / ``update_agent`` pass
+      ``allow_extra=True``: extra-kwarg tolerance on those two is a pre-existing,
+      documented part of their contract (unknown fields ride through as
+      ``additional_properties`` for forward-compat), so rejecting it would be a
+      behavior regression. The other ``**fields`` wrappers never promised
+      field-passthrough, so there a clear typo error is the better default.
     * **Coercion failures** raised by the generated ``from_dict`` (a malformed
       body UUID, a wrong nested shape such as ``recipients=["+1555..."]``, a bad
       enum value) are caught and re-raised as a typed error.
     """
-    required = _required_field_names(model_cls)
-    missing = [name for name in required if name not in fields]
-    if missing:
-        model_name = getattr(model_cls, "__name__", str(model_cls))
-        if len(missing) == 1:
-            msg = f"Missing required field for {model_name}: {missing[0]!r}"
-        else:
-            joined = ", ".join(repr(n) for n in missing)
-            msg = f"Missing required fields for {model_name}: {joined}"
-        detail = [
-            {
-                "type": "missing",
-                "loc": ["body", name],
-                "msg": "Field required",
-                "input": fields,
-            }
+    model_name = getattr(model_cls, "__name__", str(model_cls))
+    missing = [name for name in _required_field_names(model_cls) if name not in fields]
+    unknown = (
+        []
+        if allow_extra
+        else [name for name in fields if name not in _known_field_names(model_cls)]
+    )
+    if missing or unknown:
+        detail: list[dict[str, Any]] = [
+            {"type": "missing", "loc": ["body", name], "msg": "Field required", "input": fields}
             for name in missing
         ]
-        raise _validation_error(msg, detail)
-
-    if not allow_extra:
-        known = _known_field_names(model_cls)
-        unknown = [name for name in fields if name not in known]
+        detail += [
+            {
+                "type": "unexpected_keyword_argument",
+                "loc": ["body", name],
+                "msg": "Unexpected field",
+                "input": fields.get(name),
+            }
+            for name in unknown
+        ]
+        parts = []
+        if missing:
+            parts.append("missing " + ", ".join(repr(n) for n in missing))
         if unknown:
-            model_name = getattr(model_cls, "__name__", str(model_cls))
-            joined = ", ".join(repr(n) for n in unknown)
-            label = "field" if len(unknown) == 1 else "fields"
-            msg = f"Unknown {label} for {model_name}: {joined}"
-            detail = [
-                {
-                    "type": "unexpected_keyword_argument",
-                    "loc": ["body", name],
-                    "msg": "Unexpected field",
-                    "input": fields,
-                }
-                for name in unknown
-            ]
-            raise _validation_error(msg, detail)
+            parts.append("unknown " + ", ".join(repr(n) for n in unknown))
+        raise _validation_error(f"Invalid fields for {model_name}: {'; '.join(parts)}", detail)
 
     try:
         return model_cls.from_dict(fields)  # type: ignore[attr-defined,no-any-return]
     except ValidationError:
         raise
-    except (ValueError, TypeError, AttributeError) as exc:
-        model_name = getattr(model_cls, "__name__", str(model_cls))
-        detail = [
-            {
-                "type": "value_error",
-                "loc": ["body"],
-                "msg": str(exc),
-                "input": fields,
-            }
-        ]
+    except (ValueError, TypeError) as exc:
+        detail = [{"type": "value_error", "loc": ["body"], "msg": str(exc), "input": fields}]
         raise _validation_error(f"Invalid value for {model_name}: {exc}", detail) from exc
