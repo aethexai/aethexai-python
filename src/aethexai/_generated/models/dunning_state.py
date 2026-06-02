@@ -19,15 +19,18 @@ T = TypeVar("T", bound="DunningState")
 
 @_attrs_define
 class DunningState:
-    """Payment-retry (dunning) timeline for a ``past_due`` account: how many payment retries have occurred, when the next
-    retry is scheduled, when the last attempt failed, and the final cutoff after which the subscription is canceled.
-    ``None`` for accounts that aren't ``past_due``. These fields let you show a banner such as "Card declined Apr 28.
-    We'll retry May 1. Service stops May 19 if unresolved."
+    """Stripe-side dunning timeline for a ``past_due`` tenant. Pulled live from Stripe (``stripe.Subscription.retrieve``
+    with the
+    latest_invoice expanded) rather than cached in our DB — Stripe's
+    Smart Retries reschedule on its side and any cached value would go
+    stale within hours. ``None`` for tenants that aren't ``past_due``. The portal banner uses this trio to render
+    "Card declined Apr 28. We'll retry May 1. Service stops May 19 if
+    unresolved." instead of the prior "Update card" with no timeline.
 
         Attributes:
             attempt_count (int | Unset): How many retries Stripe has burned on this invoice. Default: 0.
-            final_cutoff_at (datetime.datetime | None | Unset): When the subscription is scheduled to be canceled if payment
-                retries still fail; ``None`` if no auto-cancel is scheduled yet.
+            final_cutoff_at (datetime.datetime | None | Unset): When the subscription will be auto-canceled if dunning still
+                fails. Mirrors ``subscription.cancel_at`` from Stripe; ``None`` if Stripe hasn't scheduled an auto-cancel yet.
             last_failed_at (datetime.datetime | None | Unset): When Stripe last attempted the dunning charge and got
                 declined.
             next_retry_at (datetime.datetime | None | Unset): When Stripe will attempt the next dunning retry. ``None`` when

@@ -15,12 +15,12 @@ from __future__ import annotations
 
 import os
 from collections.abc import AsyncIterator
-from typing import Any, cast
+from typing import Any, BinaryIO, cast
 from uuid import UUID
 
 import httpx
 
-from aethexai._body import build_body, coerce_uuid
+from aethexai._body import build_body, build_knowledge_doc_body, coerce_uuid
 from aethexai._exceptions import (
     APIConnectionError,
     APITimeoutError,
@@ -32,7 +32,7 @@ from aethexai._generated.models.agent_response import AgentResponse
 from aethexai._generated.models.call_response import CallResponse
 from aethexai._generated.models.conversation_response import ConversationResponse
 from aethexai._generated.models.paginated_response import PaginatedResponse
-from aethexai._generated.types import UNSET, Unset
+from aethexai._generated.types import UNSET, File, Unset
 
 _DEFAULT_BASE_URL = "https://api.aethexai.com"
 
@@ -61,6 +61,7 @@ class AsyncAethexAI:
         if not resolved_key.strip():
             raise AuthenticationError(
                 "API key is required. Pass api_key= or set the AETHEX_API_KEY env var.",
+                code="authentication_error",
                 status_code=401,
             )
         self._base_url = base_url.rstrip("/")
@@ -216,12 +217,37 @@ class AsyncAethexAI:
 
         return await self._call(_op.asyncio_detailed, coerce_uuid(agent_id, "agent_id"))
 
-    async def upload_knowledge_doc(self, agent_id: str | UUID, *, body: Any | Unset = UNSET) -> Any:
-        """Upload a knowledge-base document (multipart)."""
+    async def upload_knowledge_doc(
+        self,
+        agent_id: str | UUID,
+        *,
+        text: str | None = None,
+        file: bytes | BinaryIO | File | None = None,
+        filename: str | None = None,
+        file_name: str | None = None,
+        mime_type: str | None = None,
+        body: Any | Unset = UNSET,
+    ) -> Any:
+        """Upload a knowledge-base document (multipart).
+
+        Provide inline ``text`` or an uploaded ``file`` (raw bytes, a binary
+        stream, or a pre-built ``File``). ``filename`` is the stored document
+        name; ``file_name`` / ``mime_type`` set the uploaded part's metadata.
+        Power users may pass a pre-built ``body`` instead, which takes
+        precedence over the keyword arguments.
+        """
         from aethexai._generated.api.agents import (
             upload_knowledge_doc_api_v1_agents_agent_id_knowledge_base_post as _op,
         )
 
+        if isinstance(body, Unset):
+            body = build_knowledge_doc_body(
+                text=text,
+                file=file,
+                filename=filename,
+                file_name=file_name,
+                mime_type=mime_type,
+            )
         return await self._call(_op.asyncio_detailed, coerce_uuid(agent_id, "agent_id"), body=body)
 
     async def upload_knowledge_doc_by_upload(self, agent_id: str | UUID, **fields: Any) -> Any:
@@ -402,7 +428,35 @@ class AsyncAethexAI:
         return await self._call(_op.asyncio_detailed, session_id)
 
     async def send_ice_candidate(self, session_id: str, **fields: Any) -> Any:
-        """Send an ICE candidate for a WebRTC session."""
+        """Send trickle-ICE candidates for a WebRTC session.
+
+        Despite the singular method name, the request body takes a **list**
+        of candidates plus the peer-connection id — there is no singular
+        ``candidate`` field. Pass these keyword arguments:
+
+        * ``candidates`` (``list[dict]``, required): one or more ICE candidate
+          patches. Each dict needs ``candidate`` (the SDP candidate string),
+          ``sdp_mid`` (``str``), and ``sdp_mline_index`` (``int``).
+        * ``pc_id`` (``str``, required): the peer-connection id returned when
+          the session was established.
+
+        Example::
+
+            await client.send_ice_candidate(
+                session_id,
+                pc_id="pc-123",
+                candidates=[
+                    {
+                        "candidate": "candidate:1 1 udp 2122260223 10.0.0.1 54321 typ host",
+                        "sdp_mid": "0",
+                        "sdp_mline_index": 0,
+                    }
+                ],
+            )
+
+        Passing a singular ``candidate=`` keyword raises ``ValidationError``
+        for the missing required ``candidates`` / ``pc_id`` fields.
+        """
         from aethexai._generated.api.conversation import (
             ice_candidate_api_v1_conversation_session_id_ice_patch as _op,
         )
@@ -417,10 +471,10 @@ class AsyncAethexAI:
         from aethexai._generated.api.conversation import (
             offer_api_v1_conversation_session_id_offer_post as _op,
         )
-        from aethexai._generated.models.small_web_rtc_request import SmallWebRTCRequest
+        from aethexai._generated.models.offer_request import OfferRequest
 
         return await self._call(
-            _op.asyncio_detailed, session_id, body=build_body(SmallWebRTCRequest, fields)
+            _op.asyncio_detailed, session_id, body=build_body(OfferRequest, fields)
         )
 
     async def send_tool_result(self, session_id: str, **fields: Any) -> Any:
@@ -991,6 +1045,14 @@ class AsyncAethexAI:
         """Return the closed tag vocabulary for voices."""
         from aethexai._generated.api.voices import (
             list_tag_vocabulary_api_v1_voices_tag_vocabulary_get as _op,
+        )
+
+        return await self._call(_op.asyncio_detailed)
+
+    async def list_countries(self) -> Any:
+        """List the country codes accepted by the ``country`` voice filter."""
+        from aethexai._generated.api.voices import (
+            list_countries_api_v1_voices_countries_get as _op,
         )
 
         return await self._call(_op.asyncio_detailed)

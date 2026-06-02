@@ -73,7 +73,10 @@ def sync_detailed(
     """Batch Synthesize
 
      Batch synthesis — submit multiple texts, get a batch_id for polling. Poll GET /tts/batch/{batch_id}
-    for download URLs when complete. Only successfully synthesized items are billed.
+    for
+    presigned download URLs when complete. Usage metering is deferred to the worker (run_tts_batch) so
+    only
+    successfully synthesized items are billed.
 
     Args:
         body (TTSBatchCreate):
@@ -105,7 +108,10 @@ def sync(
     """Batch Synthesize
 
      Batch synthesis — submit multiple texts, get a batch_id for polling. Poll GET /tts/batch/{batch_id}
-    for download URLs when complete. Only successfully synthesized items are billed.
+    for
+    presigned download URLs when complete. Usage metering is deferred to the worker (run_tts_batch) so
+    only
+    successfully synthesized items are billed.
 
     Args:
         body (TTSBatchCreate):
@@ -132,7 +138,10 @@ async def asyncio_detailed(
     """Batch Synthesize
 
      Batch synthesis — submit multiple texts, get a batch_id for polling. Poll GET /tts/batch/{batch_id}
-    for download URLs when complete. Only successfully synthesized items are billed.
+    for
+    presigned download URLs when complete. Usage metering is deferred to the worker (run_tts_batch) so
+    only
+    successfully synthesized items are billed.
 
     Args:
         body (TTSBatchCreate):
@@ -162,7 +171,10 @@ async def asyncio(
     """Batch Synthesize
 
      Batch synthesis — submit multiple texts, get a batch_id for polling. Poll GET /tts/batch/{batch_id}
-    for download URLs when complete. Only successfully synthesized items are billed.
+    for
+    presigned download URLs when complete. Usage metering is deferred to the worker (run_tts_batch) so
+    only
+    successfully synthesized items are billed.
 
     Args:
         body (TTSBatchCreate):

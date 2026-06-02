@@ -70,6 +70,7 @@ class AgentResponse:
         turn_eagerness (None | str | Unset):
         updated_at (None | str | Unset):
         voice_id (str | Unset):  Default: ''.
+        voice_name (None | str | Unset):
         voicemail_action (str | Unset):  Default: 'leave_message'.
         voicemail_detection_enabled (bool | Unset):  Default: False.
         voicemail_message (None | str | Unset):
@@ -119,6 +120,7 @@ class AgentResponse:
     turn_eagerness: None | str | Unset = UNSET
     updated_at: None | str | Unset = UNSET
     voice_id: str | Unset = ""
+    voice_name: None | str | Unset = UNSET
     voicemail_action: str | Unset = "leave_message"
     voicemail_detection_enabled: bool | Unset = False
     voicemail_message: None | str | Unset = UNSET
@@ -327,6 +329,12 @@ class AgentResponse:
 
         voice_id = self.voice_id
 
+        voice_name: None | str | Unset
+        if isinstance(self.voice_name, Unset):
+            voice_name = UNSET
+        else:
+            voice_name = self.voice_name
+
         voicemail_action = self.voicemail_action
 
         voicemail_detection_enabled = self.voicemail_detection_enabled
@@ -425,6 +433,8 @@ class AgentResponse:
             field_dict["updated_at"] = updated_at
         if voice_id is not UNSET:
             field_dict["voice_id"] = voice_id
+        if voice_name is not UNSET:
+            field_dict["voice_name"] = voice_name
         if voicemail_action is not UNSET:
             field_dict["voicemail_action"] = voicemail_action
         if voicemail_detection_enabled is not UNSET:
@@ -757,6 +767,15 @@ class AgentResponse:
 
         voice_id = d.pop("voice_id", UNSET)
 
+        def _parse_voice_name(data: object) -> None | str | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(None | str | Unset, data)
+
+        voice_name = _parse_voice_name(d.pop("voice_name", UNSET))
+
         voicemail_action = d.pop("voicemail_action", UNSET)
 
         voicemail_detection_enabled = d.pop("voicemail_detection_enabled", UNSET)
@@ -813,6 +832,7 @@ class AgentResponse:
             turn_eagerness=turn_eagerness,
             updated_at=updated_at,
             voice_id=voice_id,
+            voice_name=voice_name,
             voicemail_action=voicemail_action,
             voicemail_detection_enabled=voicemail_detection_enabled,
             voicemail_message=voicemail_message,

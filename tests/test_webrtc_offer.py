@@ -69,6 +69,23 @@ def test_send_ice_candidate_posts_candidates(client: AethexAI) -> None:
     assert result == {"status": "ok"}
 
 
+def test_send_ice_candidate_singular_candidate_raises_validation_error(client: AethexAI) -> None:
+    """The method name is singular but the body needs a ``candidates`` list and
+    ``pc_id``. The intuitive singular ``candidate=`` call must fail fast with a
+    typed error naming the required fields — the docstring documents this DX
+    sharp edge, this test pins the behaviour it describes.
+    """
+    from aethexai import ValidationError
+
+    with pytest.raises(ValidationError, match="candidates"):
+        client.send_ice_candidate(
+            "sess-1",
+            candidate="candidate:1 1 udp ...",
+            sdp_mid="0",
+            sdp_mline_index=0,
+        )
+
+
 @respx.mock
 async def test_async_send_offer_handles_201() -> None:
     """Async parity, and a 201 success body comes back like a 200 would."""

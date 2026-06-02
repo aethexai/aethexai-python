@@ -70,10 +70,15 @@ def sync_detailed(
 ) -> Response[Any | HTTPValidationError]:
     r"""Trigger Call
 
-     Create a call record and schedule the outbound dial (asynchronous). Returns **202 Accepted** with
-    the Call record (``status=\"queued\"``) as soon as it is persisted; the dial proceeds in the
-    background. Poll ``GET /calls/{id}`` for terminal status. On failure the record is marked ``failed``
-    and ``metadata.error_message`` carries the explanation.
+     Create a call record and schedule the outbound dial (async / 202). Returns **202 Accepted** with the
+    Call record (``status=\"queued\"``)
+    as soon as the row is persisted. The actual provider dial — which
+    includes an up-to-300 s wait for TTS to become ready — runs as a
+    background task so the HTTP response is never held open past the
+    typical SDK timeout (30–60 s). Clients poll ``GET /calls/{id}`` for
+    terminal status. On TTS-readiness failure the row is marked
+    ``failed`` and ``metadata.error_message`` carries the user-facing
+    explanation.
 
     Args:
         body (CallCreate):
@@ -104,10 +109,15 @@ def sync(
 ) -> Any | HTTPValidationError | None:
     r"""Trigger Call
 
-     Create a call record and schedule the outbound dial (asynchronous). Returns **202 Accepted** with
-    the Call record (``status=\"queued\"``) as soon as it is persisted; the dial proceeds in the
-    background. Poll ``GET /calls/{id}`` for terminal status. On failure the record is marked ``failed``
-    and ``metadata.error_message`` carries the explanation.
+     Create a call record and schedule the outbound dial (async / 202). Returns **202 Accepted** with the
+    Call record (``status=\"queued\"``)
+    as soon as the row is persisted. The actual provider dial — which
+    includes an up-to-300 s wait for TTS to become ready — runs as a
+    background task so the HTTP response is never held open past the
+    typical SDK timeout (30–60 s). Clients poll ``GET /calls/{id}`` for
+    terminal status. On TTS-readiness failure the row is marked
+    ``failed`` and ``metadata.error_message`` carries the user-facing
+    explanation.
 
     Args:
         body (CallCreate):
@@ -133,10 +143,15 @@ async def asyncio_detailed(
 ) -> Response[Any | HTTPValidationError]:
     r"""Trigger Call
 
-     Create a call record and schedule the outbound dial (asynchronous). Returns **202 Accepted** with
-    the Call record (``status=\"queued\"``) as soon as it is persisted; the dial proceeds in the
-    background. Poll ``GET /calls/{id}`` for terminal status. On failure the record is marked ``failed``
-    and ``metadata.error_message`` carries the explanation.
+     Create a call record and schedule the outbound dial (async / 202). Returns **202 Accepted** with the
+    Call record (``status=\"queued\"``)
+    as soon as the row is persisted. The actual provider dial — which
+    includes an up-to-300 s wait for TTS to become ready — runs as a
+    background task so the HTTP response is never held open past the
+    typical SDK timeout (30–60 s). Clients poll ``GET /calls/{id}`` for
+    terminal status. On TTS-readiness failure the row is marked
+    ``failed`` and ``metadata.error_message`` carries the user-facing
+    explanation.
 
     Args:
         body (CallCreate):
@@ -165,10 +180,15 @@ async def asyncio(
 ) -> Any | HTTPValidationError | None:
     r"""Trigger Call
 
-     Create a call record and schedule the outbound dial (asynchronous). Returns **202 Accepted** with
-    the Call record (``status=\"queued\"``) as soon as it is persisted; the dial proceeds in the
-    background. Poll ``GET /calls/{id}`` for terminal status. On failure the record is marked ``failed``
-    and ``metadata.error_message`` carries the explanation.
+     Create a call record and schedule the outbound dial (async / 202). Returns **202 Accepted** with the
+    Call record (``status=\"queued\"``)
+    as soon as the row is persisted. The actual provider dial — which
+    includes an up-to-300 s wait for TTS to become ready — runs as a
+    background task so the HTTP response is never held open past the
+    typical SDK timeout (30–60 s). Clients poll ``GET /calls/{id}`` for
+    terminal status. On TTS-readiness failure the row is marked
+    ``failed`` and ``metadata.error_message`` carries the user-facing
+    explanation.
 
     Args:
         body (CallCreate):
