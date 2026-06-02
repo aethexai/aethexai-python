@@ -75,6 +75,9 @@ from .knowledge_query_response import KnowledgeQueryResponse
 from .knowledge_query_result import KnowledgeQueryResult
 from .list_calls_api_v1_calls_get_direction_type_0 import ListCallsApiV1CallsGetDirectionType0
 from .list_calls_api_v1_calls_get_status_type_0 import ListCallsApiV1CallsGetStatusType0
+from .list_countries_api_v1_voices_countries_get_response_200_item import (
+    ListCountriesApiV1VoicesCountriesGetResponse200Item,
+)
 from .list_tag_vocabulary_api_v1_voices_tag_vocabulary_get_response_list_tag_vocabulary_api_v1_voices_tag_vocabulary_get import (
     ListTagVocabularyApiV1VoicesTagVocabularyGetResponseListTagVocabularyApiV1VoicesTagVocabularyGet,
 )
@@ -84,6 +87,7 @@ from .magic_link_request_response import MagicLinkRequestResponse
 from .magic_link_verify_request import MagicLinkVerifyRequest
 from .model_entry import ModelEntry
 from .model_entry_provider import ModelEntryProvider
+from .offer_request import OfferRequest
 from .paginated_response import PaginatedResponse
 from .payg_state import PaygState
 from .payment_method_list_response import PaymentMethodListResponse
@@ -106,7 +110,6 @@ from .select_plan_response import SelectPlanResponse
 from .setup_intent_response import SetupIntentResponse
 from .sip_register_request import SipRegisterRequest
 from .small_web_rtc_patch_request import SmallWebRTCPatchRequest
-from .small_web_rtc_request import SmallWebRTCRequest
 from .tool_result_request import ToolResultRequest
 from .transaction_entry import TransactionEntry
 from .transaction_entry_details import TransactionEntryDetails
@@ -210,6 +213,7 @@ __all__ = (
     "KnowledgeQueryResult",
     "ListCallsApiV1CallsGetDirectionType0",
     "ListCallsApiV1CallsGetStatusType0",
+    "ListCountriesApiV1VoicesCountriesGetResponse200Item",
     "ListTagVocabularyApiV1VoicesTagVocabularyGetResponseListTagVocabularyApiV1VoicesTagVocabularyGet",
     "LogoutAllResponse",
     "MagicLinkRequest",
@@ -217,6 +221,7 @@ __all__ = (
     "MagicLinkVerifyRequest",
     "ModelEntry",
     "ModelEntryProvider",
+    "OfferRequest",
     "PaginatedResponse",
     "PaygState",
     "PaymentMethodListResponse",
@@ -239,7 +244,6 @@ __all__ = (
     "SetupIntentResponse",
     "SipRegisterRequest",
     "SmallWebRTCPatchRequest",
-    "SmallWebRTCRequest",
     "ToolResultRequest",
     "TransactionEntry",
     "TransactionEntryDetails",

@@ -9,17 +9,14 @@ from attrs import field as _attrs_field
 from ..types import UNSET, Unset
 
 
-T = TypeVar("T", bound="TransactionEntryDetails")
+T = TypeVar("T", bound="ListCountriesApiV1VoicesCountriesGetResponse200Item")
 
 
 @_attrs_define
-class TransactionEntryDetails:
-    """Free-form metadata (call_id, resource counts, idempotency key, etc). Shape is not guaranteed and may change per
-    tx_type.
+class ListCountriesApiV1VoicesCountriesGetResponse200Item:
+    """ """
 
-    """
-
-    additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
+    additional_properties: dict[str, str] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
 
@@ -31,19 +28,19 @@ class TransactionEntryDetails:
     @classmethod
     def from_dict(cls: type[T], src_dict: Mapping[str, Any]) -> T:
         d = dict(src_dict)
-        transaction_entry_details = cls()
+        list_countries_api_v1_voices_countries_get_response_200_item = cls()
 
-        transaction_entry_details.additional_properties = d
-        return transaction_entry_details
+        list_countries_api_v1_voices_countries_get_response_200_item.additional_properties = d
+        return list_countries_api_v1_voices_countries_get_response_200_item
 
     @property
     def additional_keys(self) -> list[str]:
         return list(self.additional_properties.keys())
 
-    def __getitem__(self, key: str) -> Any:
+    def __getitem__(self, key: str) -> str:
         return self.additional_properties[key]
 
-    def __setitem__(self, key: str, value: Any) -> None:
+    def __setitem__(self, key: str, value: str) -> None:
         self.additional_properties[key] = value
 
     def __delitem__(self, key: str) -> None:

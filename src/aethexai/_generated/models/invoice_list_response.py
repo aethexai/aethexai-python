@@ -20,9 +20,13 @@ T = TypeVar("T", bound="InvoiceListResponse")
 
 @_attrs_define
 class InvoiceListResponse:
-    """``GET /billing/invoices`` payload. Cursor pagination: clients pass the ``next_cursor`` from the prior page back as
-    ``?cursor=...`` (canonical); ``?next_cursor=...`` is accepted as an alias. When ``next_cursor`` is null the caller
-    has reached the oldest invoice.
+    """``GET /billing/invoices`` payload. Cursor pagination via Stripe's ``starting_after`` (the last invoice
+    id on the prior page). Clients pass ``next_cursor`` back as
+    ``?cursor=...`` (canonical); ``?next_cursor=...`` is accepted as an
+    alias. When ``next_cursor`` is null the caller has reached the
+    oldest invoice. The response field is named ``next_cursor`` and must not be renamed:
+    the portal and SDK consumers have typed against it. Only the *request*
+    surface accepts both names.
 
         Attributes:
             invoices (list[InvoiceEntry]):

@@ -89,8 +89,9 @@ def sync_detailed(
     credits). Required state:
      * Tenant must have ``has_payment_method=True`` (i.e. attached a
      chargeable card or Link PM via the SetupIntent flow) before
-     selecting any paid tier. Free tier is always selectable. * Plan row must have ``stripe_price_id``
-    populated (ops sets
+     selecting any public self-serve tier, including the free tier. Paid-to-free cancellation is still
+    allowed because it schedules
+     the existing subscription to end. * Plan row must have ``stripe_price_id`` populated (ops sets
      this after creating the Stripe Price). If not populated for
      the requested tier, the route returns 503.
 
@@ -135,8 +136,9 @@ def sync(
     credits). Required state:
      * Tenant must have ``has_payment_method=True`` (i.e. attached a
      chargeable card or Link PM via the SetupIntent flow) before
-     selecting any paid tier. Free tier is always selectable. * Plan row must have ``stripe_price_id``
-    populated (ops sets
+     selecting any public self-serve tier, including the free tier. Paid-to-free cancellation is still
+    allowed because it schedules
+     the existing subscription to end. * Plan row must have ``stripe_price_id`` populated (ops sets
      this after creating the Stripe Price). If not populated for
      the requested tier, the route returns 503.
 
@@ -176,8 +178,9 @@ async def asyncio_detailed(
     credits). Required state:
      * Tenant must have ``has_payment_method=True`` (i.e. attached a
      chargeable card or Link PM via the SetupIntent flow) before
-     selecting any paid tier. Free tier is always selectable. * Plan row must have ``stripe_price_id``
-    populated (ops sets
+     selecting any public self-serve tier, including the free tier. Paid-to-free cancellation is still
+    allowed because it schedules
+     the existing subscription to end. * Plan row must have ``stripe_price_id`` populated (ops sets
      this after creating the Stripe Price). If not populated for
      the requested tier, the route returns 503.
 
@@ -220,8 +223,9 @@ async def asyncio(
     credits). Required state:
      * Tenant must have ``has_payment_method=True`` (i.e. attached a
      chargeable card or Link PM via the SetupIntent flow) before
-     selecting any paid tier. Free tier is always selectable. * Plan row must have ``stripe_price_id``
-    populated (ops sets
+     selecting any public self-serve tier, including the free tier. Paid-to-free cancellation is still
+    allowed because it schedules
+     the existing subscription to end. * Plan row must have ``stripe_price_id`` populated (ops sets
      this after creating the Stripe Price). If not populated for
      the requested tier, the route returns 503.
 

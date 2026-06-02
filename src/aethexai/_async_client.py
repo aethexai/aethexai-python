@@ -459,10 +459,10 @@ class AsyncAethexAI:
         from aethexai._generated.api.conversation import (
             offer_api_v1_conversation_session_id_offer_post as _op,
         )
-        from aethexai._generated.models.small_web_rtc_request import SmallWebRTCRequest
+        from aethexai._generated.models.offer_request import OfferRequest
 
         return await self._call(
-            _op.asyncio_detailed, session_id, body=build_body(SmallWebRTCRequest, fields)
+            _op.asyncio_detailed, session_id, body=build_body(OfferRequest, fields)
         )
 
     async def send_tool_result(self, session_id: str, **fields: Any) -> Any:
@@ -1017,6 +1017,14 @@ class AsyncAethexAI:
         """Return the closed tag vocabulary for voices."""
         from aethexai._generated.api.voices import (
             list_tag_vocabulary_api_v1_voices_tag_vocabulary_get as _op,
+        )
+
+        return await self._call(_op.asyncio_detailed)
+
+    async def list_countries(self) -> Any:
+        """List the country codes accepted by the ``country`` voice filter."""
+        from aethexai._generated.api.voices import (
+            list_countries_api_v1_voices_countries_get as _op,
         )
 
         return await self._call(_op.asyncio_detailed)

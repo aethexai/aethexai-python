@@ -75,8 +75,9 @@ def sync_detailed(
     """Tool Result
 
      Submit a tool call result back to an active session. When the LLM calls a client-side tool, the
-    client processes it and sends the result back via this endpoint. The result is injected into the LLM
-    context as a tool response and triggers a continuation.
+    client processes it and
+    sends the result back via this endpoint. The result is injected into
+    the LLM context as a tool response and triggers a continuation.
 
     Args:
         session_id (str):
@@ -111,8 +112,9 @@ def sync(
     """Tool Result
 
      Submit a tool call result back to an active session. When the LLM calls a client-side tool, the
-    client processes it and sends the result back via this endpoint. The result is injected into the LLM
-    context as a tool response and triggers a continuation.
+    client processes it and
+    sends the result back via this endpoint. The result is injected into
+    the LLM context as a tool response and triggers a continuation.
 
     Args:
         session_id (str):
@@ -142,8 +144,9 @@ async def asyncio_detailed(
     """Tool Result
 
      Submit a tool call result back to an active session. When the LLM calls a client-side tool, the
-    client processes it and sends the result back via this endpoint. The result is injected into the LLM
-    context as a tool response and triggers a continuation.
+    client processes it and
+    sends the result back via this endpoint. The result is injected into
+    the LLM context as a tool response and triggers a continuation.
 
     Args:
         session_id (str):
@@ -176,8 +179,9 @@ async def asyncio(
     """Tool Result
 
      Submit a tool call result back to an active session. When the LLM calls a client-side tool, the
-    client processes it and sends the result back via this endpoint. The result is injected into the LLM
-    context as a tool response and triggers a continuation.
+    client processes it and
+    sends the result back via this endpoint. The result is injected into
+    the LLM context as a tool response and triggers a continuation.
 
     Args:
         session_id (str):

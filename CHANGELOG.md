@@ -20,10 +20,13 @@ All notable changes to this project are documented here. Format based on [Keep a
 - The inline async transcription routes (`transcribe_async`, `transcribe_audio_async`) now raise a typed `aethexai.ValidationError` client-side when handed a WAV longer than the ~35s per-request limit, pointing callers at the auto-chunking `Kora.transcribe` / `AethexAI.transcribe_audio` paths instead of failing with the opaque server "Audio too long" error. The by-upload routes only receive an `upload_id` (no local bytes) and remain server-bound.
 - `PaginatedResponse` now implements a consistent sequence protocol over `.data`. `len(page)` works (previously raised `TypeError: object of type 'PaginatedResponse' has no len()`); `len`, integer/slice indexing, iteration, `in`, and `del` all operate on the page's items. Previously the protocol was mixed — `page[0]` returned a typed item while `x in page` and `del page[...]` silently targeted `additional_properties`. Note that `x in page` now tests membership against the page items (`.data`) rather than `additional_properties` keys. Forward-compat extra fields remain reachable via the `additional_properties` attribute, `additional_keys`, and string-key subscript (`page["key"]` / `page["key"] = ...`). Each `PaginatedResponse` still holds one page — loop while `page.has_more` to consume every page.
 
-## [0.3.0]
+## [0.4.0] — 2026-06-02
+
+Synced to the current backend OpenAPI contract and adds a voice-catalog helper.
 
 ### Added
 
+- `AethexAI.list_countries()` / `AsyncAethexAI.list_countries()` — wrapper for `GET /api/v1/voices/countries`. Returns the closed set of ISO 3166-1 alpha-2 country codes (as `{"code", "name"}` items) accepted by the `country` filter on `list_voices`, so a country picker can be rendered without hardcoding the list.
 - `AethexAI.list_tag_vocabulary()` / `AsyncAethexAI.list_tag_vocabulary()` — wrapper for `GET /api/v1/voices/tag-vocabulary`. Returns the closed-vocabulary tag set (tone, voice_texture, delivery_style, business_persona) used by voice tagging and accepted by `GET /voices?tag=...`.
 
 ### Changed
@@ -35,6 +38,7 @@ All notable changes to this project are documented here. Format based on [Keep a
 - `create_agent`, `update_agent`, and `duplicate_agent` now return a typed `AgentResponse` instead of a raw `dict`, so code can use attribute access (`agent.id`) instead of `agent["id"]`. The typed parsing is durable across SDK regenerations, including `update_agent` (PATCH 200).
 
 ### Fixed
+- `Kora.transcribe` now transcribes WAV recordings longer than 35s. When WAV audio is passed as `bytes` and exceeds 35s it is split into ≤35s chunks, transcribed per chunk, and the transcripts are concatenated (`.segments` reflect only the first chunk). Non-WAV bytes and stream/`File` inputs are unchanged.
 - `send_offer()` / `send_ice_candidate()` no longer raise a false `Missing required field` error. `build_body` compared required fields by the generated Python attribute name (`type_`) instead of the JSON wire name (`type`), so the WebRTC signalling wrappers always rejected valid input before the request went out.
 - `[realtime]` extra now installs from a binary wheel on supported Pythons instead of forcing a from-source PyAV build. Pinned to `av>=14.0.0,!=14.4.0,<15` so it resolves to `av==14.2.0` — the newest 14.x with cp310–cp313 wheels (FFmpeg bundled) — so no system FFmpeg is needed on manylinux, macOS, or Windows. (Alpine/musl has no `av` 14.x musllinux wheel and still builds from source.)
 - Removed the public `get_conversation_diagnostics` wrapper from `AethexAI` / `AsyncAethexAI`. The endpoint is not callable with a public API key, so the wrapper is removed rather than repointed.

@@ -269,10 +269,34 @@ def _strip_generated_comments() -> int:
     return 0
 
 
-_NON_PUBLIC_TAGS = frozenset({"internal", "internal-admin", "health", "metrics", "dashboard"})
+_NON_PUBLIC_TAGS = frozenset(
+    {"internal", "internal-admin", "admin", "health", "metrics", "dashboard"}
+)
 
 # Path prefixes that are internal regardless of tagging (belt-and-suspenders).
-_NON_PUBLIC_PATH_PREFIXES = ("/internal",)
+# Extended for the post-prod backend surface: ``main`` runs far ahead of the
+# frozen prod spec the original denylist was tuned for, and adds an admin
+# console, a developer-dashboard backend, telephony (Twilio/SIP) webhooks,
+# un-versioned internal/demo routes, and operational probes — none of which are
+# customer surface. The two unauthenticated, docs-site-facing voice routes are
+# excluded too: ``/voices/public`` (globals-only catalog) and the static
+# ``/voices/{id}/preview.wav`` clip are redundant with the authenticated
+# ``list_voices`` / ``preview_voice`` the SDK already ships, and their
+# descriptions narrate storage/runtime internals.
+_NON_PUBLIC_PATH_PREFIXES = (
+    "/internal",
+    "/health",
+    "/dashboard",
+    "/api/dashboard",
+    "/twilio",
+    "/aethex-sip",
+    "/api/sounds",
+    "/api/stats",
+    "/api/transcribe",
+    "/api/tts",
+    "/api/v1/voices/public",
+    "/api/v1/voices/{voice_id}/preview.wav",
+)
 
 _HTTP_METHODS = frozenset({"get", "put", "post", "delete", "options", "head", "patch", "trace"})
 
@@ -288,6 +312,11 @@ _TEXT_SCRUB_PATTERNS = (
     re.compile(r"\bvo_[a-z_]+\b"),  # internal DB table names
     re.compile(r":(?:data|meth|class|func|attr|mod):`[^`]*`"),  # sphinx symbol refs
     re.compile(r"\bAETHEX_[A-Z][A-Z0-9_]*\b"),  # internal env-var names
+    re.compile(r"\bPAYG_[A-Z_]+\b"),  # internal pricing/config constants
+    # Lowercase ``<name>-aethex`` is an internal GitHub username left in reviewer
+    # notes; the public ``X-Aethex-Signature`` header (capital A) is NOT matched.
+    re.compile(r"\b[a-z]{3,}-aethex\b"),
+    re.compile(r"\bround-\d+\s+MUST\b", re.IGNORECASE),  # reviewer note shorthand
 )
 
 # A sentence mentioning any of these infra nouns is dropped wholesale — customers
@@ -295,7 +324,10 @@ _TEXT_SCRUB_PATTERNS = (
 _INFRA_SENTENCE_TERMS = re.compile(
     r"\b(redis|elasticache|postgres|clickhouse|langfuse|grafana|cloudwatch|kubernetes|"
     r"k8s|kubectl|prestop|sigterm|alb|waf|nlb|karpenter|ecr|eks|pgbouncer|coturn|"
-    r"pipecat|vllm|omniasr|cloudflare|sentry|preStop)\b|app\.state",
+    r"pipecat|vllm|omniasr|cloudflare|sentry|preStop|s3|arq|encryptedstring|"
+    r"qwen\w*|wav2vec\w*|model_size)\b"
+    r"|app\.state|alter\s+type|recording uploader"
+    r"|pod[-\s]aware|cross[-\s]pod|different pod|pod routing",
     re.IGNORECASE,
 )
 

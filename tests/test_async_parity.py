@@ -104,6 +104,27 @@ async def test_parity_list_tag_vocabulary(
     assert _attrs(sync_vocab) == _attrs(async_vocab) == payload
 
 
+# ─── list_countries ─────────────────────────────────────────────────────────
+
+
+@respx.mock
+async def test_parity_list_countries(sync_client: AethexAI, async_client: AsyncAethexAI) -> None:
+    payload = [
+        {"code": "NG", "name": "Nigeria"},
+        {"code": "US", "name": "United States"},
+    ]
+    respx.get(f"{BASE_URL}/api/v1/voices/countries").mock(
+        return_value=httpx.Response(200, json=payload)
+    )
+
+    sync_countries = sync_client.list_countries()
+    async_countries = await async_client.list_countries()
+
+    sync_dicts = [c.to_dict() for c in sync_countries]
+    async_dicts = [c.to_dict() for c in async_countries]
+    assert sync_dicts == async_dicts == payload
+
+
 # ─── list_agents (paginated) ────────────────────────────────────────────────
 
 

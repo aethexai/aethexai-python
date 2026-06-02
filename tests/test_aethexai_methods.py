@@ -184,6 +184,28 @@ def test_list_tag_vocabulary_returns_typed_model(client: AethexAI) -> None:
     assert vocab.to_dict() == payload
 
 
+@respx.mock
+def test_list_countries_returns_typed_items(client: AethexAI) -> None:
+    payload = [
+        {"code": "NG", "name": "Nigeria"},
+        {"code": "US", "name": "United States"},
+    ]
+    route = respx.get(f"{BASE_URL}/api/v1/voices/countries").mock(
+        return_value=httpx.Response(200, json=payload)
+    )
+
+    countries = client.list_countries()
+
+    assert route.called
+    req = route.calls.last.request
+    assert req.method == "GET"
+    assert req.url.path == "/api/v1/voices/countries"
+
+    assert isinstance(countries, list)
+    assert [c.to_dict() for c in countries] == payload
+    assert countries[0]["code"] == "NG"
+
+
 # ─── agents ─────────────────────────────────────────────────────────────────
 
 
