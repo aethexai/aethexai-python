@@ -15,12 +15,17 @@ from __future__ import annotations
 
 import os
 from collections.abc import AsyncIterator
-from typing import Any, cast
+from typing import Any, BinaryIO, cast
 from uuid import UUID
 
 import httpx
 
-from aethexai._body import build_body, ensure_multipart_file_name
+from aethexai._body import (
+    build_body,
+    build_knowledge_doc_body,
+    coerce_uuid,
+    ensure_multipart_file_name,
+)
 from aethexai._exceptions import (
     APIConnectionError,
     APITimeoutError,
@@ -32,7 +37,7 @@ from aethexai._generated.models.agent_response import AgentResponse
 from aethexai._generated.models.call_response import CallResponse
 from aethexai._generated.models.conversation_response import ConversationResponse
 from aethexai._generated.models.paginated_response import PaginatedResponse
-from aethexai._generated.types import UNSET, Unset
+from aethexai._generated.types import UNSET, File, Unset
 
 _DEFAULT_BASE_URL = "https://api.aethexai.com"
 
@@ -58,9 +63,10 @@ class AsyncAethexAI:
         httpx_client: httpx.AsyncClient | None = None,
     ) -> None:
         resolved_key = api_key or os.environ.get("AETHEX_API_KEY", "")
-        if not resolved_key:
+        if not resolved_key.strip():
             raise AuthenticationError(
                 "API key is required. Pass api_key= or set the AETHEX_API_KEY env var.",
+                code="authentication_error",
                 status_code=401,
             )
         self._base_url = base_url.rstrip("/")
@@ -128,13 +134,15 @@ class AsyncAethexAI:
         from aethexai._generated.api.agents import create_agent_api_v1_agents_post as _op
         from aethexai._generated.models.agent_create import AgentCreate
 
-        return await self._call(_op.asyncio_detailed, body=build_body(AgentCreate, fields))
+        return await self._call(
+            _op.asyncio_detailed, body=build_body(AgentCreate, fields, allow_extra=True)
+        )
 
     async def get_agent(self, agent_id: str | UUID) -> Any:
         """Retrieve an agent by id."""
         from aethexai._generated.api.agents import get_agent_api_v1_agents_agent_id_get as _op
 
-        return await self._call(_op.asyncio_detailed, UUID(str(agent_id)))
+        return await self._call(_op.asyncio_detailed, coerce_uuid(agent_id, "agent_id"))
 
     async def update_agent(self, agent_id: str | UUID, **fields: Any) -> Any:
         """Update an existing agent."""
@@ -142,14 +150,16 @@ class AsyncAethexAI:
         from aethexai._generated.models.agent_update import AgentUpdate
 
         return await self._call(
-            _op.asyncio_detailed, UUID(str(agent_id)), body=build_body(AgentUpdate, fields)
+            _op.asyncio_detailed,
+            coerce_uuid(agent_id, "agent_id"),
+            body=build_body(AgentUpdate, fields, allow_extra=True),
         )
 
     async def delete_agent(self, agent_id: str | UUID) -> Any:
         """Delete an agent."""
         from aethexai._generated.api.agents import delete_agent_api_v1_agents_agent_id_delete as _op
 
-        return await self._call(_op.asyncio_detailed, UUID(str(agent_id)))
+        return await self._call(_op.asyncio_detailed, coerce_uuid(agent_id, "agent_id"))
 
     async def duplicate_agent(self, agent_id: str | UUID) -> Any:
         """Duplicate an existing agent."""
@@ -157,7 +167,7 @@ class AsyncAethexAI:
             duplicate_agent_api_v1_agents_agent_id_duplicate_post as _op,
         )
 
-        return await self._call(_op.asyncio_detailed, UUID(str(agent_id)))
+        return await self._call(_op.asyncio_detailed, coerce_uuid(agent_id, "agent_id"))
 
     async def list_agent_tools(self, agent_id: str | UUID) -> Any:
         """List tools for an agent."""
@@ -165,7 +175,7 @@ class AsyncAethexAI:
             list_tools_api_v1_agents_agent_id_tools_get as _op,
         )
 
-        return await self._call(_op.asyncio_detailed, UUID(str(agent_id)))
+        return await self._call(_op.asyncio_detailed, coerce_uuid(agent_id, "agent_id"))
 
     async def add_agent_tool(self, agent_id: str | UUID, **fields: Any) -> Any:
         """Attach a tool to an agent."""
@@ -173,7 +183,9 @@ class AsyncAethexAI:
         from aethexai._generated.models.agent_tool_create import AgentToolCreate
 
         return await self._call(
-            _op.asyncio_detailed, UUID(str(agent_id)), body=build_body(AgentToolCreate, fields)
+            _op.asyncio_detailed,
+            coerce_uuid(agent_id, "agent_id"),
+            body=build_body(AgentToolCreate, fields),
         )
 
     async def update_agent_tool(
@@ -187,8 +199,8 @@ class AsyncAethexAI:
 
         return await self._call(
             _op.asyncio_detailed,
-            UUID(str(agent_id)),
-            UUID(str(tool_id)),
+            coerce_uuid(agent_id, "agent_id"),
+            coerce_uuid(tool_id, "tool_id"),
             body=build_body(AgentToolUpdate, fields),
         )
 
@@ -198,7 +210,9 @@ class AsyncAethexAI:
             delete_tool_api_v1_agents_agent_id_tools_tool_id_delete as _op,
         )
 
-        return await self._call(_op.asyncio_detailed, UUID(str(agent_id)), UUID(str(tool_id)))
+        return await self._call(
+            _op.asyncio_detailed, coerce_uuid(agent_id, "agent_id"), coerce_uuid(tool_id, "tool_id")
+        )
 
     async def list_knowledge_docs(self, agent_id: str | UUID) -> Any:
         """List knowledge-base documents for an agent."""
@@ -206,15 +220,40 @@ class AsyncAethexAI:
             list_knowledge_docs_api_v1_agents_agent_id_knowledge_base_get as _op,
         )
 
-        return await self._call(_op.asyncio_detailed, UUID(str(agent_id)))
+        return await self._call(_op.asyncio_detailed, coerce_uuid(agent_id, "agent_id"))
 
-    async def upload_knowledge_doc(self, agent_id: str | UUID, *, body: Any | Unset = UNSET) -> Any:
-        """Upload a knowledge-base document (multipart)."""
+    async def upload_knowledge_doc(
+        self,
+        agent_id: str | UUID,
+        *,
+        text: str | None = None,
+        file: bytes | BinaryIO | File | None = None,
+        filename: str | None = None,
+        file_name: str | None = None,
+        mime_type: str | None = None,
+        body: Any | Unset = UNSET,
+    ) -> Any:
+        """Upload a knowledge-base document (multipart).
+
+        Provide inline ``text`` or an uploaded ``file`` (raw bytes, a binary
+        stream, or a pre-built ``File``). ``filename`` is the stored document
+        name; ``file_name`` / ``mime_type`` set the uploaded part's metadata.
+        Power users may pass a pre-built ``body`` instead, which takes
+        precedence over the keyword arguments.
+        """
         from aethexai._generated.api.agents import (
             upload_knowledge_doc_api_v1_agents_agent_id_knowledge_base_post as _op,
         )
 
-        return await self._call(_op.asyncio_detailed, UUID(str(agent_id)), body=body)
+        if isinstance(body, Unset):
+            body = build_knowledge_doc_body(
+                text=text,
+                file=file,
+                filename=filename,
+                file_name=file_name,
+                mime_type=mime_type,
+            )
+        return await self._call(_op.asyncio_detailed, coerce_uuid(agent_id, "agent_id"), body=body)
 
     async def upload_knowledge_doc_by_upload(self, agent_id: str | UUID, **fields: Any) -> Any:
         """Attach a previously presigned upload as a knowledge-base doc."""
@@ -227,7 +266,7 @@ class AsyncAethexAI:
 
         return await self._call(
             _op.asyncio_detailed,
-            UUID(str(agent_id)),
+            coerce_uuid(agent_id, "agent_id"),
             body=build_body(KnowledgeDocByUploadRequest, fields),
         )
 
@@ -237,7 +276,9 @@ class AsyncAethexAI:
             delete_knowledge_doc_api_v1_agents_agent_id_knowledge_base_doc_id_delete as _op,
         )
 
-        return await self._call(_op.asyncio_detailed, UUID(str(agent_id)), UUID(str(doc_id)))
+        return await self._call(
+            _op.asyncio_detailed, coerce_uuid(agent_id, "agent_id"), coerce_uuid(doc_id, "doc_id")
+        )
 
     async def process_knowledge_doc(self, agent_id: str | UUID, doc_id: str | UUID) -> Any:
         """Re-process a knowledge-base document."""
@@ -245,7 +286,9 @@ class AsyncAethexAI:
             process_knowledge_doc_api_v1_agents_agent_id_knowledge_base_doc_id_process_post as _op,
         )
 
-        return await self._call(_op.asyncio_detailed, UUID(str(agent_id)), UUID(str(doc_id)))
+        return await self._call(
+            _op.asyncio_detailed, coerce_uuid(agent_id, "agent_id"), coerce_uuid(doc_id, "doc_id")
+        )
 
     async def get_knowledge_texts(self, agent_id: str | UUID) -> Any:
         """Fetch raw knowledge-base text snippets for an agent."""
@@ -253,7 +296,7 @@ class AsyncAethexAI:
             get_knowledge_texts_api_v1_agents_agent_id_knowledge_base_texts_get as _op,
         )
 
-        return await self._call(_op.asyncio_detailed, UUID(str(agent_id)))
+        return await self._call(_op.asyncio_detailed, coerce_uuid(agent_id, "agent_id"))
 
     async def query_knowledge_base(self, agent_id: str | UUID, **fields: Any) -> Any:
         """Query an agent's knowledge base."""
@@ -264,7 +307,7 @@ class AsyncAethexAI:
 
         return await self._call(
             _op.asyncio_detailed,
-            UUID(str(agent_id)),
+            coerce_uuid(agent_id, "agent_id"),
             body=build_body(KnowledgeQueryRequest, fields),
         )
 
@@ -287,7 +330,7 @@ class AsyncAethexAI:
             revoke_api_key_api_v1_api_keys_key_id_delete as _op,
         )
 
-        return await self._call(_op.asyncio_detailed, UUID(str(key_id)))
+        return await self._call(_op.asyncio_detailed, coerce_uuid(key_id, "key_id"))
 
     async def rotate_api_key(self, key_id: str | UUID) -> Any:
         """Rotate an API key."""
@@ -295,7 +338,7 @@ class AsyncAethexAI:
             rotate_api_key_api_v1_api_keys_key_id_rotate_post as _op,
         )
 
-        return await self._call(_op.asyncio_detailed, UUID(str(key_id)))
+        return await self._call(_op.asyncio_detailed, coerce_uuid(key_id, "key_id"))
 
     async def list_calls(
         self,
@@ -334,7 +377,7 @@ class AsyncAethexAI:
         """Retrieve a call by id."""
         from aethexai._generated.api.calls import get_call_api_v1_calls_call_id_get as _op
 
-        return await self._call(_op.asyncio_detailed, UUID(str(call_id)))
+        return await self._call(_op.asyncio_detailed, coerce_uuid(call_id, "call_id"))
 
     async def get_call_status(self, call_id: str | UUID) -> Any:
         """Get a call's current status."""
@@ -342,7 +385,7 @@ class AsyncAethexAI:
             get_call_status_api_v1_calls_call_id_status_get as _op,
         )
 
-        return await self._call(_op.asyncio_detailed, UUID(str(call_id)))
+        return await self._call(_op.asyncio_detailed, coerce_uuid(call_id, "call_id"))
 
     async def trigger_call(self, **fields: Any) -> Any:
         """Place an outbound call."""
@@ -362,7 +405,7 @@ class AsyncAethexAI:
         """Retrieve a call batch by id."""
         from aethexai._generated.api.calls import get_batch_api_v1_calls_batch_batch_id_get as _op
 
-        return await self._call(_op.asyncio_detailed, UUID(str(batch_id)))
+        return await self._call(_op.asyncio_detailed, coerce_uuid(batch_id, "batch_id"))
 
     async def conversation_connect(self, **fields: Any) -> Any:
         """Establish a new conversation session."""
@@ -390,7 +433,35 @@ class AsyncAethexAI:
         return await self._call(_op.asyncio_detailed, session_id)
 
     async def send_ice_candidate(self, session_id: str, **fields: Any) -> Any:
-        """Send an ICE candidate for a WebRTC session."""
+        """Send trickle-ICE candidates for a WebRTC session.
+
+        Despite the singular method name, the request body takes a **list**
+        of candidates plus the peer-connection id — there is no singular
+        ``candidate`` field. Pass these keyword arguments:
+
+        * ``candidates`` (``list[dict]``, required): one or more ICE candidate
+          patches. Each dict needs ``candidate`` (the SDP candidate string),
+          ``sdp_mid`` (``str``), and ``sdp_mline_index`` (``int``).
+        * ``pc_id`` (``str``, required): the peer-connection id returned when
+          the session was established.
+
+        Example::
+
+            await client.send_ice_candidate(
+                session_id,
+                pc_id="pc-123",
+                candidates=[
+                    {
+                        "candidate": "candidate:1 1 udp 2122260223 10.0.0.1 54321 typ host",
+                        "sdp_mid": "0",
+                        "sdp_mline_index": 0,
+                    }
+                ],
+            )
+
+        Passing a singular ``candidate=`` keyword raises ``ValidationError``
+        for the missing required ``candidates`` / ``pc_id`` fields.
+        """
         from aethexai._generated.api.conversation import (
             ice_candidate_api_v1_conversation_session_id_ice_patch as _op,
         )
@@ -405,10 +476,10 @@ class AsyncAethexAI:
         from aethexai._generated.api.conversation import (
             offer_api_v1_conversation_session_id_offer_post as _op,
         )
-        from aethexai._generated.models.small_web_rtc_request import SmallWebRTCRequest
+        from aethexai._generated.models.offer_request import OfferRequest
 
         return await self._call(
-            _op.asyncio_detailed, session_id, body=build_body(SmallWebRTCRequest, fields)
+            _op.asyncio_detailed, session_id, body=build_body(OfferRequest, fields)
         )
 
     async def send_tool_result(self, session_id: str, **fields: Any) -> Any:
@@ -445,7 +516,9 @@ class AsyncAethexAI:
             get_conversation_api_v1_conversations_conversation_id_get as _op,
         )
 
-        return await self._call(_op.asyncio_detailed, UUID(str(conversation_id)))
+        return await self._call(
+            _op.asyncio_detailed, coerce_uuid(conversation_id, "conversation_id")
+        )
 
     async def get_transcript(self, conversation_id: str | UUID) -> Any:
         """Fetch a conversation transcript."""
@@ -453,7 +526,9 @@ class AsyncAethexAI:
             get_transcript_api_v1_conversations_conversation_id_transcript_get as _op,
         )
 
-        return await self._call(_op.asyncio_detailed, UUID(str(conversation_id)))
+        return await self._call(
+            _op.asyncio_detailed, coerce_uuid(conversation_id, "conversation_id")
+        )
 
     async def get_audio(self, conversation_id: str | UUID) -> Any:
         """Get audio metadata for a conversation."""
@@ -461,7 +536,9 @@ class AsyncAethexAI:
             get_audio_api_v1_conversations_conversation_id_audio_get as _op,
         )
 
-        return await self._call(_op.asyncio_detailed, UUID(str(conversation_id)))
+        return await self._call(
+            _op.asyncio_detailed, coerce_uuid(conversation_id, "conversation_id")
+        )
 
     async def stream_audio(
         self,
@@ -486,7 +563,7 @@ class AsyncAethexAI:
             headers["Range"] = range_
 
         url = "/api/v1/conversations/{conversation_id}/audio.wav".format(
-            conversation_id=quote(str(UUID(str(conversation_id))), safe=""),
+            conversation_id=quote(str(coerce_uuid(conversation_id, "conversation_id")), safe=""),
         )
         httpx_client = self._client.get_async_httpx_client()
         try:
@@ -509,7 +586,7 @@ class AsyncAethexAI:
 
         return await self._call(
             _op.asyncio_detailed,
-            UUID(str(conversation_id)),
+            coerce_uuid(conversation_id, "conversation_id"),
             body=build_body(AudioRevokeBody, fields),
         )
 
@@ -522,7 +599,7 @@ class AsyncAethexAI:
 
         return await self._call(
             _op.asyncio_detailed,
-            UUID(str(conversation_id)),
+            coerce_uuid(conversation_id, "conversation_id"),
             body=build_body(ConversationFeedback, fields),
         )
 
@@ -554,7 +631,7 @@ class AsyncAethexAI:
             get_phone_number_api_v1_phone_numbers_pn_id_get as _op,
         )
 
-        return await self._call(_op.asyncio_detailed, UUID(str(pn_id)))
+        return await self._call(_op.asyncio_detailed, coerce_uuid(pn_id, "pn_id"))
 
     async def update_phone_number(self, pn_id: str | UUID, **fields: Any) -> Any:
         """Update a phone number's configuration."""
@@ -564,7 +641,9 @@ class AsyncAethexAI:
         from aethexai._generated.models.phone_number_update import PhoneNumberUpdate
 
         return await self._call(
-            _op.asyncio_detailed, UUID(str(pn_id)), body=build_body(PhoneNumberUpdate, fields)
+            _op.asyncio_detailed,
+            coerce_uuid(pn_id, "pn_id"),
+            body=build_body(PhoneNumberUpdate, fields),
         )
 
     async def release_phone_number(self, pn_id: str | UUID) -> Any:
@@ -573,7 +652,7 @@ class AsyncAethexAI:
             release_phone_number_api_v1_phone_numbers_pn_id_delete as _op,
         )
 
-        return await self._call(_op.asyncio_detailed, UUID(str(pn_id)))
+        return await self._call(_op.asyncio_detailed, coerce_uuid(pn_id, "pn_id"))
 
     async def set_phone_number_routing(self, pn_id: str | UUID, **fields: Any) -> Any:
         """Configure inbound routing for a phone number."""
@@ -584,7 +663,7 @@ class AsyncAethexAI:
 
         return await self._call(
             _op.asyncio_detailed,
-            UUID(str(pn_id)),
+            coerce_uuid(pn_id, "pn_id"),
             body=build_body(InboundRoutingConfig, fields),
         )
 
@@ -633,7 +712,7 @@ class AsyncAethexAI:
             get_twilio_account_api_v1_twilio_accounts_account_id_get as _op,
         )
 
-        return await self._call(_op.asyncio_detailed, UUID(str(account_id)))
+        return await self._call(_op.asyncio_detailed, coerce_uuid(account_id, "account_id"))
 
     async def release_twilio_account(self, account_id: str | UUID) -> Any:
         """Release a tenant-owned Twilio account."""
@@ -641,7 +720,7 @@ class AsyncAethexAI:
             release_twilio_account_api_v1_twilio_accounts_account_id_delete as _op,
         )
 
-        return await self._call(_op.asyncio_detailed, UUID(str(account_id)))
+        return await self._call(_op.asyncio_detailed, coerce_uuid(account_id, "account_id"))
 
     async def list_recordings(self, *, offset: int | Unset = 0, limit: int | Unset = 50) -> Any:
         """List recordings."""
@@ -655,7 +734,7 @@ class AsyncAethexAI:
             get_recording_api_v1_recordings_recording_id_get as _op,
         )
 
-        return await self._call(_op.asyncio_detailed, UUID(str(recording_id)))
+        return await self._call(_op.asyncio_detailed, coerce_uuid(recording_id, "recording_id"))
 
     async def delete_recording(self, recording_id: str | UUID) -> Any:
         """Delete a recording."""
@@ -663,7 +742,7 @@ class AsyncAethexAI:
             delete_recording_api_v1_recordings_recording_id_delete as _op,
         )
 
-        return await self._call(_op.asyncio_detailed, UUID(str(recording_id)))
+        return await self._call(_op.asyncio_detailed, coerce_uuid(recording_id, "recording_id"))
 
     async def get_recording_audio(self, recording_id: str | UUID) -> Any:
         """Get recording audio download metadata."""
@@ -671,7 +750,7 @@ class AsyncAethexAI:
             get_recording_audio_api_v1_recordings_recording_id_audio_get as _op,
         )
 
-        return await self._call(_op.asyncio_detailed, UUID(str(recording_id)))
+        return await self._call(_op.asyncio_detailed, coerce_uuid(recording_id, "recording_id"))
 
     async def transcribe_audio(self, *, body: Any) -> Any:
         """Synchronously transcribe an audio file (multipart)."""
@@ -760,7 +839,7 @@ class AsyncAethexAI:
             get_transcription_job_api_v1_transcribe_job_id_get as _op,
         )
 
-        return await self._call(_op.asyncio_detailed, UUID(str(job_id)))
+        return await self._call(_op.asyncio_detailed, coerce_uuid(job_id, "job_id"))
 
     async def cancel_transcription_job(self, job_id: str | UUID) -> Any:
         """Cancel an in-flight transcription job."""
@@ -768,7 +847,7 @@ class AsyncAethexAI:
             cancel_transcription_job_api_v1_transcribe_job_id_delete as _op,
         )
 
-        return await self._call(_op.asyncio_detailed, UUID(str(job_id)))
+        return await self._call(_op.asyncio_detailed, coerce_uuid(job_id, "job_id"))
 
     async def synthesize_speech(self, **fields: Any) -> bytes:
         """Synthesize speech from text and return the raw audio bytes."""
@@ -826,7 +905,7 @@ class AsyncAethexAI:
         """Retrieve a TTS batch by id."""
         from aethexai._generated.api.tts import get_batch_api_v1_tts_batch_batch_id_get as _op
 
-        return await self._call(_op.asyncio_detailed, UUID(str(batch_id)))
+        return await self._call(_op.asyncio_detailed, coerce_uuid(batch_id, "batch_id"))
 
     async def presign_upload(self, **fields: Any) -> Any:
         """Request a presigned URL for direct file upload."""
@@ -882,7 +961,9 @@ class AsyncAethexAI:
         from aethexai._generated.models.usage_trigger_update import UsageTriggerUpdate
 
         return await self._call(
-            _op.asyncio_detailed, UUID(str(trigger_id)), body=build_body(UsageTriggerUpdate, fields)
+            _op.asyncio_detailed,
+            coerce_uuid(trigger_id, "trigger_id"),
+            body=build_body(UsageTriggerUpdate, fields),
         )
 
     async def list_trigger_firings(self, trigger_id: str | UUID, *, limit: int | Unset = 50) -> Any:
@@ -891,7 +972,9 @@ class AsyncAethexAI:
             list_trigger_firings_api_v1_usage_triggers_trigger_id_firings_get as _op,
         )
 
-        return await self._call(_op.asyncio_detailed, UUID(str(trigger_id)), limit=limit)
+        return await self._call(
+            _op.asyncio_detailed, coerce_uuid(trigger_id, "trigger_id"), limit=limit
+        )
 
     async def redeliver_firing(self, trigger_id: str | UUID, firing_id: str | UUID) -> Any:
         """Re-deliver a webhook firing."""
@@ -899,7 +982,11 @@ class AsyncAethexAI:
             redeliver_firing_api_v1_usage_triggers_trigger_id_firings_firing_id_redeliver_post as _op,
         )
 
-        return await self._call(_op.asyncio_detailed, UUID(str(trigger_id)), UUID(str(firing_id)))
+        return await self._call(
+            _op.asyncio_detailed,
+            coerce_uuid(trigger_id, "trigger_id"),
+            coerce_uuid(firing_id, "firing_id"),
+        )
 
     async def rotate_webhook_secret(self) -> Any:
         """Rotate the tenant-level webhook signing secret."""
@@ -966,6 +1053,14 @@ class AsyncAethexAI:
         """Return the closed tag vocabulary for voices."""
         from aethexai._generated.api.voices import (
             list_tag_vocabulary_api_v1_voices_tag_vocabulary_get as _op,
+        )
+
+        return await self._call(_op.asyncio_detailed)
+
+    async def list_countries(self) -> Any:
+        """List the country codes accepted by the ``country`` voice filter."""
+        from aethexai._generated.api.voices import (
+            list_countries_api_v1_voices_countries_get as _op,
         )
 
         return await self._call(_op.asyncio_detailed)

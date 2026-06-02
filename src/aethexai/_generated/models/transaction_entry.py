@@ -34,7 +34,7 @@ class TransactionEntry:
             id (str):
             tx_type (str):
             details (TransactionEntryDetails | Unset): Free-form metadata (call_id, resource counts, idempotency key, etc).
-                Shape is not guaranteed and may vary by transaction type.
+                Shape is not guaranteed and may change per tx_type.
     """
 
     amount: str

@@ -104,6 +104,27 @@ async def test_parity_list_tag_vocabulary(
     assert _attrs(sync_vocab) == _attrs(async_vocab) == payload
 
 
+# ─── list_countries ─────────────────────────────────────────────────────────
+
+
+@respx.mock
+async def test_parity_list_countries(sync_client: AethexAI, async_client: AsyncAethexAI) -> None:
+    payload = [
+        {"code": "NG", "name": "Nigeria"},
+        {"code": "US", "name": "United States"},
+    ]
+    respx.get(f"{BASE_URL}/api/v1/voices/countries").mock(
+        return_value=httpx.Response(200, json=payload)
+    )
+
+    sync_countries = sync_client.list_countries()
+    async_countries = await async_client.list_countries()
+
+    sync_dicts = [c.to_dict() for c in sync_countries]
+    async_dicts = [c.to_dict() for c in async_countries]
+    assert sync_dicts == async_dicts == payload
+
+
 # ─── list_agents (paginated) ────────────────────────────────────────────────
 
 
@@ -323,6 +344,30 @@ async def test_parity_transcribe_audio_bytes_without_file_name(
 
     assert 'filename="audio"' in sync_wire
     assert 'filename="audio"' in async_wire
+
+
+# ─── upload_knowledge_doc (multipart from friendly kwargs) ──────────────────
+
+
+@respx.mock
+async def test_parity_upload_knowledge_doc(
+    sync_client: AethexAI, async_client: AsyncAethexAI
+) -> None:
+    """Sync and async wrappers build the same multipart body from friendly kwargs."""
+    agent_id = uuid4()
+    route = respx.post(f"{BASE_URL}/api/v1/agents/{agent_id}/knowledge-base").mock(
+        return_value=httpx.Response(201, json={"id": "doc-1"})
+    )
+
+    sync_client.upload_knowledge_doc(agent_id, text="kb body", filename="Doc")
+    await async_client.upload_knowledge_doc(agent_id, text="kb body", filename="Doc")
+
+    assert route.call_count == 2
+    for call in route.calls:
+        assert call.request.headers.get("content-type", "").startswith("multipart/form-data")
+        body = call.request.content
+        assert b'name="text"' in body and b"kb body" in body
+        assert b'name="filename"' in body and b"Doc" in body
 
 
 # ─── transcribe_audio (WAV chunking) ────────────────────────────────────────

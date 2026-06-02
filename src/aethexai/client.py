@@ -18,12 +18,17 @@ from __future__ import annotations
 
 import os
 from collections.abc import Iterator
-from typing import Any, cast
+from typing import Any, BinaryIO, cast
 from uuid import UUID
 
 import httpx
 
-from aethexai._body import build_body, ensure_multipart_file_name
+from aethexai._body import (
+    build_body,
+    build_knowledge_doc_body,
+    coerce_uuid,
+    ensure_multipart_file_name,
+)
 from aethexai._exceptions import (
     APIConnectionError,
     APITimeoutError,
@@ -35,7 +40,7 @@ from aethexai._generated.models.agent_response import AgentResponse
 from aethexai._generated.models.call_response import CallResponse
 from aethexai._generated.models.conversation_response import ConversationResponse
 from aethexai._generated.models.paginated_response import PaginatedResponse
-from aethexai._generated.types import UNSET, Unset
+from aethexai._generated.types import UNSET, File, Unset
 
 _DEFAULT_BASE_URL = "https://api.aethexai.com"
 
@@ -61,9 +66,10 @@ class AethexAI:
         httpx_client: httpx.Client | None = None,
     ) -> None:
         resolved_key = api_key or os.environ.get("AETHEX_API_KEY", "")
-        if not resolved_key:
+        if not resolved_key.strip():
             raise AuthenticationError(
                 "API key is required. Pass api_key= or set the AETHEX_API_KEY env var.",
+                code="authentication_error",
                 status_code=401,
             )
         self._base_url = base_url.rstrip("/")
@@ -136,13 +142,13 @@ class AethexAI:
         from aethexai._generated.api.agents import create_agent_api_v1_agents_post as _op
         from aethexai._generated.models.agent_create import AgentCreate
 
-        return self._call(_op.sync_detailed, body=build_body(AgentCreate, fields))
+        return self._call(_op.sync_detailed, body=build_body(AgentCreate, fields, allow_extra=True))
 
     def get_agent(self, agent_id: str | UUID) -> Any:
         """Retrieve an agent by id. See https://developers.aethexai.com/docs/api-reference/agents."""
         from aethexai._generated.api.agents import get_agent_api_v1_agents_agent_id_get as _op
 
-        return self._call(_op.sync_detailed, UUID(str(agent_id)))
+        return self._call(_op.sync_detailed, coerce_uuid(agent_id, "agent_id"))
 
     def update_agent(self, agent_id: str | UUID, **fields: Any) -> Any:
         """Update an existing agent. See https://developers.aethexai.com/docs/api-reference/agents."""
@@ -150,14 +156,16 @@ class AethexAI:
         from aethexai._generated.models.agent_update import AgentUpdate
 
         return self._call(
-            _op.sync_detailed, UUID(str(agent_id)), body=build_body(AgentUpdate, fields)
+            _op.sync_detailed,
+            coerce_uuid(agent_id, "agent_id"),
+            body=build_body(AgentUpdate, fields, allow_extra=True),
         )
 
     def delete_agent(self, agent_id: str | UUID) -> Any:
         """Delete an agent. See https://developers.aethexai.com/docs/api-reference/agents."""
         from aethexai._generated.api.agents import delete_agent_api_v1_agents_agent_id_delete as _op
 
-        return self._call(_op.sync_detailed, UUID(str(agent_id)))
+        return self._call(_op.sync_detailed, coerce_uuid(agent_id, "agent_id"))
 
     def duplicate_agent(self, agent_id: str | UUID) -> Any:
         """Duplicate an existing agent. See https://developers.aethexai.com/docs/api-reference/agents."""
@@ -165,7 +173,7 @@ class AethexAI:
             duplicate_agent_api_v1_agents_agent_id_duplicate_post as _op,
         )
 
-        return self._call(_op.sync_detailed, UUID(str(agent_id)))
+        return self._call(_op.sync_detailed, coerce_uuid(agent_id, "agent_id"))
 
     def list_agent_tools(self, agent_id: str | UUID) -> Any:
         """List tools for an agent. See https://developers.aethexai.com/docs/api-reference/agents."""
@@ -173,7 +181,7 @@ class AethexAI:
             list_tools_api_v1_agents_agent_id_tools_get as _op,
         )
 
-        return self._call(_op.sync_detailed, UUID(str(agent_id)))
+        return self._call(_op.sync_detailed, coerce_uuid(agent_id, "agent_id"))
 
     def add_agent_tool(self, agent_id: str | UUID, **fields: Any) -> Any:
         """Attach a tool to an agent. See https://developers.aethexai.com/docs/api-reference/agents."""
@@ -181,7 +189,9 @@ class AethexAI:
         from aethexai._generated.models.agent_tool_create import AgentToolCreate
 
         return self._call(
-            _op.sync_detailed, UUID(str(agent_id)), body=build_body(AgentToolCreate, fields)
+            _op.sync_detailed,
+            coerce_uuid(agent_id, "agent_id"),
+            body=build_body(AgentToolCreate, fields),
         )
 
     def update_agent_tool(self, agent_id: str | UUID, tool_id: str | UUID, **fields: Any) -> Any:
@@ -193,8 +203,8 @@ class AethexAI:
 
         return self._call(
             _op.sync_detailed,
-            UUID(str(agent_id)),
-            UUID(str(tool_id)),
+            coerce_uuid(agent_id, "agent_id"),
+            coerce_uuid(tool_id, "tool_id"),
             body=build_body(AgentToolUpdate, fields),
         )
 
@@ -204,7 +214,9 @@ class AethexAI:
             delete_tool_api_v1_agents_agent_id_tools_tool_id_delete as _op,
         )
 
-        return self._call(_op.sync_detailed, UUID(str(agent_id)), UUID(str(tool_id)))
+        return self._call(
+            _op.sync_detailed, coerce_uuid(agent_id, "agent_id"), coerce_uuid(tool_id, "tool_id")
+        )
 
     def list_knowledge_docs(self, agent_id: str | UUID) -> Any:
         """List knowledge-base documents for an agent. See https://developers.aethexai.com/docs/concepts/knowledge-base."""
@@ -212,15 +224,40 @@ class AethexAI:
             list_knowledge_docs_api_v1_agents_agent_id_knowledge_base_get as _op,
         )
 
-        return self._call(_op.sync_detailed, UUID(str(agent_id)))
+        return self._call(_op.sync_detailed, coerce_uuid(agent_id, "agent_id"))
 
-    def upload_knowledge_doc(self, agent_id: str | UUID, *, body: Any | Unset = UNSET) -> Any:
-        """Upload a knowledge-base document (multipart). See https://developers.aethexai.com/docs/concepts/knowledge-base."""
+    def upload_knowledge_doc(
+        self,
+        agent_id: str | UUID,
+        *,
+        text: str | None = None,
+        file: bytes | BinaryIO | File | None = None,
+        filename: str | None = None,
+        file_name: str | None = None,
+        mime_type: str | None = None,
+        body: Any | Unset = UNSET,
+    ) -> Any:
+        """Upload a knowledge-base document (multipart). See https://developers.aethexai.com/docs/concepts/knowledge-base.
+
+        Provide inline ``text`` or an uploaded ``file`` (raw bytes, a binary
+        stream, or a pre-built ``File``). ``filename`` is the stored document
+        name; ``file_name`` / ``mime_type`` set the uploaded part's metadata.
+        Power users may pass a pre-built ``body`` instead, which takes
+        precedence over the keyword arguments.
+        """
         from aethexai._generated.api.agents import (
             upload_knowledge_doc_api_v1_agents_agent_id_knowledge_base_post as _op,
         )
 
-        return self._call(_op.sync_detailed, UUID(str(agent_id)), body=body)
+        if isinstance(body, Unset):
+            body = build_knowledge_doc_body(
+                text=text,
+                file=file,
+                filename=filename,
+                file_name=file_name,
+                mime_type=mime_type,
+            )
+        return self._call(_op.sync_detailed, coerce_uuid(agent_id, "agent_id"), body=body)
 
     def upload_knowledge_doc_by_upload(self, agent_id: str | UUID, **fields: Any) -> Any:
         """Attach a previously presigned upload as a knowledge-base doc. See https://developers.aethexai.com/docs/concepts/knowledge-base."""
@@ -233,7 +270,7 @@ class AethexAI:
 
         return self._call(
             _op.sync_detailed,
-            UUID(str(agent_id)),
+            coerce_uuid(agent_id, "agent_id"),
             body=build_body(KnowledgeDocByUploadRequest, fields),
         )
 
@@ -243,7 +280,9 @@ class AethexAI:
             delete_knowledge_doc_api_v1_agents_agent_id_knowledge_base_doc_id_delete as _op,
         )
 
-        return self._call(_op.sync_detailed, UUID(str(agent_id)), UUID(str(doc_id)))
+        return self._call(
+            _op.sync_detailed, coerce_uuid(agent_id, "agent_id"), coerce_uuid(doc_id, "doc_id")
+        )
 
     def process_knowledge_doc(self, agent_id: str | UUID, doc_id: str | UUID) -> Any:
         """Re-process a knowledge-base document. See https://developers.aethexai.com/docs/concepts/knowledge-base."""
@@ -251,7 +290,9 @@ class AethexAI:
             process_knowledge_doc_api_v1_agents_agent_id_knowledge_base_doc_id_process_post as _op,
         )
 
-        return self._call(_op.sync_detailed, UUID(str(agent_id)), UUID(str(doc_id)))
+        return self._call(
+            _op.sync_detailed, coerce_uuid(agent_id, "agent_id"), coerce_uuid(doc_id, "doc_id")
+        )
 
     def get_knowledge_texts(self, agent_id: str | UUID) -> Any:
         """Fetch raw knowledge-base text snippets for an agent. See https://developers.aethexai.com/docs/concepts/knowledge-base."""
@@ -259,7 +300,7 @@ class AethexAI:
             get_knowledge_texts_api_v1_agents_agent_id_knowledge_base_texts_get as _op,
         )
 
-        return self._call(_op.sync_detailed, UUID(str(agent_id)))
+        return self._call(_op.sync_detailed, coerce_uuid(agent_id, "agent_id"))
 
     def query_knowledge_base(self, agent_id: str | UUID, **fields: Any) -> Any:
         """Query an agent's knowledge base. See https://developers.aethexai.com/docs/concepts/knowledge-base."""
@@ -270,7 +311,7 @@ class AethexAI:
 
         return self._call(
             _op.sync_detailed,
-            UUID(str(agent_id)),
+            coerce_uuid(agent_id, "agent_id"),
             body=build_body(KnowledgeQueryRequest, fields),
         )
 
@@ -293,7 +334,7 @@ class AethexAI:
             revoke_api_key_api_v1_api_keys_key_id_delete as _op,
         )
 
-        return self._call(_op.sync_detailed, UUID(str(key_id)))
+        return self._call(_op.sync_detailed, coerce_uuid(key_id, "key_id"))
 
     def rotate_api_key(self, key_id: str | UUID) -> Any:
         """Rotate an API key. See https://developers.aethexai.com/docs/authentication."""
@@ -301,7 +342,7 @@ class AethexAI:
             rotate_api_key_api_v1_api_keys_key_id_rotate_post as _op,
         )
 
-        return self._call(_op.sync_detailed, UUID(str(key_id)))
+        return self._call(_op.sync_detailed, coerce_uuid(key_id, "key_id"))
 
     def list_calls(
         self,
@@ -336,7 +377,7 @@ class AethexAI:
         """Retrieve a call by id. See https://developers.aethexai.com/docs/api-reference/calls."""
         from aethexai._generated.api.calls import get_call_api_v1_calls_call_id_get as _op
 
-        return self._call(_op.sync_detailed, UUID(str(call_id)))
+        return self._call(_op.sync_detailed, coerce_uuid(call_id, "call_id"))
 
     def get_call_status(self, call_id: str | UUID) -> Any:
         """Get a call's current status. See https://developers.aethexai.com/docs/api-reference/calls."""
@@ -344,7 +385,7 @@ class AethexAI:
             get_call_status_api_v1_calls_call_id_status_get as _op,
         )
 
-        return self._call(_op.sync_detailed, UUID(str(call_id)))
+        return self._call(_op.sync_detailed, coerce_uuid(call_id, "call_id"))
 
     def trigger_call(self, **fields: Any) -> Any:
         """Place an outbound call. See https://developers.aethexai.com/docs/api-reference/calls."""
@@ -364,7 +405,7 @@ class AethexAI:
         """Retrieve a call batch by id. See https://developers.aethexai.com/docs/api-reference/calls."""
         from aethexai._generated.api.calls import get_batch_api_v1_calls_batch_batch_id_get as _op
 
-        return self._call(_op.sync_detailed, UUID(str(batch_id)))
+        return self._call(_op.sync_detailed, coerce_uuid(batch_id, "batch_id"))
 
     def conversation_connect(self, **fields: Any) -> Any:
         """Establish a new conversation session. See https://developers.aethexai.com/docs/api-reference/conversation."""
@@ -392,7 +433,35 @@ class AethexAI:
         return self._call(_op.sync_detailed, session_id)
 
     def send_ice_candidate(self, session_id: str, **fields: Any) -> Any:
-        """Send an ICE candidate for a WebRTC session. See https://developers.aethexai.com/docs/api-reference/conversation."""
+        """Send trickle-ICE candidates for a WebRTC session. See https://developers.aethexai.com/docs/api-reference/conversation.
+
+        Despite the singular method name, the request body takes a **list**
+        of candidates plus the peer-connection id — there is no singular
+        ``candidate`` field. Pass these keyword arguments:
+
+        * ``candidates`` (``list[dict]``, required): one or more ICE candidate
+          patches. Each dict needs ``candidate`` (the SDP candidate string),
+          ``sdp_mid`` (``str``), and ``sdp_mline_index`` (``int``).
+        * ``pc_id`` (``str``, required): the peer-connection id returned when
+          the session was established.
+
+        Example::
+
+            client.send_ice_candidate(
+                session_id,
+                pc_id="pc-123",
+                candidates=[
+                    {
+                        "candidate": "candidate:1 1 udp 2122260223 10.0.0.1 54321 typ host",
+                        "sdp_mid": "0",
+                        "sdp_mline_index": 0,
+                    }
+                ],
+            )
+
+        Passing a singular ``candidate=`` keyword raises ``ValidationError``
+        for the missing required ``candidates`` / ``pc_id`` fields.
+        """
         from aethexai._generated.api.conversation import (
             ice_candidate_api_v1_conversation_session_id_ice_patch as _op,
         )
@@ -407,11 +476,9 @@ class AethexAI:
         from aethexai._generated.api.conversation import (
             offer_api_v1_conversation_session_id_offer_post as _op,
         )
-        from aethexai._generated.models.small_web_rtc_request import SmallWebRTCRequest
+        from aethexai._generated.models.offer_request import OfferRequest
 
-        return self._call(
-            _op.sync_detailed, session_id, body=build_body(SmallWebRTCRequest, fields)
-        )
+        return self._call(_op.sync_detailed, session_id, body=build_body(OfferRequest, fields))
 
     def send_tool_result(self, session_id: str, **fields: Any) -> Any:
         """Return a tool-call result to a live conversation. See https://developers.aethexai.com/docs/api-reference/conversation."""
@@ -445,7 +512,7 @@ class AethexAI:
             get_conversation_api_v1_conversations_conversation_id_get as _op,
         )
 
-        return self._call(_op.sync_detailed, UUID(str(conversation_id)))
+        return self._call(_op.sync_detailed, coerce_uuid(conversation_id, "conversation_id"))
 
     def get_transcript(self, conversation_id: str | UUID) -> Any:
         """Fetch a conversation transcript. See https://developers.aethexai.com/docs/api-reference/conversations."""
@@ -453,7 +520,7 @@ class AethexAI:
             get_transcript_api_v1_conversations_conversation_id_transcript_get as _op,
         )
 
-        return self._call(_op.sync_detailed, UUID(str(conversation_id)))
+        return self._call(_op.sync_detailed, coerce_uuid(conversation_id, "conversation_id"))
 
     def get_audio(self, conversation_id: str | UUID) -> Any:
         """Get audio metadata for a conversation. See https://developers.aethexai.com/docs/api-reference/conversations."""
@@ -461,7 +528,7 @@ class AethexAI:
             get_audio_api_v1_conversations_conversation_id_audio_get as _op,
         )
 
-        return self._call(_op.sync_detailed, UUID(str(conversation_id)))
+        return self._call(_op.sync_detailed, coerce_uuid(conversation_id, "conversation_id"))
 
     def stream_audio(
         self,
@@ -488,7 +555,7 @@ class AethexAI:
             headers["Range"] = range_
 
         url = "/api/v1/conversations/{conversation_id}/audio.wav".format(
-            conversation_id=quote(str(UUID(str(conversation_id))), safe=""),
+            conversation_id=quote(str(coerce_uuid(conversation_id, "conversation_id")), safe=""),
         )
         httpx_client = self._client.get_httpx_client()
         try:
@@ -510,7 +577,9 @@ class AethexAI:
         from aethexai._generated.models.audio_revoke_body import AudioRevokeBody
 
         return self._call(
-            _op.sync_detailed, UUID(str(conversation_id)), body=build_body(AudioRevokeBody, fields)
+            _op.sync_detailed,
+            coerce_uuid(conversation_id, "conversation_id"),
+            body=build_body(AudioRevokeBody, fields),
         )
 
     def submit_feedback(self, conversation_id: str | UUID, **fields: Any) -> Any:
@@ -522,7 +591,7 @@ class AethexAI:
 
         return self._call(
             _op.sync_detailed,
-            UUID(str(conversation_id)),
+            coerce_uuid(conversation_id, "conversation_id"),
             body=build_body(ConversationFeedback, fields),
         )
 
@@ -554,7 +623,7 @@ class AethexAI:
             get_phone_number_api_v1_phone_numbers_pn_id_get as _op,
         )
 
-        return self._call(_op.sync_detailed, UUID(str(pn_id)))
+        return self._call(_op.sync_detailed, coerce_uuid(pn_id, "pn_id"))
 
     def update_phone_number(self, pn_id: str | UUID, **fields: Any) -> Any:
         """Update a phone number's configuration. See https://developers.aethexai.com/docs/api-reference/phone-numbers."""
@@ -564,7 +633,9 @@ class AethexAI:
         from aethexai._generated.models.phone_number_update import PhoneNumberUpdate
 
         return self._call(
-            _op.sync_detailed, UUID(str(pn_id)), body=build_body(PhoneNumberUpdate, fields)
+            _op.sync_detailed,
+            coerce_uuid(pn_id, "pn_id"),
+            body=build_body(PhoneNumberUpdate, fields),
         )
 
     def release_phone_number(self, pn_id: str | UUID) -> Any:
@@ -573,7 +644,7 @@ class AethexAI:
             release_phone_number_api_v1_phone_numbers_pn_id_delete as _op,
         )
 
-        return self._call(_op.sync_detailed, UUID(str(pn_id)))
+        return self._call(_op.sync_detailed, coerce_uuid(pn_id, "pn_id"))
 
     def set_phone_number_routing(self, pn_id: str | UUID, **fields: Any) -> Any:
         """Configure inbound routing for a phone number. See https://developers.aethexai.com/docs/api-reference/phone-numbers."""
@@ -584,7 +655,7 @@ class AethexAI:
 
         return self._call(
             _op.sync_detailed,
-            UUID(str(pn_id)),
+            coerce_uuid(pn_id, "pn_id"),
             body=build_body(InboundRoutingConfig, fields),
         )
 
@@ -629,7 +700,7 @@ class AethexAI:
             get_twilio_account_api_v1_twilio_accounts_account_id_get as _op,
         )
 
-        return self._call(_op.sync_detailed, UUID(str(account_id)))
+        return self._call(_op.sync_detailed, coerce_uuid(account_id, "account_id"))
 
     def release_twilio_account(self, account_id: str | UUID) -> Any:
         """Release a tenant-owned Twilio account."""
@@ -637,7 +708,7 @@ class AethexAI:
             release_twilio_account_api_v1_twilio_accounts_account_id_delete as _op,
         )
 
-        return self._call(_op.sync_detailed, UUID(str(account_id)))
+        return self._call(_op.sync_detailed, coerce_uuid(account_id, "account_id"))
 
     def list_recordings(self, *, offset: int | Unset = 0, limit: int | Unset = 50) -> Any:
         """List recordings. See https://developers.aethexai.com/docs/api-reference/recordings."""
@@ -651,7 +722,7 @@ class AethexAI:
             get_recording_api_v1_recordings_recording_id_get as _op,
         )
 
-        return self._call(_op.sync_detailed, UUID(str(recording_id)))
+        return self._call(_op.sync_detailed, coerce_uuid(recording_id, "recording_id"))
 
     def delete_recording(self, recording_id: str | UUID) -> Any:
         """Delete a recording. See https://developers.aethexai.com/docs/api-reference/recordings."""
@@ -659,7 +730,7 @@ class AethexAI:
             delete_recording_api_v1_recordings_recording_id_delete as _op,
         )
 
-        return self._call(_op.sync_detailed, UUID(str(recording_id)))
+        return self._call(_op.sync_detailed, coerce_uuid(recording_id, "recording_id"))
 
     def get_recording_audio(self, recording_id: str | UUID) -> Any:
         """Get recording audio download metadata. See https://developers.aethexai.com/docs/api-reference/recordings."""
@@ -667,7 +738,7 @@ class AethexAI:
             get_recording_audio_api_v1_recordings_recording_id_audio_get as _op,
         )
 
-        return self._call(_op.sync_detailed, UUID(str(recording_id)))
+        return self._call(_op.sync_detailed, coerce_uuid(recording_id, "recording_id"))
 
     def transcribe_audio(self, *, body: Any) -> Any:
         """Synchronously transcribe an audio file (multipart). See https://developers.aethexai.com/docs/api-reference/transcription."""
@@ -754,7 +825,7 @@ class AethexAI:
             get_transcription_job_api_v1_transcribe_job_id_get as _op,
         )
 
-        return self._call(_op.sync_detailed, UUID(str(job_id)))
+        return self._call(_op.sync_detailed, coerce_uuid(job_id, "job_id"))
 
     def cancel_transcription_job(self, job_id: str | UUID) -> Any:
         """Cancel an in-flight transcription job. See https://developers.aethexai.com/docs/api-reference/transcription."""
@@ -762,7 +833,7 @@ class AethexAI:
             cancel_transcription_job_api_v1_transcribe_job_id_delete as _op,
         )
 
-        return self._call(_op.sync_detailed, UUID(str(job_id)))
+        return self._call(_op.sync_detailed, coerce_uuid(job_id, "job_id"))
 
     def synthesize_speech(self, **fields: Any) -> bytes:
         """Synthesize speech from text and return the raw audio bytes."""
@@ -819,7 +890,7 @@ class AethexAI:
         """Retrieve a TTS batch by id. See https://developers.aethexai.com/docs/api-reference/tts."""
         from aethexai._generated.api.tts import get_batch_api_v1_tts_batch_batch_id_get as _op
 
-        return self._call(_op.sync_detailed, UUID(str(batch_id)))
+        return self._call(_op.sync_detailed, coerce_uuid(batch_id, "batch_id"))
 
     def presign_upload(self, **fields: Any) -> Any:
         """Request a presigned URL for direct file upload. See https://developers.aethexai.com/docs/api-reference/uploads."""
@@ -875,7 +946,9 @@ class AethexAI:
         from aethexai._generated.models.usage_trigger_update import UsageTriggerUpdate
 
         return self._call(
-            _op.sync_detailed, UUID(str(trigger_id)), body=build_body(UsageTriggerUpdate, fields)
+            _op.sync_detailed,
+            coerce_uuid(trigger_id, "trigger_id"),
+            body=build_body(UsageTriggerUpdate, fields),
         )
 
     def list_trigger_firings(self, trigger_id: str | UUID, *, limit: int | Unset = 50) -> Any:
@@ -884,7 +957,7 @@ class AethexAI:
             list_trigger_firings_api_v1_usage_triggers_trigger_id_firings_get as _op,
         )
 
-        return self._call(_op.sync_detailed, UUID(str(trigger_id)), limit=limit)
+        return self._call(_op.sync_detailed, coerce_uuid(trigger_id, "trigger_id"), limit=limit)
 
     def redeliver_firing(self, trigger_id: str | UUID, firing_id: str | UUID) -> Any:
         """Re-deliver a webhook firing. See https://developers.aethexai.com/docs/concepts/webhooks."""
@@ -892,7 +965,11 @@ class AethexAI:
             redeliver_firing_api_v1_usage_triggers_trigger_id_firings_firing_id_redeliver_post as _op,
         )
 
-        return self._call(_op.sync_detailed, UUID(str(trigger_id)), UUID(str(firing_id)))
+        return self._call(
+            _op.sync_detailed,
+            coerce_uuid(trigger_id, "trigger_id"),
+            coerce_uuid(firing_id, "firing_id"),
+        )
 
     def rotate_webhook_secret(self) -> Any:
         """Rotate the tenant-level webhook signing secret. See https://developers.aethexai.com/docs/concepts/webhooks."""
@@ -970,6 +1047,22 @@ class AethexAI:
         """
         from aethexai._generated.api.voices import (
             list_tag_vocabulary_api_v1_voices_tag_vocabulary_get as _op,
+        )
+
+        return self._call(_op.sync_detailed)
+
+    def list_countries(self) -> Any:
+        """List the country codes accepted by the ``country`` voice filter.
+
+        Returns the closed set of ISO 3166-1 alpha-2 country codes as
+        ``{"code", "name"}`` items (e.g. ``{"code": "NG", "name": "Nigeria"}``),
+        the same values accepted by ``list_voices(country=...)``. Use it to
+        populate a country picker without hardcoding the list.
+
+        See https://developers.aethexai.com/docs/api-reference/voices.
+        """
+        from aethexai._generated.api.voices import (
+            list_countries_api_v1_voices_countries_get as _op,
         )
 
         return self._call(_op.sync_detailed)

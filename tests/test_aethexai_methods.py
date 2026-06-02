@@ -185,6 +185,28 @@ def test_list_tag_vocabulary_returns_typed_model(client: AethexAI) -> None:
     assert vocab.to_dict() == payload
 
 
+@respx.mock
+def test_list_countries_returns_typed_items(client: AethexAI) -> None:
+    payload = [
+        {"code": "NG", "name": "Nigeria"},
+        {"code": "US", "name": "United States"},
+    ]
+    route = respx.get(f"{BASE_URL}/api/v1/voices/countries").mock(
+        return_value=httpx.Response(200, json=payload)
+    )
+
+    countries = client.list_countries()
+
+    assert route.called
+    req = route.calls.last.request
+    assert req.method == "GET"
+    assert req.url.path == "/api/v1/voices/countries"
+
+    assert isinstance(countries, list)
+    assert [c.to_dict() for c in countries] == payload
+    assert countries[0]["code"] == "NG"
+
+
 # ─── agents ─────────────────────────────────────────────────────────────────
 
 
@@ -295,6 +317,84 @@ def test_delete_agent_uses_delete(client: AethexAI) -> None:
     assert req.method == "DELETE"
     # parsed body is None on 204 (the generated client falls through to None)
     assert result is None
+
+
+# ─── knowledge base ─────────────────────────────────────────────────────────
+
+
+@respx.mock
+def test_upload_knowledge_doc_text_builds_multipart(client: AethexAI) -> None:
+    agent_uuid = uuid4()
+    route = respx.post(f"{BASE_URL}/api/v1/agents/{agent_uuid}/knowledge-base").mock(
+        return_value=httpx.Response(201, json={"id": "doc-1"})
+    )
+
+    # Friendly kwargs only — no internal _generated import required.
+    client.upload_knowledge_doc(agent_uuid, text="hello world", filename="Doc")
+
+    assert route.called
+    req = route.calls.last.request
+    assert req.method == "POST"
+    assert req.url.path == f"/api/v1/agents/{agent_uuid}/knowledge-base"
+    assert req.headers.get("content-type", "").startswith("multipart/form-data")
+    body = req.content
+    assert b'name="text"' in body
+    assert b"hello world" in body
+    assert b'name="filename"' in body
+    assert b"Doc" in body
+
+
+@respx.mock
+def test_upload_knowledge_doc_file_bytes_builds_file_part(client: AethexAI) -> None:
+    agent_uuid = uuid4()
+    route = respx.post(f"{BASE_URL}/api/v1/agents/{agent_uuid}/knowledge-base").mock(
+        return_value=httpx.Response(201, json={"id": "doc-1"})
+    )
+
+    client.upload_knowledge_doc(
+        agent_uuid, file=b"PDFBYTES", file_name="d.pdf", mime_type="application/pdf"
+    )
+
+    req = route.calls.last.request
+    body = req.content
+    assert b'name="file"' in body
+    assert b'filename="d.pdf"' in body
+    # Raw bytes must land verbatim, not Python-repr'd (``b'PDFBYTES'``).
+    assert b"PDFBYTES" in body
+    assert b"b'PDFBYTES'" not in body
+
+
+@respx.mock
+def test_upload_knowledge_doc_accepts_prebuilt_body(client: AethexAI) -> None:
+    """Back-compat: a pre-built multipart body still works for power users."""
+    from aethexai._generated.models.body_upload_knowledge_doc_api_v1_agents_agent_id_knowledge_base_post import (
+        BodyUploadKnowledgeDocApiV1AgentsAgentIdKnowledgeBasePost as Body,
+    )
+
+    agent_uuid = uuid4()
+    route = respx.post(f"{BASE_URL}/api/v1/agents/{agent_uuid}/knowledge-base").mock(
+        return_value=httpx.Response(201, json={"id": "doc-1"})
+    )
+
+    client.upload_knowledge_doc(agent_uuid, body=Body(text="legacy"))
+
+    assert route.called
+    assert b"legacy" in route.calls.last.request.content
+
+
+def test_upload_knowledge_doc_requires_text_or_file(client: AethexAI) -> None:
+    from aethexai import ValidationError
+
+    with pytest.raises(ValidationError) as excinfo:
+        client.upload_knowledge_doc(uuid4())
+    err = excinfo.value
+    assert err.status_code == 422
+    # The 422 envelope matches the canonical validation-error shape used across
+    # the SDK, so ``err.response["fields"]`` works on the knowledge-doc path too.
+    assert err.response["error"] == "Validation failed"
+    assert err.response["code"] == "validation_error"
+    assert err.response["request_id"] is None
+    assert err.response["fields"] == err.response["detail"]
 
 
 # ─── transcription ──────────────────────────────────────────────────────────
