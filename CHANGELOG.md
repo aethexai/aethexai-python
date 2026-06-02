@@ -6,6 +6,7 @@ All notable changes to this project are documented here. Format based on [Keep a
 
 ### Fixed
 
+- `upload_knowledge_doc` (sync and async) now accepts friendly keyword arguments — `text=`, `file=` (raw `bytes`, a binary stream, or a `File`), `filename=`, plus `file_name=` / `mime_type=` for the uploaded part — and builds the multipart request internally. Previously the only working call required passing a pre-built internal request model, so the intuitive `upload_knowledge_doc(agent_id, text="...")` raised `AttributeError`. Calling it with neither `text` nor `file` now raises a typed `aethexai.ValidationError` before the request goes out. Passing a pre-built `body=` is still supported and takes precedence.
 - `Kora.transcribe` now transcribes WAV recordings longer than 35s. When WAV audio is passed as `bytes` and exceeds 35s it is split into ≤35s chunks, transcribed per chunk, and the transcripts are concatenated (`.segments` reflect only the first chunk). Non-WAV bytes and stream/`File` inputs are unchanged.
 
 ## [0.3.0]

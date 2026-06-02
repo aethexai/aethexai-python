@@ -15,11 +15,19 @@ from __future__ import annotations
 
 import builtins
 import keyword
-from typing import Any, TypeVar
+from io import BytesIO
+from typing import TYPE_CHECKING, Any, BinaryIO, TypeVar
 
 import attrs
 
 from aethexai._exceptions import ValidationError
+from aethexai._generated.models.body_upload_knowledge_doc_api_v1_agents_agent_id_knowledge_base_post import (
+    BodyUploadKnowledgeDocApiV1AgentsAgentIdKnowledgeBasePost,
+)
+from aethexai._generated.types import UNSET, File
+
+if TYPE_CHECKING:
+    from aethexai._generated.types import Unset
 
 T = TypeVar("T")
 
@@ -89,3 +97,67 @@ def build_body(model_cls: type[T], fields: dict[str, Any]) -> T:
             },
         )
     return model_cls.from_dict(fields)  # type: ignore[attr-defined,no-any-return]
+
+
+def _as_file(
+    file: bytes | BinaryIO | File,
+    *,
+    file_name: str | None = None,
+    mime_type: str | None = None,
+) -> File:
+    """Normalize raw bytes / streams / ``File`` objects into the generated ``File`` type."""
+    if isinstance(file, File):
+        return file
+    if isinstance(file, (bytes, bytearray)):
+        return File(
+            payload=BytesIO(bytes(file)),
+            file_name=file_name,
+            mime_type=mime_type or "application/octet-stream",
+        )
+    return File(payload=file, file_name=file_name, mime_type=mime_type)
+
+
+def build_knowledge_doc_body(
+    *,
+    text: str | None = None,
+    file: bytes | BinaryIO | File | None = None,
+    filename: str | None = None,
+    file_name: str | None = None,
+    mime_type: str | None = None,
+) -> BodyUploadKnowledgeDocApiV1AgentsAgentIdKnowledgeBasePost:
+    """Build the multipart knowledge-doc body from friendly keyword arguments.
+
+    Exactly one source is expected: inline ``text`` or an uploaded ``file``
+    (raw bytes, a binary stream, or a pre-built ``File``). ``filename`` is the
+    stored document name; ``file_name`` / ``mime_type`` set the uploaded part's
+    metadata. Raises :class:`aethexai.ValidationError` when neither ``text`` nor
+    ``file`` is supplied, so callers never need to construct the request model
+    themselves.
+    """
+    if text is None and file is None:
+        raise ValidationError(
+            message="Provide 'text' or 'file' to upload a knowledge-base document.",
+            code="validation_error",
+            status_code=422,
+            response={
+                "error": "Validation failed",
+                "code": "validation_error",
+                "request_id": None,
+                "detail": [
+                    {
+                        "type": "missing",
+                        "loc": ["body", "text"],
+                        "msg": "Provide 'text' or 'file'.",
+                        "input": None,
+                    }
+                ],
+            },
+        )
+    file_field: File | Unset = (
+        _as_file(file, file_name=file_name, mime_type=mime_type) if file is not None else UNSET
+    )
+    return BodyUploadKnowledgeDocApiV1AgentsAgentIdKnowledgeBasePost(
+        file=file_field,
+        filename=filename if filename is not None else UNSET,
+        text=text if text is not None else UNSET,
+    )

@@ -271,3 +271,27 @@ async def test_parity_cancel_transcription_job(
     assert isinstance(async_out, CancelTranscriptionJobResponse)
     assert sync_out.id == str(job_id) == async_out.id
     assert sync_out.status == async_out.status == "cancelled"
+
+
+# ─── upload_knowledge_doc (multipart from friendly kwargs) ──────────────────
+
+
+@respx.mock
+async def test_parity_upload_knowledge_doc(
+    sync_client: AethexAI, async_client: AsyncAethexAI
+) -> None:
+    """Sync and async wrappers build the same multipart body from friendly kwargs."""
+    agent_id = uuid4()
+    route = respx.post(f"{BASE_URL}/api/v1/agents/{agent_id}/knowledge-base").mock(
+        return_value=httpx.Response(201, json={"id": "doc-1"})
+    )
+
+    sync_client.upload_knowledge_doc(agent_id, text="kb body", filename="Doc")
+    await async_client.upload_knowledge_doc(agent_id, text="kb body", filename="Doc")
+
+    assert route.call_count == 2
+    for call in route.calls:
+        assert call.request.headers.get("content-type", "").startswith("multipart/form-data")
+        body = call.request.content
+        assert b'name="text"' in body and b"kb body" in body
+        assert b'name="filename"' in body and b"Doc" in body
