@@ -4,6 +4,10 @@ All notable changes to this project are documented here. Format based on [Keep a
 
 ## [Unreleased]
 
+## [1.0.0rc1] — 2026-06-03
+
+First release candidate for the 1.0 stable line. Bundles the latest backend-contract sync plus the typed-pagination and long-audio improvements listed below.
+
 ### Added
 
 - New optional `audio` extra (`pip install "aethexai[audio]"`) installs PyAV (`av`) for client-side audio format conversion / normalization in transcription. With it installed, the sync transcription paths decode any input (mp3, m4a, stereo or 48kHz WAV, etc.) to canonical 24kHz mono 16-bit PCM WAV before chunking; without it the paths fall back to WAV-only handling and send non-canonical input as-is. Same `av` pin as the `realtime` extra, so it resolves to a binary wheel with no system FFmpeg required on supported platforms.
