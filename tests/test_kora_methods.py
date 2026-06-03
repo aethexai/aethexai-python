@@ -1,0 +1,479 @@
+"""End-to-end wrapper tests for representative ``Kora`` methods.
+
+Each test uses ``respx`` to intercept the underlying ``httpx`` transport
+and verifies the wrapper:
+
+  1. issues the correct HTTP verb and URL path
+  2. serializes its body / multipart / query params correctly
+  3. parses the response back to a sane Python value
+  4. returns bytes for the binary endpoints (TTS, conversation audio)
+
+We do not exhaustively cover every Kora method — we pick ~12 that span the
+distinct payload / response shapes Kora exposes (JSON, multipart, binary,
+streamed bytes).
+"""
+
+from __future__ import annotations
+
+import io
+import json
+import wave
+from uuid import uuid4
+
+import httpx
+import pytest
+import respx
+
+from aethexai import Kora
+
+BASE_URL = "https://api.test.aethexai.com"
+
+# preview_voice and get_conversation_audio return ``audio/wav`` bytes
+# even though ``openapi.json`` declares ``application/json``. The wrappers must
+# bypass the generated JSON parser and return raw bytes. We use a binary payload
+# with non-UTF-8 leading bytes so a regression surfaces as a ``UnicodeDecodeError``
+# instead of being silently swallowed by a payload that happens to be valid ASCII.
+_WAV_PAYLOAD = b"RIFF\x24\x00\x00\x00WAVE\xc0\x92\xbabinaryaudiopayload"
+
+
+@pytest.fixture
+def kora() -> Kora:
+    """A live ``Kora`` against a fake base_url; respx intercepts the wire."""
+    k = Kora(BASE_URL, "ae_live_kora_test")
+    yield k
+    k.close()
+
+
+# ─── construction sanity ────────────────────────────────────────────────────
+
+
+def test_kora_positional_constructor_round_trip() -> None:
+    k = Kora(BASE_URL, "ae_live_xyz")
+    assert k._base_url == BASE_URL
+    # x-api-key header must be wired on the underlying client. The raw key
+    # is NOT stored on the Kora instance — the only authoritative location
+    # is the auth header that goes out on every request.
+    hc = k._client.get_httpx_client()
+    assert hc.headers.get("x-api-key") == "ae_live_xyz"
+    k.close()
+
+
+# ─── voices ─────────────────────────────────────────────────────────────────
+
+
+@respx.mock
+def test_kora_list_voices(kora: Kora) -> None:
+    route = respx.get(f"{BASE_URL}/api/v1/voices").mock(
+        return_value=httpx.Response(
+            200,
+            json=[
+                {"id": "fatima", "name": "Fatima", "language": "french"},
+                {"id": "amir", "name": "Amir", "language": "arabic"},
+            ],
+        )
+    )
+
+    voices = kora.list_voices()
+
+    assert route.called
+    req = route.calls.last.request
+    assert req.method == "GET"
+    assert req.url.path == "/api/v1/voices"
+    assert req.headers.get("x-api-key") == "ae_live_kora_test"
+    assert isinstance(voices, list)
+    assert len(voices) == 2
+    assert voices[0].id == "fatima"
+    assert voices[1].id == "amir"
+
+
+@respx.mock
+def test_kora_list_voices_with_language_filter(kora: Kora) -> None:
+    route = respx.get(f"{BASE_URL}/api/v1/voices").mock(return_value=httpx.Response(200, json=[]))
+
+    kora.list_voices(language="french", limit=5, offset=10)
+
+    req = route.calls.last.request
+    qs = dict(req.url.params)
+    assert qs.get("language") == "french"
+    assert qs.get("limit") == "5"
+    assert qs.get("offset") == "10"
+
+
+@respx.mock
+def test_kora_list_voices_forwards_tag_param(kora: Kora) -> None:
+    route = respx.get(f"{BASE_URL}/api/v1/voices").mock(return_value=httpx.Response(200, json=[]))
+
+    kora.list_voices(tag="warm", supports_dialect_style=True, country="NG", limit=5, offset=10)
+
+    req = route.calls.last.request
+    qs = dict(req.url.params)
+    assert qs.get("tag") == "warm"
+    assert qs.get("supports_dialect_style") == "true"
+    assert qs.get("country") == "NG"
+    assert qs.get("limit") == "5"
+    assert qs.get("offset") == "10"
+
+
+@respx.mock
+def test_kora_get_voice_path_param(kora: Kora) -> None:
+    route = respx.get(f"{BASE_URL}/api/v1/voices/fatima").mock(
+        return_value=httpx.Response(
+            200, json={"id": "fatima", "name": "Fatima", "language": "french"}
+        )
+    )
+
+    voice = kora.get_voice("fatima")
+
+    assert route.called
+    assert route.calls.last.request.url.path == "/api/v1/voices/fatima"
+    assert voice.id == "fatima"
+
+
+# ─── agents ─────────────────────────────────────────────────────────────────
+
+
+@respx.mock
+def test_kora_create_agent_posts_json_body(kora: Kora) -> None:
+    route = respx.post(f"{BASE_URL}/api/v1/agents").mock(
+        return_value=httpx.Response(200, json={"id": "ag-1", "name": "Banker"})
+    )
+
+    kora.create_agent(
+        name="Banker",
+        system_prompt="You handle account questions.",
+        voice_id="fatima",
+        language="french",
+        dialect_style="local",
+        first_message="Bonjour!",
+    )
+
+    assert route.called
+    req = route.calls.last.request
+    assert req.method == "POST"
+    assert req.url.path == "/api/v1/agents"
+    assert req.headers.get("content-type") == "application/json"
+    body = json.loads(req.content.decode())
+    assert body["name"] == "Banker"
+    assert body["system_prompt"] == "You handle account questions."
+    assert body["voice_id"] == "fatima"
+    assert body["language"] == "french"
+    assert body["dialect_style"] == "local"
+    assert body["first_message"] == "Bonjour!"
+
+
+@respx.mock
+def test_kora_update_agent_patch(kora: Kora) -> None:
+    agent_id = uuid4()
+    route = respx.patch(f"{BASE_URL}/api/v1/agents/{agent_id}").mock(
+        return_value=httpx.Response(200, json={"id": str(agent_id), "name": "New"})
+    )
+
+    kora.update_agent(agent_id, name="New", language="english")
+
+    assert route.called
+    req = route.calls.last.request
+    assert req.method == "PATCH"
+    body = json.loads(req.content.decode())
+    assert body["name"] == "New"
+    assert body["language"] == "english"
+
+
+@respx.mock
+def test_kora_delete_agent(kora: Kora) -> None:
+    agent_id = uuid4()
+    route = respx.delete(f"{BASE_URL}/api/v1/agents/{agent_id}").mock(
+        return_value=httpx.Response(204, content=b"")
+    )
+
+    result = kora.delete_agent(agent_id)
+
+    assert route.called
+    assert route.calls.last.request.method == "DELETE"
+    # 204 doesn't match the generated 200-branch, so parsed=None
+    assert result is None
+
+
+# ─── calls ──────────────────────────────────────────────────────────────────
+
+
+@respx.mock
+def test_kora_trigger_call(kora: Kora) -> None:
+    agent_id = str(uuid4())
+    route = respx.post(f"{BASE_URL}/api/v1/calls/trigger").mock(
+        return_value=httpx.Response(202, json={"id": "call-1", "status": "queued"})
+    )
+
+    kora.trigger_call(agent_id, to_number="+221770000000", from_number="+221780000000")
+
+    assert route.called
+    req = route.calls.last.request
+    assert req.method == "POST"
+    assert req.url.path == "/api/v1/calls/trigger"
+    body = json.loads(req.content.decode())
+    assert body["agent_id"] == agent_id
+    assert body["to_number"] == "+221770000000"
+    assert body["from_number"] == "+221780000000"
+
+
+# ─── tts (binary response) ──────────────────────────────────────────────────
+
+
+@respx.mock
+def test_kora_synthesize_speech_returns_bytes(kora: Kora) -> None:
+    # the TTS 200 response is non-UTF-8 ``audio/wav`` bytes even though
+    # ``openapi.json`` declares ``application/json``. Use a binary payload with
+    # non-UTF-8 leading bytes so a regression (routing back through the generated
+    # parser) resurfaces as a ``UnicodeDecodeError`` instead of silently passing.
+    route = respx.post(f"{BASE_URL}/api/v1/tts").mock(
+        return_value=httpx.Response(
+            200, content=_WAV_PAYLOAD, headers={"content-type": "audio/wav"}
+        )
+    )
+
+    out = kora.synthesize_speech(text="Hello world", voice_id="fatima")
+
+    assert route.called
+    req = route.calls.last.request
+    assert req.method == "POST"
+    assert req.url.path == "/api/v1/tts"
+    body = json.loads(req.content.decode())
+    assert body["text"] == "Hello world"
+    assert body["voice_id"] == "fatima"
+    assert isinstance(out, bytes)
+    assert out == _WAV_PAYLOAD
+
+
+@respx.mock
+def test_kora_stream_speech_yields_chunks(kora: Kora) -> None:
+    # Total payload returned from the stream endpoint.
+    audio_blob = b"AAAA" * 1024  # 4 KiB
+    route = respx.post(f"{BASE_URL}/api/v1/tts/stream").mock(
+        return_value=httpx.Response(
+            200,
+            content=audio_blob,
+            headers={"content-type": "audio/wav"},
+        )
+    )
+
+    chunks = list(kora.stream_speech("hello", "fatima"))
+
+    assert route.called
+    # Drain the generator: concatenated chunks must match the full payload.
+    assert b"".join(chunks) == audio_blob
+    # And the body still carried the synthesis request.
+    body = json.loads(route.calls.last.request.content.decode())
+    assert body["text"] == "hello"
+    assert body["voice_id"] == "fatima"
+
+
+# ─── transcription (multipart) ──────────────────────────────────────────────
+
+
+@respx.mock
+def test_kora_transcribe_uses_multipart(kora: Kora) -> None:
+    route = respx.post(f"{BASE_URL}/api/v1/transcribe").mock(
+        return_value=httpx.Response(
+            200,
+            json={"id": "t1", "text": "hello", "language": "english"},
+        )
+    )
+
+    kora.transcribe(
+        b"fake-audio-bytes",
+        language="english",
+        file_name="audio.wav",
+        mime_type="audio/wav",
+    )
+
+    assert route.called
+    req = route.calls.last.request
+    assert req.method == "POST"
+    assert req.url.path == "/api/v1/transcribe"
+    # The body must be a multipart form, not application/json.
+    ctype = req.headers.get("content-type", "")
+    assert ctype.startswith("multipart/form-data")
+
+
+# ─── transcription — raw bytes without file_name ─────────────────
+
+_TRANSCRIBE_SUCCESS = {"id": "t1", "text": "hello", "language": "english"}
+_TRANSCRIBE_ASYNC_SUCCESS = {"id": "j1", "status": "queued"}
+
+
+@respx.mock
+def test_kora_transcribe_bytes_without_file_name(kora: Kora) -> None:
+    route = respx.post(f"{BASE_URL}/api/v1/transcribe").mock(
+        return_value=httpx.Response(200, json=_TRANSCRIBE_SUCCESS)
+    )
+
+    kora.transcribe(b"RIFF\x24\x00\x00\x00WAVEfmt ")
+
+    assert route.called
+    body = route.calls.last.request.content.decode("latin-1")
+    assert "audio.bin" not in body
+    assert 'filename="audio"' in body
+    assert "application/octet-stream" in body
+
+
+@respx.mock
+def test_kora_transcribe_async_bytes_without_file_name(kora: Kora) -> None:
+    route = respx.post(f"{BASE_URL}/api/v1/transcribe/async").mock(
+        return_value=httpx.Response(200, json=_TRANSCRIBE_ASYNC_SUCCESS)
+    )
+
+    kora.transcribe_async(b"fLaC\x00\x00\x00\x22stream")
+
+    assert route.called
+    body = route.calls.last.request.content.decode("latin-1")
+    assert "audio.bin" not in body
+    assert 'filename="audio"' in body
+    assert "application/octet-stream" in body
+
+
+@respx.mock
+def test_kora_transcribe_explicit_metadata_is_preserved(kora: Kora) -> None:
+    route = respx.post(f"{BASE_URL}/api/v1/transcribe").mock(
+        return_value=httpx.Response(200, json=_TRANSCRIBE_SUCCESS)
+    )
+
+    kora.transcribe(b"OggS\x00\x02\x00\x00", file_name="recording.ogg", mime_type="audio/ogg")
+
+    assert route.called
+    body = route.calls.last.request.content.decode("latin-1")
+    assert "recording.ogg" in body
+    assert "audio/ogg" in body
+
+
+def _make_wav(seconds: float, rate: int = 8000) -> bytes:
+    """A mono 16-bit silent WAV of the given duration."""
+    buffer = io.BytesIO()
+    with wave.open(buffer, "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(rate)
+        w.writeframes(b"\x00\x00" * int(seconds * rate))
+    return buffer.getvalue()
+
+
+@respx.mock
+def test_kora_transcribe_chunks_long_wav(kora: Kora) -> None:
+    route = respx.post(f"{BASE_URL}/api/v1/transcribe").mock(
+        side_effect=[
+            httpx.Response(200, json={"id": "t1", "text": "alpha"}),
+            httpx.Response(200, json={"id": "t2", "text": "beta"}),
+            httpx.Response(200, json={"id": "t3", "text": "gamma"}),
+        ]
+    )
+
+    result = kora.transcribe(_make_wav(80), mime_type="audio/wav")
+
+    assert route.call_count == 3
+    assert result.text == "alpha beta gamma"
+
+
+@respx.mock
+def test_kora_transcribe_single_call_for_short_wav(kora: Kora) -> None:
+    route = respx.post(f"{BASE_URL}/api/v1/transcribe").mock(
+        return_value=httpx.Response(200, json={"id": "t1", "text": "short"})
+    )
+
+    result = kora.transcribe(_make_wav(5), mime_type="audio/wav")
+
+    assert route.call_count == 1
+    assert result.text == "short"
+
+
+# ─── conversations ──────────────────────────────────────────────────────────
+
+
+@respx.mock
+def test_kora_list_conversations(kora: Kora) -> None:
+    route = respx.get(f"{BASE_URL}/api/v1/conversations").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "data": [{"id": "c1", "agent_id": "a1"}, {"id": "c2", "agent_id": "a2"}],
+                "total": 2,
+                "limit": 50,
+                "offset": 0,
+            },
+        )
+    )
+
+    result = kora.list_conversations(limit=25)
+
+    assert route.called
+    req = route.calls.last.request
+    assert req.url.path == "/api/v1/conversations"
+    qs = dict(req.url.params)
+    assert qs.get("limit") == "25"
+    # PaginatedResponse exposes .data
+    assert hasattr(result, "data")
+    assert len(result.data) == 2
+
+
+@respx.mock
+def test_kora_list_conversations_filters_by_agent_client_side(kora: Kora) -> None:
+    route = respx.get(f"{BASE_URL}/api/v1/conversations").mock(
+        return_value=httpx.Response(
+            200,
+            json={
+                "data": [
+                    {"id": "c1", "agent_id": "a1"},
+                    {"id": "c2", "agent_id": "a2"},
+                ],
+                "total": 2,
+                "limit": 50,
+                "offset": 0,
+            },
+        )
+    )
+
+    result = kora.list_conversations(agent_id="a1")
+
+    assert route.called
+    assert len(result.data) == 1
+    # .data items are now typed ConversationResponse objects.
+    assert result.data[0].agent_id == "a1"
+
+
+@respx.mock
+def test_kora_get_conversation_audio_returns_bytes(kora: Kora) -> None:
+    conv_id = uuid4()
+    route = respx.get(f"{BASE_URL}/api/v1/conversations/{conv_id}/audio.wav").mock(
+        return_value=httpx.Response(
+            200, content=_WAV_PAYLOAD, headers={"content-type": "audio/wav"}
+        )
+    )
+
+    out = kora.get_conversation_audio(conv_id)
+
+    assert route.called
+    req = route.calls.last.request
+    assert req.method == "GET"
+    assert req.url.path == f"/api/v1/conversations/{conv_id}/audio.wav"
+    assert req.headers.get("x-api-key") == "ae_live_kora_test"
+    assert isinstance(out, bytes)
+    assert out == _WAV_PAYLOAD
+
+
+@respx.mock
+def test_kora_preview_voice_returns_bytes(kora: Kora) -> None:
+    route = respx.post(f"{BASE_URL}/api/v1/voices/preview").mock(
+        return_value=httpx.Response(
+            200, content=_WAV_PAYLOAD, headers={"content-type": "audio/wav"}
+        )
+    )
+
+    out = kora.preview_voice(voice_id="fatima", text="Bonjour.")
+
+    assert route.called
+    req = route.calls.last.request
+    assert req.method == "POST"
+    assert req.url.path == "/api/v1/voices/preview"
+    assert req.headers.get("x-api-key") == "ae_live_kora_test"
+    sent = json.loads(req.content.decode())
+    assert sent["voice_id"] == "fatima"
+    assert sent["text"] == "Bonjour."
+    assert isinstance(out, bytes)
+    assert out == _WAV_PAYLOAD

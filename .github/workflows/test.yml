@@ -1,0 +1,60 @@
+# Runs the pytest suite on every push to main and every pull request, across
+# the full supported Python matrix (3.10 is the floor per pyproject's
+# requires-python; 3.13 is the current stable upper bound).
+#
+# Uses uv for install + run because that's what the rest of the repo uses
+# (uv.lock is committed).
+
+name: test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+
+      - name: Set up Python ${{ matrix.python-version }}
+        run: uv python install ${{ matrix.python-version }}
+
+      - name: Install dependencies
+        # NOTE: deliberately not --all-extras. The realtime extra pulls in
+        # `av` (PyAV), which builds from source and requires ffmpeg 7 +
+        # pkg-config on the runner. None of our unit/integration tests
+        # exercise realtime, so installing those extras just slows CI and
+        # introduces a brittle system-deps dependency. Use a dedicated
+        # workflow with `sudo apt-get install ffmpeg libavformat-dev ...`
+        # if/when realtime tests are added.
+        run: uv sync --extra dev
+
+      - name: Run pytest
+        run: uv run pytest tests/ --tb=short -v
+
+      # Optional: upload coverage to Codecov. Enable by:
+      #   1. Adding pytest-cov to the dev deps in pyproject.toml
+      #   2. Changing the pytest step above to ``uv run pytest tests/ --cov=src/aethexai --cov-report=xml --tb=short -v``
+      #   3. Uncommenting the block below
+      #   4. Adding CODECOV_TOKEN to the repo secrets (private repos only;
+      #      public repos can use tokenless upload)
+      #
+      # - name: Upload coverage to Codecov
+      #   uses: codecov/codecov-action@v4
+      #   with:
+      #     token: ${{ secrets.CODECOV_TOKEN }}
+      #     files: ./coverage.xml
+      #     fail_ci_if_error: false

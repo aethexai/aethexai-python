@@ -1,0 +1,45 @@
+# Lint + format + type check. Runs on every push to main and every pull
+# request. A single Python version is enough; lint output doesn't vary across
+# minor versions for this codebase.
+#
+# Ruff and mypy config live in pyproject.toml (``[tool.ruff]`` / ``[tool.mypy]``),
+# including the ``exclude`` for the generated client under
+# ``src/aethexai/_generated/``. If mypy complains about _generated/, fix it in
+# pyproject.toml, not here.
+
+name: lint
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Install dependencies
+        # See note in test.yml — skip --all-extras to avoid PyAV source build
+        # (needs ffmpeg + pkg-config). Lint only inspects src/, and realtime/*
+        # is excluded from both ruff and mypy.
+        run: uv sync --extra dev
+
+      - name: Ruff lint
+        run: uv run ruff check src/ tests/ examples/
+
+      - name: Ruff format check
+        run: uv run ruff format --check src/ tests/ examples/
+
+      - name: Mypy
+        run: uv run mypy src/aethexai/

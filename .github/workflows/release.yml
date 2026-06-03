@@ -1,0 +1,70 @@
+# Builds and publishes a release to PyPI whenever a ``v*`` tag is pushed
+# (e.g. ``v0.2.1``). Also creates a GitHub Release for the same tag so the
+# tag has discoverable release notes alongside the artifacts.
+#
+# Authentication: PyPI Trusted Publishing (OIDC). No API token to manage.
+# One-time setup at https://pypi.org/manage/account/publishing/ — register
+# a "pending publisher" with:
+#   PyPI project name: aethexai
+#   Owner:             aethexai
+#   Repository name:   aethexai-python
+#   Workflow filename: release.yml
+#   Environment:       (leave blank)
+# Once the first release is published the publisher promotes from pending
+# to trusted automatically.
+#
+# Tagging flow:
+#   git tag v0.2.1
+#   git push origin v0.2.1
+# The tag must start with ``v`` to match the trigger filter below.
+
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    permissions:
+      # ``id-token: write`` is required for PyPI Trusted Publishing — the
+      # gh-action-pypi-publish action exchanges this OIDC token for a
+      # short-lived PyPI upload credential.
+      id-token: write
+      # ``contents: write`` is required for softprops/action-gh-release to
+      # create the GitHub Release object for the tag.
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          enable-cache: true
+
+      - name: Set up Python
+        run: uv python install 3.12
+
+      - name: Build wheel + sdist
+        run: uv build
+
+      - name: Publish to PyPI
+        # No ``password:`` — omitting it tells the action to use Trusted
+        # Publishing (OIDC). The PyPI project must have a publisher
+        # registered for this owner/repo/workflow combination first.
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          packages-dir: dist/
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          # ``files`` attaches the built artifacts to the GitHub release so
+          # users can grab the wheel directly without going through PyPI.
+          files: |
+            dist/*.whl
+            dist/*.tar.gz
+          generate_release_notes: true

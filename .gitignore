@@ -1,0 +1,19 @@
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+.eggs/
+*.egg
+.venv/
+venv/
+.env
+.coverage
+htmlcov/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+# Ignore local Claude Code state (worktrees, settings) but track committed skills.
+.claude/*
+!.claude/skills/

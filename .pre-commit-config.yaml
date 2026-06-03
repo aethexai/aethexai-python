@@ -1,0 +1,35 @@
+# Pre-commit hooks for local + CI use. Install with:
+#   uv run pre-commit install
+#
+# Mypy is intentionally NOT included here -- it's slow and noisy on
+# pre-commit, and CI runs it on every PR anyway. If you want it locally,
+# uncomment the bottom block.
+
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: check-yaml
+      - id: check-toml
+      - id: end-of-file-fixer
+      - id: trailing-whitespace
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.6.9
+    hooks:
+      - id: ruff
+        args: [--fix]
+      - id: ruff-format
+
+  # Mypy in pre-commit is slow because every hook run installs its own env
+  # and re-checks everything. Leaving here as opt-in.
+  #
+  # - repo: https://github.com/pre-commit/mirrors-mypy
+  #   rev: v1.11.2
+  #   hooks:
+  #     - id: mypy
+  #       args: [--no-strict-optional]
+  #       additional_dependencies:
+  #         - pydantic>=2.0
+  #         - httpx>=0.24.0
+  #         - types-python-dateutil
