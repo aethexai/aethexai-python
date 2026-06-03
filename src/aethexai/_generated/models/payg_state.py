@@ -29,7 +29,7 @@ class PaygState:
         Attributes:
             pending_overage_credits (str): Absolute value of the negative balance, in credits. Always >= 0; the sign is
                 implied (overage).
-            pending_overage_usd (str): Pending overage in USD at the current PAYG rate (``PAYG_OVERAGE_RATE_USD_PER_MINUTE``
+            pending_overage_usd (str): Pending overage in USD at the current PAYG rate (``the per-credit overage rate``
                 = $0.065/credit today).
             threshold_credits (str): Credit threshold above which the next PAYG charge fires. Surfaced so the portal can
                 render a 'next charge at X' progress.

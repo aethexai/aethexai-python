@@ -77,7 +77,7 @@ def sync_detailed(
     fetching the account from Twilio. Persists the SID and the (encrypted)
     auth token; the token is needed at runtime for inbound-webhook
     signature verification and outbound API calls and is decrypted via
-    the ``EncryptedString`` column type. Status codes:
+    the ``an encrypted column`` column type. Status codes:
      * 422 -- Twilio rejected the request (400/401/403/404): bad
      credentials, or a SID that doesn't exist or that the supplied
      token can't access; or the fetched SID does not match the
@@ -126,7 +126,7 @@ def sync(
     fetching the account from Twilio. Persists the SID and the (encrypted)
     auth token; the token is needed at runtime for inbound-webhook
     signature verification and outbound API calls and is decrypted via
-    the ``EncryptedString`` column type. Status codes:
+    the ``an encrypted column`` column type. Status codes:
      * 422 -- Twilio rejected the request (400/401/403/404): bad
      credentials, or a SID that doesn't exist or that the supplied
      token can't access; or the fetched SID does not match the
@@ -170,7 +170,7 @@ async def asyncio_detailed(
     fetching the account from Twilio. Persists the SID and the (encrypted)
     auth token; the token is needed at runtime for inbound-webhook
     signature verification and outbound API calls and is decrypted via
-    the ``EncryptedString`` column type. Status codes:
+    the ``an encrypted column`` column type. Status codes:
      * 422 -- Twilio rejected the request (400/401/403/404): bad
      credentials, or a SID that doesn't exist or that the supplied
      token can't access; or the fetched SID does not match the
@@ -217,7 +217,7 @@ async def asyncio(
     fetching the account from Twilio. Persists the SID and the (encrypted)
     auth token; the token is needed at runtime for inbound-webhook
     signature verification and outbound API calls and is decrypted via
-    the ``EncryptedString`` column type. Status codes:
+    the ``an encrypted column`` column type. Status codes:
      * 422 -- Twilio rejected the request (400/401/403/404): bad
      credentials, or a SID that doesn't exist or that the supplied
      token can't access; or the fetched SID does not match the

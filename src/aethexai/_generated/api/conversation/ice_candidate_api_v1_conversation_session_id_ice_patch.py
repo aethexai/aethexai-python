@@ -78,8 +78,8 @@ def sync_detailed(
     and
     can be high volume, so the rate-limiter middleware does not charge it
     against tenant API RPM, but callers must still present a valid
-    ``calls:write`` API key. Pod-aware: if the peer connection lives on a different pod, the request
-    is proxied transparently via the pod routing layer.
+    ``calls:write`` API key. Node-aware: if the peer connection lives on a another node, the request
+    is proxied transparently via the request routing layer.
 
     Args:
         session_id (str):
@@ -119,8 +119,8 @@ def sync(
     and
     can be high volume, so the rate-limiter middleware does not charge it
     against tenant API RPM, but callers must still present a valid
-    ``calls:write`` API key. Pod-aware: if the peer connection lives on a different pod, the request
-    is proxied transparently via the pod routing layer.
+    ``calls:write`` API key. Node-aware: if the peer connection lives on a another node, the request
+    is proxied transparently via the request routing layer.
 
     Args:
         session_id (str):
@@ -155,8 +155,8 @@ async def asyncio_detailed(
     and
     can be high volume, so the rate-limiter middleware does not charge it
     against tenant API RPM, but callers must still present a valid
-    ``calls:write`` API key. Pod-aware: if the peer connection lives on a different pod, the request
-    is proxied transparently via the pod routing layer.
+    ``calls:write`` API key. Node-aware: if the peer connection lives on a another node, the request
+    is proxied transparently via the request routing layer.
 
     Args:
         session_id (str):
@@ -194,8 +194,8 @@ async def asyncio(
     and
     can be high volume, so the rate-limiter middleware does not charge it
     against tenant API RPM, but callers must still present a valid
-    ``calls:write`` API key. Pod-aware: if the peer connection lives on a different pod, the request
-    is proxied transparently via the pod routing layer.
+    ``calls:write`` API key. Node-aware: if the peer connection lives on a another node, the request
+    is proxied transparently via the request routing layer.
 
     Args:
         session_id (str):

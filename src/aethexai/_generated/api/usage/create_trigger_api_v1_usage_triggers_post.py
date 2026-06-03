@@ -72,7 +72,7 @@ def sync_detailed(
 ) -> Response[HTTPValidationError | UsageTriggerResponse]:
     """Create Trigger
 
-     Configure a usage threshold + callback URL. The evaluator (ARQ cron, every 5 minutes) checks active
+     Configure a usage threshold + callback URL. The evaluator (the task queue cron, every 5 minutes) checks active
     triggers
     and posts a signed webhook when the threshold is crossed for the
     period. One firing per period; the trigger auto-rearms when the
@@ -115,7 +115,7 @@ def sync(
 ) -> HTTPValidationError | UsageTriggerResponse | None:
     """Create Trigger
 
-     Configure a usage threshold + callback URL. The evaluator (ARQ cron, every 5 minutes) checks active
+     Configure a usage threshold + callback URL. The evaluator (the task queue cron, every 5 minutes) checks active
     triggers
     and posts a signed webhook when the threshold is crossed for the
     period. One firing per period; the trigger auto-rearms when the
@@ -153,7 +153,7 @@ async def asyncio_detailed(
 ) -> Response[HTTPValidationError | UsageTriggerResponse]:
     """Create Trigger
 
-     Configure a usage threshold + callback URL. The evaluator (ARQ cron, every 5 minutes) checks active
+     Configure a usage threshold + callback URL. The evaluator (the task queue cron, every 5 minutes) checks active
     triggers
     and posts a signed webhook when the threshold is crossed for the
     period. One firing per period; the trigger auto-rearms when the
@@ -194,7 +194,7 @@ async def asyncio(
 ) -> HTTPValidationError | UsageTriggerResponse | None:
     """Create Trigger
 
-     Configure a usage threshold + callback URL. The evaluator (ARQ cron, every 5 minutes) checks active
+     Configure a usage threshold + callback URL. The evaluator (the task queue cron, every 5 minutes) checks active
     triggers
     and posts a signed webhook when the threshold is crossed for the
     period. One firing per period; the trigger auto-rearms when the

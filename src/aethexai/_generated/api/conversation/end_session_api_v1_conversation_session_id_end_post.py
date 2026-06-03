@@ -67,7 +67,7 @@ def sync_detailed(
      Gracefully end an active WebRTC session via REST. Looks up the running PipelineTask by session_id
     and queues a
     CancelTaskFrame to trigger a clean shutdown. If the pipeline lives
-    on a different pod, the request is proxied transparently. Accepts either ``X-API-Key`` or a
+    on a another node, the request is proxied transparently. Accepts either ``X-API-Key`` or a
     developer JWT — see ``connect`` for
     the rationale.
 
@@ -103,7 +103,7 @@ def sync(
      Gracefully end an active WebRTC session via REST. Looks up the running PipelineTask by session_id
     and queues a
     CancelTaskFrame to trigger a clean shutdown. If the pipeline lives
-    on a different pod, the request is proxied transparently. Accepts either ``X-API-Key`` or a
+    on a another node, the request is proxied transparently. Accepts either ``X-API-Key`` or a
     developer JWT — see ``connect`` for
     the rationale.
 
@@ -134,7 +134,7 @@ async def asyncio_detailed(
      Gracefully end an active WebRTC session via REST. Looks up the running PipelineTask by session_id
     and queues a
     CancelTaskFrame to trigger a clean shutdown. If the pipeline lives
-    on a different pod, the request is proxied transparently. Accepts either ``X-API-Key`` or a
+    on a another node, the request is proxied transparently. Accepts either ``X-API-Key`` or a
     developer JWT — see ``connect`` for
     the rationale.
 
@@ -168,7 +168,7 @@ async def asyncio(
      Gracefully end an active WebRTC session via REST. Looks up the running PipelineTask by session_id
     and queues a
     CancelTaskFrame to trigger a clean shutdown. If the pipeline lives
-    on a different pod, the request is proxied transparently. Accepts either ``X-API-Key`` or a
+    on a another node, the request is proxied transparently. Accepts either ``X-API-Key`` or a
     developer JWT — see ``connect`` for
     the rationale.
 
