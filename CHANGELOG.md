@@ -27,6 +27,10 @@ All notable changes to this project are documented here. Format based on [Keep a
 - The inline async transcription routes (`transcribe_async`, `transcribe_audio_async`) now raise a typed `aethexai.ValidationError` client-side when handed a WAV longer than the ~35s per-request limit, pointing callers at the auto-chunking `Kora.transcribe` / `AethexAI.transcribe_audio` paths instead of failing with the opaque server "Audio too long" error. The by-upload routes only receive an `upload_id` (no local bytes) and remain server-bound.
 - `PaginatedResponse` now implements a consistent sequence protocol over `.data`. `len(page)` works (previously raised `TypeError: object of type 'PaginatedResponse' has no len()`); `len`, integer/slice indexing, iteration, `in`, and `del` all operate on the page's items. Previously the protocol was mixed — `page[0]` returned a typed item while `x in page` and `del page[...]` silently targeted `additional_properties`. Note that `x in page` now tests membership against the page items (`.data`) rather than `additional_properties` keys. Forward-compat extra fields remain reachable via the `additional_properties` attribute, `additional_keys`, and string-key subscript (`page["key"]` / `page["key"] = ...`). Each `PaginatedResponse` still holds one page — loop while `page.has_more` to consume every page.
 
+### Documentation
+
+- Clarified the `max_retries` constructor docstring on `AethexAI` / `AsyncAethexAI`: it wires **connection-level** retries through the httpx transport only (connect errors, dropped connections) and does **not** retry HTTP error responses — a 429/5xx surfaces immediately as a typed `RateLimitError` / `InternalServerError`, which the caller should retry itself (honoring `RateLimitError.retry_after`). No behavior change.
+
 ## [0.4.0] — 2026-06-02
 
 Synced to the current backend OpenAPI contract and adds a voice-catalog helper.

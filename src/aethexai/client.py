@@ -52,7 +52,11 @@ class AethexAI:
         api_key: Aethex API key. Falls back to the ``AETHEX_API_KEY`` env var.
         base_url: API base URL. Defaults to https://api.aethexai.com.
         timeout: Per-request timeout in seconds.
-        max_retries: Number of HTTP-level retries (wired via httpx transport).
+        max_retries: Connection-level retries for transport failures (e.g. connect
+            errors, dropped connections), wired via the httpx transport. This does
+            **not** retry HTTP error responses — a 429/5xx is surfaced immediately as
+            a typed ``RateLimitError`` / ``InternalServerError`` (retry those yourself,
+            honoring ``RateLimitError.retry_after`` where present).
         httpx_client: Optional pre-built ``httpx.Client`` to use as the transport.
     """
 
