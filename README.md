@@ -11,7 +11,7 @@
 </p>
 
 <p align="center">
-  <a href="https://pypi.org/project/aethexai/"><img alt="PyPI" src="https://img.shields.io/pypi/v/aethexai?style=flat-square&logo=pypi&logoColor=white&label=pypi&labelColor=0B0E14&color=38BDF8"></a>
+  <a href="https://pypi.org/project/aethexai/"><img alt="PyPI" src="https://img.shields.io/pypi/v/aethexai?style=flat-square&logo=pypi&logoColor=white&label=pypi&labelColor=0B0E14&color=38BDF8&cacheSeconds=300"></a>
   <a href="https://pypi.org/project/aethexai/"><img alt="Python versions" src="https://img.shields.io/pypi/pyversions/aethexai?style=flat-square&logo=python&logoColor=white&labelColor=0B0E14&color=1E293B"></a>
   <a href="https://github.com/aethexai/aethexai-python/actions/workflows/test.yml"><img alt="Tests" src="https://img.shields.io/github/actions/workflow/status/aethexai/aethexai-python/test.yml?branch=main&style=flat-square&logo=githubactions&logoColor=white&label=tests&labelColor=0B0E14&color=22D3EE"></a>
   <a href="LICENSE"><img alt="License: MIT" src="https://img.shields.io/badge/license-MIT-64748B?style=flat-square&labelColor=0B0E14"></a>
