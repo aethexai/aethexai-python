@@ -94,13 +94,13 @@ def main() -> int:
 
         # ── 4. Place the outbound call ───────────────────────────────────
         call = client.trigger_call(agent_id=str(agent.id), to_number=to_number)
-        print(f"Triggered call: {call.id}")
+        print(f"Triggered call: {call['id']}")
 
         # ── 5. Poll for terminal status ──────────────────────────────────
         deadline = time.monotonic() + MAX_POLL_SECONDS
         last_status: str | None = None
         while time.monotonic() < deadline:
-            status_resp = client.get_call_status(call.id)
+            status_resp = client.get_call_status(call["id"])
             status = getattr(status_resp, "status", None) or getattr(
                 status_resp, "state", "unknown"
             )

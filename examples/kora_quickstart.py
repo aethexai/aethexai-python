@@ -52,7 +52,7 @@ def main() -> int:
     print(f"Created agent: {agent.id}")
 
     call = client.trigger_call(agent.id, to_number=to_number)
-    print(f"Started call: {call.id}")
+    print(f"Started call: {call['id']}")
     return 0
 
 
