@@ -12,8 +12,8 @@ from ... import errors
 def _get_kwargs() -> dict[str, Any]:
 
     _kwargs: dict[str, Any] = {
-        "method": "post",
-        "url": "/api/v1/auth/logout",
+        "method": "get",
+        "url": "/api/v1/admin/whoami",
     }
 
     return _kwargs
@@ -48,13 +48,13 @@ def sync_detailed(
     *,
     client: AuthenticatedClient | Client,
 ) -> Response[Any]:
-    """Logout
+    """Admin Whoami
 
-     Logout and revoke the current server-side JWT session. Rate-limited per-session: a stolen access
-    token cannot flood
-    /auth/logout to burn the user's session row repeatedly and mask
-    other malicious activity in audit trails. Per ayooluwa-aethex
-    round-2 MUST #2.
+     Cheap admin-access probe for the portal nav/gate. Returns 200 (admin) — non-admins are already
+    rejected with 403 by the
+    router-level ``require_admin_developer`` dependency. Does NO database work,
+    so the portal can check admin access without firing the expensive overview
+    aggregates on every dashboard load.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -77,13 +77,13 @@ async def asyncio_detailed(
     *,
     client: AuthenticatedClient | Client,
 ) -> Response[Any]:
-    """Logout
+    """Admin Whoami
 
-     Logout and revoke the current server-side JWT session. Rate-limited per-session: a stolen access
-    token cannot flood
-    /auth/logout to burn the user's session row repeatedly and mask
-    other malicious activity in audit trails. Per ayooluwa-aethex
-    round-2 MUST #2.
+     Cheap admin-access probe for the portal nav/gate. Returns 200 (admin) — non-admins are already
+    rejected with 403 by the
+    router-level ``require_admin_developer`` dependency. Does NO database work,
+    so the portal can check admin access without firing the expensive overview
+    aggregates on every dashboard load.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.

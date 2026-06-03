@@ -71,7 +71,11 @@ def sync_detailed(
     render the catalogue without hardcoding the list. Gated behind
     ``voices:read`` so the surface matches the rest of ``/voices/*``;
     the data is static configuration but the endpoint sits on the public
-    API and every other voices listing already requires the same scope.
+    API and every other voices listing already requires the same scope. Adding a new country is an
+    ``ALTER TYPE voice_country ADD VALUE``
+    migration plus an entry in
+     and; the response surface
+    here picks it up on the next deploy.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -103,7 +107,11 @@ def sync(
     render the catalogue without hardcoding the list. Gated behind
     ``voices:read`` so the surface matches the rest of ``/voices/*``;
     the data is static configuration but the endpoint sits on the public
-    API and every other voices listing already requires the same scope.
+    API and every other voices listing already requires the same scope. Adding a new country is an
+    ``ALTER TYPE voice_country ADD VALUE``
+    migration plus an entry in
+     and; the response surface
+    here picks it up on the next deploy.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -131,7 +139,11 @@ async def asyncio_detailed(
     render the catalogue without hardcoding the list. Gated behind
     ``voices:read`` so the surface matches the rest of ``/voices/*``;
     the data is static configuration but the endpoint sits on the public
-    API and every other voices listing already requires the same scope.
+    API and every other voices listing already requires the same scope. Adding a new country is an
+    ``ALTER TYPE voice_country ADD VALUE``
+    migration plus an entry in
+     and; the response surface
+    here picks it up on the next deploy.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -161,7 +173,11 @@ async def asyncio(
     render the catalogue without hardcoding the list. Gated behind
     ``voices:read`` so the surface matches the rest of ``/voices/*``;
     the data is static configuration but the endpoint sits on the public
-    API and every other voices listing already requires the same scope.
+    API and every other voices listing already requires the same scope. Adding a new country is an
+    ``ALTER TYPE voice_country ADD VALUE``
+    migration plus an entry in
+     and; the response surface
+    here picks it up on the next deploy.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.

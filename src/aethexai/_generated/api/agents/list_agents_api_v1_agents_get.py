@@ -9,7 +9,6 @@ from ...types import Response, UNSET
 from ... import errors
 
 from ...models.http_validation_error import HTTPValidationError
-from ...models.agent_response import AgentResponse
 from ...models.paginated_response import PaginatedResponse
 from ...types import UNSET, Unset
 from typing import cast
@@ -45,11 +44,7 @@ def _parse_response(
         if not response.content:
             return None
         response_200 = PaginatedResponse.from_dict(response.json())
-        if response_200.data is not UNSET and response_200.data is not None:
-            response_200.data = [
-                AgentResponse.from_dict(item) if isinstance(item, dict) else item
-                for item in response_200.data
-            ]
+
         return response_200
 
     if response.status_code == 422:

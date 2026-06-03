@@ -19,10 +19,12 @@ T = TypeVar("T", bound="SmallWebRTCPatchRequest")
 
 @_attrs_define
 class SmallWebRTCPatchRequest:
-    """
-    Attributes:
-        candidates (list[IceCandidate]):
-        pc_id (str):
+    """Small WebRTC transport session arguments for the runner. Parameters:
+    pc_id: Identifier for the peer connection. candidates: A list of ICE candidate patches.
+
+       Attributes:
+           candidates (list[IceCandidate]):
+           pc_id (str):
     """
 
     candidates: list[IceCandidate]

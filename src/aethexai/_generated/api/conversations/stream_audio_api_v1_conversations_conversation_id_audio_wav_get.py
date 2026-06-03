@@ -87,8 +87,10 @@ def sync_detailed(
 ) -> Response[Any | HTTPValidationError]:
     """Stream Audio
 
-     Stream the conversation audio. Bucket and region are never exposed. The Content-Type is still taken
-    from the underlying recording (via
+     Stream the conversation audio. Bucket and region are never exposed. The recording uploader writes
+    WAV; the ``CallRecording.format`` field
+    defaults to ``wav`` and nothing in the codebase writes anything else. The Content-Type is still
+    taken from the underlying recording (via
     ``_FORMAT_CONTENT_TYPES``) so a future non-WAV writer would be served
     correctly without re-introducing a per-format route. Auth: either a signed ``?token=`` issued by
     ``GET /audio`` (lets browsers
@@ -131,8 +133,10 @@ def sync(
 ) -> Any | HTTPValidationError | None:
     """Stream Audio
 
-     Stream the conversation audio. Bucket and region are never exposed. The Content-Type is still taken
-    from the underlying recording (via
+     Stream the conversation audio. Bucket and region are never exposed. The recording uploader writes
+    WAV; the ``CallRecording.format`` field
+    defaults to ``wav`` and nothing in the codebase writes anything else. The Content-Type is still
+    taken from the underlying recording (via
     ``_FORMAT_CONTENT_TYPES``) so a future non-WAV writer would be served
     correctly without re-introducing a per-format route. Auth: either a signed ``?token=`` issued by
     ``GET /audio`` (lets browsers
@@ -170,8 +174,10 @@ async def asyncio_detailed(
 ) -> Response[Any | HTTPValidationError]:
     """Stream Audio
 
-     Stream the conversation audio. Bucket and region are never exposed. The Content-Type is still taken
-    from the underlying recording (via
+     Stream the conversation audio. Bucket and region are never exposed. The recording uploader writes
+    WAV; the ``CallRecording.format`` field
+    defaults to ``wav`` and nothing in the codebase writes anything else. The Content-Type is still
+    taken from the underlying recording (via
     ``_FORMAT_CONTENT_TYPES``) so a future non-WAV writer would be served
     correctly without re-introducing a per-format route. Auth: either a signed ``?token=`` issued by
     ``GET /audio`` (lets browsers
@@ -212,8 +218,10 @@ async def asyncio(
 ) -> Any | HTTPValidationError | None:
     """Stream Audio
 
-     Stream the conversation audio. Bucket and region are never exposed. The Content-Type is still taken
-    from the underlying recording (via
+     Stream the conversation audio. Bucket and region are never exposed. The recording uploader writes
+    WAV; the ``CallRecording.format`` field
+    defaults to ``wav`` and nothing in the codebase writes anything else. The Content-Type is still
+    taken from the underlying recording (via
     ``_FORMAT_CONTENT_TYPES``) so a future non-WAV writer would be served
     correctly without re-introducing a per-format route. Auth: either a signed ``?token=`` issued by
     ``GET /audio`` (lets browsers

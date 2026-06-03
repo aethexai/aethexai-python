@@ -9,18 +9,30 @@ from ...types import Response, UNSET
 from ... import errors
 
 from ...models.http_validation_error import HTTPValidationError
+from ...types import UNSET, Unset
 from typing import cast
 
 
 def _get_kwargs(
-    session_id: str,
+    *,
+    days: int | None | Unset = UNSET,
 ) -> dict[str, Any]:
 
+    params: dict[str, Any] = {}
+
+    json_days: int | None | Unset
+    if isinstance(days, Unset):
+        json_days = UNSET
+    else:
+        json_days = days
+    params["days"] = json_days
+
+    params = {k: v for k, v in params.items() if v is not UNSET and v is not None}
+
     _kwargs: dict[str, Any] = {
-        "method": "post",
-        "url": "/api/v1/conversation/{session_id}/end".format(
-            session_id=quote(str(session_id), safe=""),
-        ),
+        "method": "get",
+        "url": "/api/v1/admin/usage/endpoints",
+        "params": params,
     }
 
     return _kwargs
@@ -58,21 +70,16 @@ def _build_response(
 
 
 def sync_detailed(
-    session_id: str,
     *,
-    client: AuthenticatedClient,
+    client: AuthenticatedClient | Client,
+    days: int | None | Unset = UNSET,
 ) -> Response[Any | HTTPValidationError]:
-    """End Session
+    """Get Admin Usage Endpoints
 
-     Gracefully end an active WebRTC session via REST. Looks up the running PipelineTask by session_id
-    and queues a
-    CancelTaskFrame to trigger a clean shutdown. If the pipeline lives
-    on a different pod, the request is proxied transparently. Accepts either ``X-API-Key`` or a
-    developer JWT — see ``connect`` for
-    the rationale.
+     Platform-wide per-endpoint request volume, error rate, and latency.
 
     Args:
-        session_id (str):
+        days (int | None | Unset):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -83,7 +90,7 @@ def sync_detailed(
     """
 
     kwargs = _get_kwargs(
-        session_id=session_id,
+        days=days,
     )
 
     response = client.get_httpx_client().request(
@@ -94,21 +101,16 @@ def sync_detailed(
 
 
 def sync(
-    session_id: str,
     *,
-    client: AuthenticatedClient,
+    client: AuthenticatedClient | Client,
+    days: int | None | Unset = UNSET,
 ) -> Any | HTTPValidationError | None:
-    """End Session
+    """Get Admin Usage Endpoints
 
-     Gracefully end an active WebRTC session via REST. Looks up the running PipelineTask by session_id
-    and queues a
-    CancelTaskFrame to trigger a clean shutdown. If the pipeline lives
-    on a different pod, the request is proxied transparently. Accepts either ``X-API-Key`` or a
-    developer JWT — see ``connect`` for
-    the rationale.
+     Platform-wide per-endpoint request volume, error rate, and latency.
 
     Args:
-        session_id (str):
+        days (int | None | Unset):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -119,27 +121,22 @@ def sync(
     """
 
     return sync_detailed(
-        session_id=session_id,
         client=client,
+        days=days,
     ).parsed
 
 
 async def asyncio_detailed(
-    session_id: str,
     *,
-    client: AuthenticatedClient,
+    client: AuthenticatedClient | Client,
+    days: int | None | Unset = UNSET,
 ) -> Response[Any | HTTPValidationError]:
-    """End Session
+    """Get Admin Usage Endpoints
 
-     Gracefully end an active WebRTC session via REST. Looks up the running PipelineTask by session_id
-    and queues a
-    CancelTaskFrame to trigger a clean shutdown. If the pipeline lives
-    on a different pod, the request is proxied transparently. Accepts either ``X-API-Key`` or a
-    developer JWT — see ``connect`` for
-    the rationale.
+     Platform-wide per-endpoint request volume, error rate, and latency.
 
     Args:
-        session_id (str):
+        days (int | None | Unset):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -150,7 +147,7 @@ async def asyncio_detailed(
     """
 
     kwargs = _get_kwargs(
-        session_id=session_id,
+        days=days,
     )
 
     response = await client.get_async_httpx_client().request(**kwargs)
@@ -159,21 +156,16 @@ async def asyncio_detailed(
 
 
 async def asyncio(
-    session_id: str,
     *,
-    client: AuthenticatedClient,
+    client: AuthenticatedClient | Client,
+    days: int | None | Unset = UNSET,
 ) -> Any | HTTPValidationError | None:
-    """End Session
+    """Get Admin Usage Endpoints
 
-     Gracefully end an active WebRTC session via REST. Looks up the running PipelineTask by session_id
-    and queues a
-    CancelTaskFrame to trigger a clean shutdown. If the pipeline lives
-    on a different pod, the request is proxied transparently. Accepts either ``X-API-Key`` or a
-    developer JWT — see ``connect`` for
-    the rationale.
+     Platform-wide per-endpoint request volume, error rate, and latency.
 
     Args:
-        session_id (str):
+        days (int | None | Unset):
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -185,7 +177,7 @@ async def asyncio(
 
     return (
         await asyncio_detailed(
-            session_id=session_id,
             client=client,
+            days=days,
         )
     ).parsed

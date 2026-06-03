@@ -74,7 +74,10 @@ def sync_detailed(
 
      Register a Twilio Account SID for this tenant. Validates the supplied ``account_sid`` +
     ``auth_token`` pair by
-    fetching the account from Twilio. Status codes:
+    fetching the account from Twilio. Persists the SID and the (encrypted)
+    auth token; the token is needed at runtime for inbound-webhook
+    signature verification and outbound API calls and is decrypted via
+    the ``EncryptedString`` column type. Status codes:
      * 422 -- Twilio rejected the request (400/401/403/404): bad
      credentials, or a SID that doesn't exist or that the supplied
      token can't access; or the fetched SID does not match the
@@ -120,7 +123,10 @@ def sync(
 
      Register a Twilio Account SID for this tenant. Validates the supplied ``account_sid`` +
     ``auth_token`` pair by
-    fetching the account from Twilio. Status codes:
+    fetching the account from Twilio. Persists the SID and the (encrypted)
+    auth token; the token is needed at runtime for inbound-webhook
+    signature verification and outbound API calls and is decrypted via
+    the ``EncryptedString`` column type. Status codes:
      * 422 -- Twilio rejected the request (400/401/403/404): bad
      credentials, or a SID that doesn't exist or that the supplied
      token can't access; or the fetched SID does not match the
@@ -161,7 +167,10 @@ async def asyncio_detailed(
 
      Register a Twilio Account SID for this tenant. Validates the supplied ``account_sid`` +
     ``auth_token`` pair by
-    fetching the account from Twilio. Status codes:
+    fetching the account from Twilio. Persists the SID and the (encrypted)
+    auth token; the token is needed at runtime for inbound-webhook
+    signature verification and outbound API calls and is decrypted via
+    the ``EncryptedString`` column type. Status codes:
      * 422 -- Twilio rejected the request (400/401/403/404): bad
      credentials, or a SID that doesn't exist or that the supplied
      token can't access; or the fetched SID does not match the
@@ -205,7 +214,10 @@ async def asyncio(
 
      Register a Twilio Account SID for this tenant. Validates the supplied ``account_sid`` +
     ``auth_token`` pair by
-    fetching the account from Twilio. Status codes:
+    fetching the account from Twilio. Persists the SID and the (encrypted)
+    auth token; the token is needed at runtime for inbound-webhook
+    signature verification and outbound API calls and is decrypted via
+    the ``EncryptedString`` column type. Status codes:
      * 422 -- Twilio rejected the request (400/401/403/404): bad
      credentials, or a SID that doesn't exist or that the supplied
      token can't access; or the fetched SID does not match the

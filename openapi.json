@@ -21,11 +21,13 @@
           },
           "rate_limit_daily": {
             "default": 10000,
+            "minimum": 1.0,
             "title": "Rate Limit Daily",
             "type": "integer"
           },
           "rate_limit_rpm": {
             "default": 60,
+            "minimum": 1.0,
             "title": "Rate Limit Rpm",
             "type": "integer"
           },
@@ -2994,6 +2996,7 @@
         "type": "object"
       },
       "IceCandidate": {
+        "description": "The remote ice candidate object received from the peer connection. Parameters:\n candidate: The ice candidate patch SDP string (Session Description Protocol). sdp_mid: The SDP mid for the candidate patch. sdp_mline_index: The SDP mline index for the candidate patch.",
         "properties": {
           "candidate": {
             "title": "Candidate",
@@ -3546,7 +3549,7 @@
             "type": "string"
           },
           "pending_overage_usd": {
-            "description": "Pending overage in USD at the current PAYG rate (```` = $0.065/credit today).",
+            "description": "Pending overage in USD at the current PAYG rate (``PAYG_OVERAGE_RATE_USD_PER_MINUTE`` = $0.065/credit today).",
             "title": "Pending Overage Usd",
             "type": "string"
           },
@@ -4272,6 +4275,7 @@
         "type": "object"
       },
       "SmallWebRTCPatchRequest": {
+        "description": "Small WebRTC transport session arguments for the runner. Parameters:\n pc_id: Identifier for the peer connection. candidates: A list of ICE candidate patches.",
         "properties": {
           "candidates": {
             "items": {
@@ -5667,6 +5671,402 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/v1/admin/overview": {
+      "get": {
+        "description": "Platform-wide headline metrics for the admin dashboard. ``days`` windows the API-request / usage aggregates and the\n``active_tenants`` count (tenants with at least one logged request in\nthe window). Tenant / developer totals and the signup counters are\npoint-in-time / fixed-window and ignore ``days``.",
+        "operationId": "get_admin_overview_api_v1_admin_overview_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "days",
+            "required": false,
+            "schema": {
+              "default": 30,
+              "maximum": 365,
+              "minimum": 1,
+              "title": "Days",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Admin Overview",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/signups/daily": {
+      "get": {
+        "description": "New-tenant signups per calendar day over the trailing window. Zero-filled so the response always has one entry per day in the window\n(oldest-first) and the portal can render a chart without bridging gaps.",
+        "operationId": "get_admin_signups_daily_api_v1_admin_signups_daily_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "days",
+            "required": false,
+            "schema": {
+              "default": 30,
+              "maximum": 365,
+              "minimum": 1,
+              "title": "Days",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Admin Signups Daily",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/tenants": {
+      "get": {
+        "description": "Paginated table of every tenant with its lifetime request count. ``request_count`` is the tenant's all-time request count from the daily\nrollup; tenants with no traffic still appear (count 0). ``sort`` is\nvalidated against a fixed allowlist; an unknown value falls back to\nnewest-first. The page of tenants is selected first, then request counts are read from\nthe rollup only for that page's tenant ids \u2014 so a single page never scans\n```` at all. The sort always carries ``Tenant.id`` as a\ntie-breaker so pagination is stable even when the primary key\n(``created_at`` / ``name`` / ``status`` / credits) ties.",
+        "operationId": "list_admin_tenants_api_v1_admin_tenants_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 50,
+              "maximum": 200,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "default": "-created_at",
+              "title": "Sort",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "name",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Name"
+            }
+          },
+          {
+            "in": "query",
+            "name": "created_at",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Created At"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PaginatedResponse"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Admin Tenants",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/usage/by-service": {
+      "get": {
+        "description": "Platform-wide usage breakdown by service type (all tenants).",
+        "operationId": "get_admin_usage_by_service_api_v1_admin_usage_by_service_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "days",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 365,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Days"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Admin Usage By Service",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/usage/daily": {
+      "get": {
+        "description": "Platform-wide daily request + credit usage (all tenants).",
+        "operationId": "get_admin_usage_daily_api_v1_admin_usage_daily_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "days",
+            "required": false,
+            "schema": {
+              "default": 30,
+              "maximum": 365,
+              "minimum": 1,
+              "title": "Days",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Admin Usage Daily",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/usage/endpoints": {
+      "get": {
+        "description": "Platform-wide per-endpoint request volume, error rate, and latency.",
+        "operationId": "get_admin_usage_endpoints_api_v1_admin_usage_endpoints_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "days",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maximum": 365,
+                  "minimum": 1,
+                  "type": "integer"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Days"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Admin Usage Endpoints",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/usage/volume": {
+      "get": {
+        "description": "Platform-wide voice-volume counters over the trailing ``days`` window. Transcribed and TTS-generated audio seconds come from the per-resource\naudio split in the usage rollup; calls made and total call duration are a\nlive aggregate over ```` (all agent calls, incl. WebRTC). Both windows are day-aligned so the four counters share one boundary.",
+        "operationId": "get_admin_usage_volume_api_v1_admin_usage_volume_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "days",
+            "required": false,
+            "schema": {
+              "default": 30,
+              "maximum": 365,
+              "minimum": 1,
+              "title": "Days",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Admin Usage Volume",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
+    "/api/v1/admin/whoami": {
+      "get": {
+        "description": "Cheap admin-access probe for the portal nav/gate. Returns 200 (admin) \u2014 non-admins are already rejected with 403 by the\nrouter-level ``require_admin_developer`` dependency. Does NO database work,\nso the portal can check admin access without firing the expensive overview\naggregates on every dashboard load.",
+        "operationId": "admin_whoami_api_v1_admin_whoami_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Admin Whoami",
+        "tags": [
+          "admin"
+        ]
+      }
+    },
     "/api/v1/agents": {
       "get": {
         "operationId": "list_agents_api_v1_agents_get",
@@ -6788,7 +7188,7 @@
     },
     "/api/v1/auth/logout": {
       "post": {
-        "description": "Logout and revoke the current server-side JWT session. Rate-limited per-session: a stolen access token cannot flood\n/auth/logout to burn the user's session row repeatedly and mask\nother malicious activity in audit trails. Per \n #2.",
+        "description": "Logout and revoke the current server-side JWT session. Rate-limited per-session: a stolen access token cannot flood\n/auth/logout to burn the user's session row repeatedly and mask\nother malicious activity in audit trails. Per ayooluwa-aethex\nround-2 MUST #2.",
         "operationId": "logout_api_v1_auth_logout_post",
         "responses": {
           "200": {
@@ -7846,7 +8246,7 @@
     },
     "/api/v1/conversation/{session_id}/end": {
       "post": {
-        "description": "Gracefully end an active WebRTC session via REST. Looks up the running PipelineTask by session_id and queues a\nCancelTaskFrame to trigger a clean shutdown. Accepts either ``X-API-Key`` or a developer JWT \u2014 see ``connect`` for\nthe rationale.",
+        "description": "Gracefully end an active WebRTC session via REST. Looks up the running PipelineTask by session_id and queues a\nCancelTaskFrame to trigger a clean shutdown. If the pipeline lives\non a different pod, the request is proxied transparently. Accepts either ``X-API-Key`` or a developer JWT \u2014 see ``connect`` for\nthe rationale.",
         "operationId": "end_session_api_v1_conversation__session_id__end_post",
         "parameters": [
           {
@@ -7892,7 +8292,7 @@
     },
     "/api/v1/conversation/{session_id}/ice": {
       "patch": {
-        "description": "Handle ICE candidate trickle. Authenticated, quota-exempt signaling. ICE trickle is time-sensitive and\ncan be high volume, so the rate-limiter middleware does not charge it\nagainst tenant API RPM, but callers must still present a valid\n``calls:write`` API key.",
+        "description": "Handle ICE candidate trickle. Authenticated, quota-exempt signaling. ICE trickle is time-sensitive and\ncan be high volume, so the rate-limiter middleware does not charge it\nagainst tenant API RPM, but callers must still present a valid\n``calls:write`` API key. Pod-aware: if the peer connection lives on a different pod, the request\nis proxied transparently via the pod routing layer.",
         "operationId": "ice_candidate_api_v1_conversation__session_id__ice_patch",
         "parameters": [
           {
@@ -8050,7 +8450,7 @@
     },
     "/api/v1/conversation/{session_id}/tool-result": {
       "post": {
-        "description": "Submit a tool call result back to an active session. When the LLM calls a client-side tool, the client processes it and\nsends the result back via this endpoint. The result is injected into\nthe LLM context as a tool response and triggers a continuation.",
+        "description": "Submit a tool call result back to an active session. When the LLM calls a client-side tool, the client processes it and\nsends the result back via this endpoint. The result is injected into\nthe LLM context as a tool response and triggers a continuation. If the pipeline lives on a different pod, proxies transparently.",
         "operationId": "tool_result_api_v1_conversation__session_id__tool_result_post",
         "parameters": [
           {
@@ -8322,7 +8722,7 @@
     },
     "/api/v1/conversations/{conversation_id}/audio.wav": {
       "get": {
-        "description": "Stream the conversation audio. Bucket and region are never exposed. The Content-Type is still taken from the underlying recording (via\n``_FORMAT_CONTENT_TYPES``) so a future non-WAV writer would be served\ncorrectly without re-introducing a per-format route. Auth: either a signed ``?token=`` issued by ``GET /audio`` (lets browsers\nembed the URL in an ``<audio>`` tag without headers), or a normal\n``X-API-Key`` / ``Authorization: Bearer`` API key with the\n``conversations:read`` scope.",
+        "description": "Stream the conversation audio. Bucket and region are never exposed. The recording uploader writes WAV; the ``CallRecording.format`` field\ndefaults to ``wav`` and nothing in the codebase writes anything else. The Content-Type is still taken from the underlying recording (via\n``_FORMAT_CONTENT_TYPES``) so a future non-WAV writer would be served\ncorrectly without re-introducing a per-format route. Auth: either a signed ``?token=`` issued by ``GET /audio`` (lets browsers\nembed the URL in an ``<audio>`` tag without headers), or a normal\n``X-API-Key`` / ``Authorization: Bearer`` API key with the\n``conversations:read`` scope.",
         "operationId": "stream_audio_api_v1_conversations__conversation_id__audio_wav_get",
         "parameters": [
           {
@@ -9488,7 +9888,7 @@
     },
     "/api/v1/tts/batch": {
       "post": {
-        "description": "Batch synthesis \u2014 submit multiple texts, get a batch_id for polling. Poll GET /tts/batch/{batch_id} for\npresigned download URLs when complete. Usage metering is deferred to the worker (run_tts_batch) so only\nsuccessfully synthesized items are billed.",
+        "description": "Batch synthesis \u2014 submit multiple texts, get a batch_id for polling. Audio files are stored in S3. Poll GET /tts/batch/{batch_id} for\npresigned download URLs when complete. Usage metering is deferred to the worker (run_tts_batch) so only\nsuccessfully synthesized items are billed.",
         "operationId": "batch_synthesize_api_v1_tts_batch_post",
         "requestBody": {
           "content": {
@@ -9688,7 +10088,7 @@
         ]
       },
       "post": {
-        "description": "Register a Twilio Account SID for this tenant. Validates the supplied ``account_sid`` + ``auth_token`` pair by\nfetching the account from Twilio. Status codes:\n * 422 -- Twilio rejected the request (400/401/403/404): bad\n credentials, or a SID that doesn't exist or that the supplied\n token can't access; or the fetched SID does not match the\n supplied SID. * 409 -- the Account SID is already claimed by another active row,\n or the tenant has reached the active-account cap. * 429 -- per-tenant registration rate limit exceeded. * 503 -- server-side service issue: encryption key not configured,\n Twilio API unreachable / 5xx / 429, Twilio did not respond\n within the configured timeout, or the rate limiter is\n offline -- this endpoint is destructive enough that we fail\n closed when admission control can't run, rather than silently\n unthrottling Twilio API and worker-slot pressure.",
+        "description": "Register a Twilio Account SID for this tenant. Validates the supplied ``account_sid`` + ``auth_token`` pair by\nfetching the account from Twilio. Persists the SID and the (encrypted)\nauth token; the token is needed at runtime for inbound-webhook\nsignature verification and outbound API calls and is decrypted via\nthe ``EncryptedString`` column type. Status codes:\n * 422 -- Twilio rejected the request (400/401/403/404): bad\n credentials, or a SID that doesn't exist or that the supplied\n token can't access; or the fetched SID does not match the\n supplied SID. * 409 -- the Account SID is already claimed by another active row,\n or the tenant has reached the active-account cap. * 429 -- per-tenant registration rate limit exceeded. * 503 -- server-side service issue: encryption key not configured,\n Twilio API unreachable / 5xx / 429, Twilio did not respond\n within the configured timeout, or the rate limiter is\n offline -- this endpoint is destructive enough that we fail\n closed when admission control can't run, rather than silently\n unthrottling Twilio API and worker-slot pressure.",
         "operationId": "register_twilio_account_api_v1_twilio_accounts_post",
         "requestBody": {
           "content": {
@@ -10148,7 +10548,7 @@
         ]
       },
       "post": {
-        "description": "Configure a usage threshold + callback URL. The evaluator checks active triggers\nand posts a signed webhook when the threshold is crossed for the\nperiod. One firing per period; the trigger auto-rearms when the\nperiod rolls over. Returns 409 when the tenant already has the per-tenant cap of\nactive triggers; PATCH ``is_active=false`` on an existing trigger\nto recover a slot before adding a new one. Returns 400 when the tenant has no ``webhook_secret`` configured. Triggers without a signing secret would deliver an unsigned\nwebhook (or, more precisely, would be skipped by the evaluator\nand audited as ``failed`` with no ability to deliver), so we\nrefuse the create at the boundary instead of accepting a\nconfiguration that will never fire. The customer's recovery is\na single ``POST /usage/webhook-secret/rotate``.",
+        "description": "Configure a usage threshold + callback URL. The evaluator (ARQ cron, every 5 minutes) checks active triggers\nand posts a signed webhook when the threshold is crossed for the\nperiod. One firing per period; the trigger auto-rearms when the\nperiod rolls over. Returns 409 when the tenant already has the per-tenant cap of\nactive triggers; PATCH ``is_active=false`` on an existing trigger\nto recover a slot before adding a new one. Returns 400 when the tenant has no ``webhook_secret`` configured. Triggers without a signing secret would deliver an unsigned\nwebhook (or, more precisely, would be skipped by the evaluator\nand audited as ``failed`` with no ability to deliver), so we\nrefuse the create at the boundary instead of accepting a\nconfiguration that will never fire. The customer's recovery is\na single ``POST /usage/webhook-secret/rotate``.",
         "operationId": "create_trigger_api_v1_usage_triggers_post",
         "requestBody": {
           "content": {
@@ -10532,7 +10932,7 @@
     },
     "/api/v1/voices/countries": {
       "get": {
-        "description": "Return the closed set of ISO 3166-1 alpha-2 country codes accepted\nby the ``?country=`` filter on ``GET /voices`` and by the curator\nPATCH on ``country``. Wire shape is a list of ``{\"code\": \"NG\", \"name\": \"Nigeria\"}`` objects\nsorted by code so SDKs and the developer-portal country picker can\nrender the catalogue without hardcoding the list. Gated behind\n``voices:read`` so the surface matches the rest of ``/voices/*``;\nthe data is static configuration but the endpoint sits on the public\nAPI and every other voices listing already requires the same scope.",
+        "description": "Return the closed set of ISO 3166-1 alpha-2 country codes accepted\nby the ``?country=`` filter on ``GET /voices`` and by the curator\nPATCH on ``country``. Wire shape is a list of ``{\"code\": \"NG\", \"name\": \"Nigeria\"}`` objects\nsorted by code so SDKs and the developer-portal country picker can\nrender the catalogue without hardcoding the list. Gated behind\n``voices:read`` so the surface matches the rest of ``/voices/*``;\nthe data is static configuration but the endpoint sits on the public\nAPI and every other voices listing already requires the same scope. Adding a new country is an ``ALTER TYPE voice_country ADD VALUE``\nmigration plus an entry in\n and; the response surface\nhere picks it up on the next deploy.",
         "operationId": "list_countries_api_v1_voices_countries_get",
         "responses": {
           "200": {
@@ -10603,6 +11003,131 @@
           }
         ],
         "summary": "Preview Voice",
+        "tags": [
+          "voices"
+        ]
+      }
+    },
+    "/api/v1/voices/public": {
+      "get": {
+        "description": "Unauthenticated, **globals-only** voice catalog for the public docs site. Same shape and filters as ``GET /voices`` but hard-scoped to the global\ncatalog (``tenant_id IS NULL``) with **no tenant context**, so an anonymous\ncaller can never surface any tenant's cloned voices. This backs the docs\nVoice Library, which renders on the public ``/docs`` surface with no API key. The middleware IP-rate-limits this path. It is a single indexed query with\n``limit`` capped at 500, so it is not a DB-amplification vector. Synthesis\n(``POST /voices/preview``) and by-id lookup (``GET /voices/{id}``) stay\nauthenticated; the static preview-clip route (``GET /voices/{id}/preview.wav``)\nis intentionally public \u2014 see ``voice_preview_audio`` below.",
+        "operationId": "list_public_voices_api_v1_voices_public_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "language",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Language"
+            }
+          },
+          {
+            "in": "query",
+            "name": "supports_dialect_style",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "boolean"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Supports Dialect Style"
+            }
+          },
+          {
+            "in": "query",
+            "name": "tag",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Tag"
+            }
+          },
+          {
+            "in": "query",
+            "name": "country",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Country"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 100,
+              "maximum": 500,
+              "minimum": 0,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "offset",
+            "required": false,
+            "schema": {
+              "default": 0,
+              "minimum": 0,
+              "title": "Offset",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/VoiceResponse"
+                  },
+                  "title": "Response List Public Voices Api V1 Voices Public Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Public Voices",
         "tags": [
           "voices"
         ]
@@ -10684,6 +11209,47 @@
           }
         ],
         "summary": "Get Voice",
+        "tags": [
+          "voices"
+        ]
+      }
+    },
+    "/api/v1/voices/{voice_id}/preview.wav": {
+      "get": {
+        "description": "Serve a pre-generated voice preview clip. **Unauthenticated by design.**\n\nClips are produced offline (``scripts/generate_voice_previews.py``) and stored\nin the app-data bucket at ``voice-previews/<voice_id>.wav``. Because the audio\nis static \u2014 no per-request synthesis, no ``tts:use``/GPU cost to gate \u2014 this\nroute is public so the docs Voice Library can play previews without an API\nkey, mirroring the unauthenticated ``/twilio/lobby-audio`` route. Responses\ncarry a long ``Cache-Control`` so a CDN/browser absorbs the load. The path param must parse as a UUID (rejected before any I/O, so junk can't\nfan out into storage calls), and the voice must still be publicly listed \u2014\nsame visibility as ``GET /voices`` \u2014 so a retired voice's leftover clip stops\nplaying. Anonymous requests are IP-rate-limited by the middleware.",
+        "operationId": "voice_preview_audio_api_v1_voices__voice_id__preview_wav_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "voice_id",
+            "required": true,
+            "schema": {
+              "title": "Voice Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Voice Preview Audio",
         "tags": [
           "voices"
         ]
