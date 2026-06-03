@@ -78,11 +78,14 @@ def sync_detailed(
     and
     can be high volume, so the rate-limiter middleware does not charge it
     against tenant API RPM, but callers must still present a valid
-    ``calls:write`` API key.
+    ``calls:write`` API key. Node-aware: if the peer connection lives on a another node, the request
+    is proxied transparently via the request routing layer.
 
     Args:
         session_id (str):
-        body (SmallWebRTCPatchRequest):
+        body (SmallWebRTCPatchRequest): Small WebRTC transport session arguments for the runner.
+            Parameters:
+             pc_id: Identifier for the peer connection. candidates: A list of ICE candidate patches.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -116,11 +119,14 @@ def sync(
     and
     can be high volume, so the rate-limiter middleware does not charge it
     against tenant API RPM, but callers must still present a valid
-    ``calls:write`` API key.
+    ``calls:write`` API key. Node-aware: if the peer connection lives on a another node, the request
+    is proxied transparently via the request routing layer.
 
     Args:
         session_id (str):
-        body (SmallWebRTCPatchRequest):
+        body (SmallWebRTCPatchRequest): Small WebRTC transport session arguments for the runner.
+            Parameters:
+             pc_id: Identifier for the peer connection. candidates: A list of ICE candidate patches.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -149,11 +155,14 @@ async def asyncio_detailed(
     and
     can be high volume, so the rate-limiter middleware does not charge it
     against tenant API RPM, but callers must still present a valid
-    ``calls:write`` API key.
+    ``calls:write`` API key. Node-aware: if the peer connection lives on a another node, the request
+    is proxied transparently via the request routing layer.
 
     Args:
         session_id (str):
-        body (SmallWebRTCPatchRequest):
+        body (SmallWebRTCPatchRequest): Small WebRTC transport session arguments for the runner.
+            Parameters:
+             pc_id: Identifier for the peer connection. candidates: A list of ICE candidate patches.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
@@ -185,11 +194,14 @@ async def asyncio(
     and
     can be high volume, so the rate-limiter middleware does not charge it
     against tenant API RPM, but callers must still present a valid
-    ``calls:write`` API key.
+    ``calls:write`` API key. Node-aware: if the peer connection lives on a another node, the request
+    is proxied transparently via the request routing layer.
 
     Args:
         session_id (str):
-        body (SmallWebRTCPatchRequest):
+        body (SmallWebRTCPatchRequest): Small WebRTC transport session arguments for the runner.
+            Parameters:
+             pc_id: Identifier for the peer connection. candidates: A list of ICE candidate patches.
 
     Raises:
         errors.UnexpectedStatus: If the server returns an undocumented status code and Client.raise_on_unexpected_status is True.
