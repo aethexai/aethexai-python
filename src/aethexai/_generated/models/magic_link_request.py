@@ -8,6 +8,9 @@ from attrs import field as _attrs_field
 
 from ..types import UNSET, Unset
 
+from ..types import UNSET, Unset
+from typing import cast
+
 
 T = TypeVar("T", bound="MagicLinkRequest")
 
@@ -17,13 +20,21 @@ class MagicLinkRequest:
     """
     Attributes:
         email (str):
+        next_ (None | str | Unset):
     """
 
     email: str
+    next_: None | str | Unset = UNSET
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         email = self.email
+
+        next_: None | str | Unset
+        if isinstance(self.next_, Unset):
+            next_ = UNSET
+        else:
+            next_ = self.next_
 
         field_dict: dict[str, Any] = {}
         field_dict.update(self.additional_properties)
@@ -32,6 +43,8 @@ class MagicLinkRequest:
                 "email": email,
             }
         )
+        if next_ is not UNSET:
+            field_dict["next"] = next_
 
         return field_dict
 
@@ -40,8 +53,18 @@ class MagicLinkRequest:
         d = dict(src_dict)
         email = d.pop("email")
 
+        def _parse_next_(data: object) -> None | str | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(None | str | Unset, data)
+
+        next_ = _parse_next_(d.pop("next", UNSET))
+
         magic_link_request = cls(
             email=email,
+            next_=next_,
         )
 
         magic_link_request.additional_properties = d

@@ -4,6 +4,26 @@ All notable changes to this project are documented here. Format based on [Keep a
 
 ## [Unreleased]
 
+## [1.0.1] — 2026-06-18
+
+Resync to the current backend OpenAPI contract. The published `1.0.0` client was generated before the backend standardized its model-provider naming, so `list_models()` raised on the new values.
+
+### Fixed
+
+- `list_models()` / `AsyncAethexAI.list_models()` no longer raise when the catalog includes a model whose `provider` is one of the newer vendors. `GET /models` now reports each model's vendor (`google`, `meta`, `xai`, `mistral`, `deepseek`, `aethex`) instead of the internal routing label, but the generated `ModelEntryProvider` enum still only knew `openai` / `anthropic` / `openrouter` / `local`, so deserializing the catalog failed with `'<vendor>' is not a valid ModelEntryProvider`. The enum is regenerated from the current contract, so every catalog model parses and `model.provider` is the model's vendor.
+
+### Added
+
+- Newly-typed optional fields the backend now returns, picked up by the contract resync:
+  - `AgentCreate`, `AgentResponse`, `AgentUpdate`: `outbound_trunk_id`, `webhook_url`.
+  - `CallResponse`: webhook-delivery tracking (`webhook_status`, `webhook_delivered_at`, `webhook_last_attempt_at`, `webhook_last_error`) plus the recording-webhook equivalents (`recording_webhook_status`, `recording_webhook_delivered_at`, `recording_webhook_last_attempt_at`, `recording_webhook_last_error`).
+  - `BalanceResponse`: `billing_mode`.
+  - `MagicLinkRequest`: `next`.
+
+### Removed
+
+- Two raw/untyped routes the backend no longer exposes in its typed contract are dropped from the generated client: `GET /voices/public` and the binary `GET /voices/{voice_id}/preview.wav`. Neither had a hand-written wrapper, so there is no public API change; `preview_voice()` is unaffected (it uses `POST /voices/preview`).
+
 ## [1.0.0] — 2026-06-03
 
 First stable release of the 1.0 line. Bundles the latest backend-contract sync plus the typed-pagination and long-audio improvements listed below.

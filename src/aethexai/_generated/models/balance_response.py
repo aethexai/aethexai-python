@@ -57,6 +57,9 @@ class BalanceResponse:
                 ``credits_granted`` after a PAYG top-up.
             plan (PlanInfo): Compact plan view used inside the balance response. The full
                 catalogue lives at ``GET /billing/plans`` for plan-picker UIs.
+            billing_mode (str | Unset): ``auto_charge`` (default) or ``invoice`` (enterprise wire/ACH). Surfaced so the
+                portal can suppress the cardless 'add a payment method' prompt for invoice-mode tenants, who the admission gate
+                exempts by design. Default: 'auto_charge'.
             dunning (DunningState | None | Unset): Stripe dunning timeline when ``payment_status='past_due'``. ``None`` for
                 healthy / canceled tenants and for tenants we couldn't reach Stripe for at request time.
             payg_state (None | PaygState | Unset): Pay-as-you-go state when ``credit_balance < 0``. ``None`` when balance is
@@ -75,6 +78,7 @@ class BalanceResponse:
     estimated_minutes_remaining: int
     period: PeriodSummary
     plan: PlanInfo
+    billing_mode: str | Unset = "auto_charge"
     dunning: DunningState | None | Unset = UNSET
     payg_state: None | PaygState | Unset = UNSET
     payment_status: str | Unset = "active"
@@ -94,6 +98,8 @@ class BalanceResponse:
         period = self.period.to_dict()
 
         plan = self.plan.to_dict()
+
+        billing_mode = self.billing_mode
 
         dunning: dict[str, Any] | None | Unset
         if isinstance(self.dunning, Unset):
@@ -129,6 +135,8 @@ class BalanceResponse:
                 "plan": plan,
             }
         )
+        if billing_mode is not UNSET:
+            field_dict["billing_mode"] = billing_mode
         if dunning is not UNSET:
             field_dict["dunning"] = dunning
         if payg_state is not UNSET:
@@ -155,6 +163,8 @@ class BalanceResponse:
         period = PeriodSummary.from_dict(d.pop("period"))
 
         plan = PlanInfo.from_dict(d.pop("plan"))
+
+        billing_mode = d.pop("billing_mode", UNSET)
 
         def _parse_dunning(data: object) -> DunningState | None | Unset:
             if data is None:
@@ -206,6 +216,7 @@ class BalanceResponse:
             estimated_minutes_remaining=estimated_minutes_remaining,
             period=period,
             plan=plan,
+            billing_mode=billing_mode,
             dunning=dunning,
             payg_state=payg_state,
             payment_status=payment_status,

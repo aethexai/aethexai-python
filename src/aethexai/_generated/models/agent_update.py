@@ -50,6 +50,7 @@ class AgentUpdate:
         max_tokens (int | None | Unset):
         metadata (AgentUpdateMetadataType0 | None | Unset):
         name (None | str | Unset):
+        outbound_trunk_id (None | str | Unset):
         presence_penalty (float | None | Unset):
         recording_enabled (bool | None | Unset):
         response_max_sentences (int | None | Unset):
@@ -68,6 +69,7 @@ class AgentUpdate:
         voicemail_action (None | str | Unset):
         voicemail_detection_enabled (bool | None | Unset):
         voicemail_message (None | str | Unset):
+        webhook_url (None | str | Unset):
     """
 
     content_guardrail_enabled: bool | None | Unset = UNSET
@@ -93,6 +95,7 @@ class AgentUpdate:
     max_tokens: int | None | Unset = UNSET
     metadata: AgentUpdateMetadataType0 | None | Unset = UNSET
     name: None | str | Unset = UNSET
+    outbound_trunk_id: None | str | Unset = UNSET
     presence_penalty: float | None | Unset = UNSET
     recording_enabled: bool | None | Unset = UNSET
     response_max_sentences: int | None | Unset = UNSET
@@ -111,6 +114,7 @@ class AgentUpdate:
     voicemail_action: None | str | Unset = UNSET
     voicemail_detection_enabled: bool | None | Unset = UNSET
     voicemail_message: None | str | Unset = UNSET
+    webhook_url: None | str | Unset = UNSET
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
@@ -271,6 +275,12 @@ class AgentUpdate:
         else:
             name = self.name
 
+        outbound_trunk_id: None | str | Unset
+        if isinstance(self.outbound_trunk_id, Unset):
+            outbound_trunk_id = UNSET
+        else:
+            outbound_trunk_id = self.outbound_trunk_id
+
         presence_penalty: float | None | Unset
         if isinstance(self.presence_penalty, Unset):
             presence_penalty = UNSET
@@ -379,6 +389,12 @@ class AgentUpdate:
         else:
             voicemail_message = self.voicemail_message
 
+        webhook_url: None | str | Unset
+        if isinstance(self.webhook_url, Unset):
+            webhook_url = UNSET
+        else:
+            webhook_url = self.webhook_url
+
         field_dict: dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update({})
@@ -428,6 +444,8 @@ class AgentUpdate:
             field_dict["metadata"] = metadata
         if name is not UNSET:
             field_dict["name"] = name
+        if outbound_trunk_id is not UNSET:
+            field_dict["outbound_trunk_id"] = outbound_trunk_id
         if presence_penalty is not UNSET:
             field_dict["presence_penalty"] = presence_penalty
         if recording_enabled is not UNSET:
@@ -464,6 +482,8 @@ class AgentUpdate:
             field_dict["voicemail_detection_enabled"] = voicemail_detection_enabled
         if voicemail_message is not UNSET:
             field_dict["voicemail_message"] = voicemail_message
+        if webhook_url is not UNSET:
+            field_dict["webhook_url"] = webhook_url
 
         return field_dict
 
@@ -743,6 +763,15 @@ class AgentUpdate:
 
         name = _parse_name(d.pop("name", UNSET))
 
+        def _parse_outbound_trunk_id(data: object) -> None | str | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(None | str | Unset, data)
+
+        outbound_trunk_id = _parse_outbound_trunk_id(d.pop("outbound_trunk_id", UNSET))
+
         def _parse_presence_penalty(data: object) -> float | None | Unset:
             if data is None:
                 return data
@@ -913,6 +942,15 @@ class AgentUpdate:
 
         voicemail_message = _parse_voicemail_message(d.pop("voicemail_message", UNSET))
 
+        def _parse_webhook_url(data: object) -> None | str | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(None | str | Unset, data)
+
+        webhook_url = _parse_webhook_url(d.pop("webhook_url", UNSET))
+
         agent_update = cls(
             content_guardrail_enabled=content_guardrail_enabled,
             custom_guardrails=custom_guardrails,
@@ -937,6 +975,7 @@ class AgentUpdate:
             max_tokens=max_tokens,
             metadata=metadata,
             name=name,
+            outbound_trunk_id=outbound_trunk_id,
             presence_penalty=presence_penalty,
             recording_enabled=recording_enabled,
             response_max_sentences=response_max_sentences,
@@ -955,6 +994,7 @@ class AgentUpdate:
             voicemail_action=voicemail_action,
             voicemail_detection_enabled=voicemail_detection_enabled,
             voicemail_message=voicemail_message,
+            webhook_url=webhook_url,
         )
 
         agent_update.additional_properties = d

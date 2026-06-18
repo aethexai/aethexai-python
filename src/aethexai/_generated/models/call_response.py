@@ -36,10 +36,18 @@ class CallResponse:
         initiated_via (str | Unset):  Default: 'api'.
         metadata (CallResponseMetadata | Unset):
         provider (CallResponseProvider | Unset):  Default: CallResponseProvider.TWILIO.
+        recording_webhook_delivered_at (None | str | Unset):
+        recording_webhook_last_attempt_at (None | str | Unset):
+        recording_webhook_last_error (None | str | Unset):
+        recording_webhook_status (None | str | Unset):
         status (str | Unset):  Default: 'queued'.
         to_number (None | str | Unset):
         updated_at (None | str | Unset):
         voice_session_id (None | str | Unset):
+        webhook_delivered_at (None | str | Unset):
+        webhook_last_attempt_at (None | str | Unset):
+        webhook_last_error (None | str | Unset):
+        webhook_status (None | str | Unset):
     """
 
     id: str
@@ -54,10 +62,18 @@ class CallResponse:
     initiated_via: str | Unset = "api"
     metadata: CallResponseMetadata | Unset = UNSET
     provider: CallResponseProvider | Unset = CallResponseProvider.TWILIO
+    recording_webhook_delivered_at: None | str | Unset = UNSET
+    recording_webhook_last_attempt_at: None | str | Unset = UNSET
+    recording_webhook_last_error: None | str | Unset = UNSET
+    recording_webhook_status: None | str | Unset = UNSET
     status: str | Unset = "queued"
     to_number: None | str | Unset = UNSET
     updated_at: None | str | Unset = UNSET
     voice_session_id: None | str | Unset = UNSET
+    webhook_delivered_at: None | str | Unset = UNSET
+    webhook_last_attempt_at: None | str | Unset = UNSET
+    webhook_last_error: None | str | Unset = UNSET
+    webhook_status: None | str | Unset = UNSET
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
@@ -121,6 +137,30 @@ class CallResponse:
         if not isinstance(self.provider, Unset):
             provider = self.provider.value
 
+        recording_webhook_delivered_at: None | str | Unset
+        if isinstance(self.recording_webhook_delivered_at, Unset):
+            recording_webhook_delivered_at = UNSET
+        else:
+            recording_webhook_delivered_at = self.recording_webhook_delivered_at
+
+        recording_webhook_last_attempt_at: None | str | Unset
+        if isinstance(self.recording_webhook_last_attempt_at, Unset):
+            recording_webhook_last_attempt_at = UNSET
+        else:
+            recording_webhook_last_attempt_at = self.recording_webhook_last_attempt_at
+
+        recording_webhook_last_error: None | str | Unset
+        if isinstance(self.recording_webhook_last_error, Unset):
+            recording_webhook_last_error = UNSET
+        else:
+            recording_webhook_last_error = self.recording_webhook_last_error
+
+        recording_webhook_status: None | str | Unset
+        if isinstance(self.recording_webhook_status, Unset):
+            recording_webhook_status = UNSET
+        else:
+            recording_webhook_status = self.recording_webhook_status
+
         status = self.status
 
         to_number: None | str | Unset
@@ -140,6 +180,30 @@ class CallResponse:
             voice_session_id = UNSET
         else:
             voice_session_id = self.voice_session_id
+
+        webhook_delivered_at: None | str | Unset
+        if isinstance(self.webhook_delivered_at, Unset):
+            webhook_delivered_at = UNSET
+        else:
+            webhook_delivered_at = self.webhook_delivered_at
+
+        webhook_last_attempt_at: None | str | Unset
+        if isinstance(self.webhook_last_attempt_at, Unset):
+            webhook_last_attempt_at = UNSET
+        else:
+            webhook_last_attempt_at = self.webhook_last_attempt_at
+
+        webhook_last_error: None | str | Unset
+        if isinstance(self.webhook_last_error, Unset):
+            webhook_last_error = UNSET
+        else:
+            webhook_last_error = self.webhook_last_error
+
+        webhook_status: None | str | Unset
+        if isinstance(self.webhook_status, Unset):
+            webhook_status = UNSET
+        else:
+            webhook_status = self.webhook_status
 
         field_dict: dict[str, Any] = {}
         field_dict.update(self.additional_properties)
@@ -170,6 +234,14 @@ class CallResponse:
             field_dict["metadata"] = metadata
         if provider is not UNSET:
             field_dict["provider"] = provider
+        if recording_webhook_delivered_at is not UNSET:
+            field_dict["recording_webhook_delivered_at"] = recording_webhook_delivered_at
+        if recording_webhook_last_attempt_at is not UNSET:
+            field_dict["recording_webhook_last_attempt_at"] = recording_webhook_last_attempt_at
+        if recording_webhook_last_error is not UNSET:
+            field_dict["recording_webhook_last_error"] = recording_webhook_last_error
+        if recording_webhook_status is not UNSET:
+            field_dict["recording_webhook_status"] = recording_webhook_status
         if status is not UNSET:
             field_dict["status"] = status
         if to_number is not UNSET:
@@ -178,6 +250,14 @@ class CallResponse:
             field_dict["updated_at"] = updated_at
         if voice_session_id is not UNSET:
             field_dict["voice_session_id"] = voice_session_id
+        if webhook_delivered_at is not UNSET:
+            field_dict["webhook_delivered_at"] = webhook_delivered_at
+        if webhook_last_attempt_at is not UNSET:
+            field_dict["webhook_last_attempt_at"] = webhook_last_attempt_at
+        if webhook_last_error is not UNSET:
+            field_dict["webhook_last_error"] = webhook_last_error
+        if webhook_status is not UNSET:
+            field_dict["webhook_status"] = webhook_status
 
         return field_dict
 
@@ -274,6 +354,50 @@ class CallResponse:
         else:
             provider = CallResponseProvider(_provider)
 
+        def _parse_recording_webhook_delivered_at(data: object) -> None | str | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(None | str | Unset, data)
+
+        recording_webhook_delivered_at = _parse_recording_webhook_delivered_at(
+            d.pop("recording_webhook_delivered_at", UNSET)
+        )
+
+        def _parse_recording_webhook_last_attempt_at(data: object) -> None | str | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(None | str | Unset, data)
+
+        recording_webhook_last_attempt_at = _parse_recording_webhook_last_attempt_at(
+            d.pop("recording_webhook_last_attempt_at", UNSET)
+        )
+
+        def _parse_recording_webhook_last_error(data: object) -> None | str | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(None | str | Unset, data)
+
+        recording_webhook_last_error = _parse_recording_webhook_last_error(
+            d.pop("recording_webhook_last_error", UNSET)
+        )
+
+        def _parse_recording_webhook_status(data: object) -> None | str | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(None | str | Unset, data)
+
+        recording_webhook_status = _parse_recording_webhook_status(
+            d.pop("recording_webhook_status", UNSET)
+        )
+
         status = d.pop("status", UNSET)
 
         def _parse_to_number(data: object) -> None | str | Unset:
@@ -303,6 +427,44 @@ class CallResponse:
 
         voice_session_id = _parse_voice_session_id(d.pop("voice_session_id", UNSET))
 
+        def _parse_webhook_delivered_at(data: object) -> None | str | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(None | str | Unset, data)
+
+        webhook_delivered_at = _parse_webhook_delivered_at(d.pop("webhook_delivered_at", UNSET))
+
+        def _parse_webhook_last_attempt_at(data: object) -> None | str | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(None | str | Unset, data)
+
+        webhook_last_attempt_at = _parse_webhook_last_attempt_at(
+            d.pop("webhook_last_attempt_at", UNSET)
+        )
+
+        def _parse_webhook_last_error(data: object) -> None | str | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(None | str | Unset, data)
+
+        webhook_last_error = _parse_webhook_last_error(d.pop("webhook_last_error", UNSET))
+
+        def _parse_webhook_status(data: object) -> None | str | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(None | str | Unset, data)
+
+        webhook_status = _parse_webhook_status(d.pop("webhook_status", UNSET))
+
         call_response = cls(
             id=id,
             agent_id=agent_id,
@@ -316,10 +478,18 @@ class CallResponse:
             initiated_via=initiated_via,
             metadata=metadata,
             provider=provider,
+            recording_webhook_delivered_at=recording_webhook_delivered_at,
+            recording_webhook_last_attempt_at=recording_webhook_last_attempt_at,
+            recording_webhook_last_error=recording_webhook_last_error,
+            recording_webhook_status=recording_webhook_status,
             status=status,
             to_number=to_number,
             updated_at=updated_at,
             voice_session_id=voice_session_id,
+            webhook_delivered_at=webhook_delivered_at,
+            webhook_last_attempt_at=webhook_last_attempt_at,
+            webhook_last_error=webhook_last_error,
+            webhook_status=webhook_status,
         )
 
         call_response.additional_properties = d

@@ -476,6 +476,17 @@
             "title": "Name",
             "type": "string"
           },
+          "outbound_trunk_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outbound Trunk Id"
+          },
           "presence_penalty": {
             "anyOf": [
               {
@@ -631,6 +642,17 @@
               }
             ],
             "title": "Voicemail Message"
+          },
+          "webhook_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Webhook Url"
           }
         },
         "required": [
@@ -858,6 +880,17 @@
             "title": "Name",
             "type": "string"
           },
+          "outbound_trunk_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outbound Trunk Id"
+          },
           "presence_penalty": {
             "anyOf": [
               {
@@ -1035,6 +1068,17 @@
               }
             ],
             "title": "Voicemail Message"
+          },
+          "webhook_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Webhook Url"
           }
         },
         "required": [
@@ -1487,6 +1531,17 @@
             ],
             "title": "Name"
           },
+          "outbound_trunk_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Outbound Trunk Id"
+          },
           "presence_penalty": {
             "anyOf": [
               {
@@ -1691,6 +1746,17 @@
               }
             ],
             "title": "Voicemail Message"
+          },
+          "webhook_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Webhook Url"
           }
         },
         "title": "AgentUpdate",
@@ -1727,6 +1793,12 @@
       "BalanceResponse": {
         "description": "``GET /billing/balance`` payload. Renders the portal billing card without a second round-trip:\nbalance, current plan, and the period decomposition. ``estimated_minutes_remaining`` is derived (1 credit \u2248 1 agent\nminute) so the UI doesn't have to know the conversion ratio.",
         "properties": {
+          "billing_mode": {
+            "default": "auto_charge",
+            "description": "``auto_charge`` (default) or ``invoice`` (enterprise wire/ACH). Surfaced so the portal can suppress the cardless 'add a payment method' prompt for invoice-mode tenants, who the admission gate exempts by design.",
+            "title": "Billing Mode",
+            "type": "string"
+          },
           "credit_balance": {
             "description": "Authoritative balance from ``.credit_balance``. Decimal-string to preserve precision for JavaScript clients.",
             "title": "Credit Balance",
@@ -2292,6 +2364,50 @@
             "title": "Provider",
             "type": "string"
           },
+          "recording_webhook_delivered_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recording Webhook Delivered At"
+          },
+          "recording_webhook_last_attempt_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recording Webhook Last Attempt At"
+          },
+          "recording_webhook_last_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recording Webhook Last Error"
+          },
+          "recording_webhook_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Recording Webhook Status"
+          },
           "status": {
             "default": "queued",
             "title": "Status",
@@ -2329,6 +2445,50 @@
               }
             ],
             "title": "Voice Session Id"
+          },
+          "webhook_delivered_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Webhook Delivered At"
+          },
+          "webhook_last_attempt_at": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Webhook Last Attempt At"
+          },
+          "webhook_last_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Webhook Last Error"
+          },
+          "webhook_status": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Webhook Status"
           }
         },
         "required": [
@@ -3382,6 +3542,17 @@
             "format": "email",
             "title": "Email",
             "type": "string"
+          },
+          "next": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next"
           }
         },
         "required": [
@@ -3435,10 +3606,14 @@
           },
           "provider": {
             "enum": [
+              "aethex",
               "openai",
               "anthropic",
-              "openrouter",
-              "local"
+              "google",
+              "meta",
+              "xai",
+              "mistral",
+              "deepseek"
             ],
             "title": "Provider",
             "type": "string"
@@ -10612,131 +10787,6 @@
         ]
       }
     },
-    "/api/v1/voices/public": {
-      "get": {
-        "description": "Unauthenticated, **globals-only** voice catalog for the public docs site. Same shape and filters as ``GET /voices`` but hard-scoped to the global\ncatalog (``tenant_id IS NULL``) with **no tenant context**, so an anonymous\ncaller can never surface any tenant's cloned voices. This backs the docs\nVoice Library, which renders on the public ``/docs`` surface with no API key. The middleware IP-rate-limits this path. It is a single indexed query with\n``limit`` capped at 500, so it is not a DB-amplification vector. Synthesis\n(``POST /voices/preview``) and by-id lookup (``GET /voices/{id}``) stay\nauthenticated; the static preview-clip route (``GET /voices/{id}/preview.wav``)\nis intentionally public \u2014 see ``voice_preview_audio`` below.",
-        "operationId": "list_public_voices_api_v1_voices_public_get",
-        "parameters": [
-          {
-            "in": "query",
-            "name": "language",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Language"
-            }
-          },
-          {
-            "in": "query",
-            "name": "supports_dialect_style",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "boolean"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Supports Dialect Style"
-            }
-          },
-          {
-            "in": "query",
-            "name": "tag",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Tag"
-            }
-          },
-          {
-            "in": "query",
-            "name": "country",
-            "required": false,
-            "schema": {
-              "anyOf": [
-                {
-                  "type": "string"
-                },
-                {
-                  "type": "null"
-                }
-              ],
-              "title": "Country"
-            }
-          },
-          {
-            "in": "query",
-            "name": "limit",
-            "required": false,
-            "schema": {
-              "default": 100,
-              "maximum": 500,
-              "minimum": 0,
-              "title": "Limit",
-              "type": "integer"
-            }
-          },
-          {
-            "in": "query",
-            "name": "offset",
-            "required": false,
-            "schema": {
-              "default": 0,
-              "minimum": 0,
-              "title": "Offset",
-              "type": "integer"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "items": {
-                    "$ref": "#/components/schemas/VoiceResponse"
-                  },
-                  "title": "Response List Public Voices Api V1 Voices Public Get",
-                  "type": "array"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "List Public Voices",
-        "tags": [
-          "voices"
-        ]
-      }
-    },
     "/api/v1/voices/tag-vocabulary": {
       "get": {
         "description": "Return the closed-vocabulary tag set the curator UI renders. Gated behind ``voices:read`` so the route matches the rest of\n``/voices/*``; tag categories are static configuration but the\nendpoint sits on the public API surface and every other voices\nlisting already requires the same scope. The four-bucket grouping (``tone`` / ``voice_texture`` /\n``delivery_style`` / ``business_persona``) is purely a UI affordance;\nthe storage column is a flat list and ``GET /voices?tag=...``\naccepts any token from any bucket. The schema-layer validator (``VoiceMetadataUpdate.tags``) rejects\ntokens outside this set with a 422 that points back at this\nendpoint, so dashboards / SDK consumers have one canonical place to\ndiscover the supported tokens.",
@@ -10813,47 +10863,6 @@
           }
         ],
         "summary": "Get Voice",
-        "tags": [
-          "voices"
-        ]
-      }
-    },
-    "/api/v1/voices/{voice_id}/preview.wav": {
-      "get": {
-        "description": "Serve a pre-generated voice preview clip. **Unauthenticated by design.**\n\nClips are produced offline (``scripts/generate_voice_previews.py``) and stored\nin the app-data bucket at ``voice-previews/<voice_id>.wav``. Because the audio\nis static \u2014 no per-request synthesis, no ``tts:use``/GPU cost to gate \u2014 this\nroute is public so the docs Voice Library can play previews without an API\nkey, mirroring the unauthenticated ``/twilio/lobby-audio`` route. Responses\ncarry a long ``Cache-Control`` so a CDN/browser absorbs the load. The path param must parse as a UUID (rejected before any I/O, so junk can't\nfan out into storage calls), and the voice must still be publicly listed \u2014\nsame visibility as ``GET /voices`` \u2014 so a retired voice's leftover clip stops\nplaying. Anonymous requests are IP-rate-limited by the middleware.",
-        "operationId": "voice_preview_audio_api_v1_voices__voice_id__preview_wav_get",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "voice_id",
-            "required": true,
-            "schema": {
-              "title": "Voice Id",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {}
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "summary": "Voice Preview Audio",
         "tags": [
           "voices"
         ]

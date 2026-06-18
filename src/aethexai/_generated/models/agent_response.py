@@ -53,6 +53,7 @@ class AgentResponse:
         max_idle_attempts (int | None | Unset):
         max_tokens (int | None | Unset):
         metadata (AgentResponseMetadata | Unset):
+        outbound_trunk_id (None | str | Unset):
         presence_penalty (float | None | Unset):
         recording_enabled (bool | Unset):  Default: True.
         response_max_sentences (int | None | Unset):
@@ -74,6 +75,7 @@ class AgentResponse:
         voicemail_action (str | Unset):  Default: 'leave_message'.
         voicemail_detection_enabled (bool | Unset):  Default: False.
         voicemail_message (None | str | Unset):
+        webhook_url (None | str | Unset):
     """
 
     id: str
@@ -103,6 +105,7 @@ class AgentResponse:
     max_idle_attempts: int | None | Unset = UNSET
     max_tokens: int | None | Unset = UNSET
     metadata: AgentResponseMetadata | Unset = UNSET
+    outbound_trunk_id: None | str | Unset = UNSET
     presence_penalty: float | None | Unset = UNSET
     recording_enabled: bool | Unset = True
     response_max_sentences: int | None | Unset = UNSET
@@ -124,6 +127,7 @@ class AgentResponse:
     voicemail_action: str | Unset = "leave_message"
     voicemail_detection_enabled: bool | Unset = False
     voicemail_message: None | str | Unset = UNSET
+    webhook_url: None | str | Unset = UNSET
     additional_properties: dict[str, Any] = _attrs_field(init=False, factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
@@ -253,6 +257,12 @@ class AgentResponse:
         if not isinstance(self.metadata, Unset):
             metadata = self.metadata.to_dict()
 
+        outbound_trunk_id: None | str | Unset
+        if isinstance(self.outbound_trunk_id, Unset):
+            outbound_trunk_id = UNSET
+        else:
+            outbound_trunk_id = self.outbound_trunk_id
+
         presence_penalty: float | None | Unset
         if isinstance(self.presence_penalty, Unset):
             presence_penalty = UNSET
@@ -345,6 +355,12 @@ class AgentResponse:
         else:
             voicemail_message = self.voicemail_message
 
+        webhook_url: None | str | Unset
+        if isinstance(self.webhook_url, Unset):
+            webhook_url = UNSET
+        else:
+            webhook_url = self.webhook_url
+
         field_dict: dict[str, Any] = {}
         field_dict.update(self.additional_properties)
         field_dict.update(
@@ -399,6 +415,8 @@ class AgentResponse:
             field_dict["max_tokens"] = max_tokens
         if metadata is not UNSET:
             field_dict["metadata"] = metadata
+        if outbound_trunk_id is not UNSET:
+            field_dict["outbound_trunk_id"] = outbound_trunk_id
         if presence_penalty is not UNSET:
             field_dict["presence_penalty"] = presence_penalty
         if recording_enabled is not UNSET:
@@ -441,6 +459,8 @@ class AgentResponse:
             field_dict["voicemail_detection_enabled"] = voicemail_detection_enabled
         if voicemail_message is not UNSET:
             field_dict["voicemail_message"] = voicemail_message
+        if webhook_url is not UNSET:
+            field_dict["webhook_url"] = webhook_url
 
         return field_dict
 
@@ -652,6 +672,15 @@ class AgentResponse:
         else:
             metadata = AgentResponseMetadata.from_dict(_metadata)
 
+        def _parse_outbound_trunk_id(data: object) -> None | str | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(None | str | Unset, data)
+
+        outbound_trunk_id = _parse_outbound_trunk_id(d.pop("outbound_trunk_id", UNSET))
+
         def _parse_presence_penalty(data: object) -> float | None | Unset:
             if data is None:
                 return data
@@ -789,6 +818,15 @@ class AgentResponse:
 
         voicemail_message = _parse_voicemail_message(d.pop("voicemail_message", UNSET))
 
+        def _parse_webhook_url(data: object) -> None | str | Unset:
+            if data is None:
+                return data
+            if isinstance(data, Unset):
+                return data
+            return cast(None | str | Unset, data)
+
+        webhook_url = _parse_webhook_url(d.pop("webhook_url", UNSET))
+
         agent_response = cls(
             id=id,
             name=name,
@@ -815,6 +853,7 @@ class AgentResponse:
             max_idle_attempts=max_idle_attempts,
             max_tokens=max_tokens,
             metadata=metadata,
+            outbound_trunk_id=outbound_trunk_id,
             presence_penalty=presence_penalty,
             recording_enabled=recording_enabled,
             response_max_sentences=response_max_sentences,
@@ -836,6 +875,7 @@ class AgentResponse:
             voicemail_action=voicemail_action,
             voicemail_detection_enabled=voicemail_detection_enabled,
             voicemail_message=voicemail_message,
+            webhook_url=webhook_url,
         )
 
         agent_response.additional_properties = d
