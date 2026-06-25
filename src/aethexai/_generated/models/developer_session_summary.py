@@ -16,12 +16,7 @@ T = TypeVar("T", bound="DeveloperSessionSummary")
 
 @_attrs_define
 class DeveloperSessionSummary:
-    """Per-session inventory row returned by ``GET /auth/sessions``. ``id`` is the first 12 hex chars of the row's
-    ``sid_hash``: enough to
-    disambiguate sessions in the portal UI but useless on its own as a
-    session credential. Forensic fields (``created_ip``,
-    ``last_activity_ip``, ``user_agent``) are best-effort and may be
-    null for sessions adopted from pre-rollout tokens.
+    """A single developer session, as returned by ``GET /auth/sessions``. ``id`` is a short, non-sensitive identifier that is safe to display and to pass to session-management calls; it cannot be used as a session credential. ``created_ip``, ``last_activity_ip`` and ``user_agent`` are best-effort and may be ``null`` for older sessions.
 
         Attributes:
             absolute_expires_at (None | str):

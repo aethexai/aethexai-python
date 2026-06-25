@@ -64,27 +64,7 @@ def sync_detailed(
 ) -> Response[Any | HTTPValidationError]:
     r"""Detach Tenant Payment Method
 
-     Detach a payment method from the tenant's Stripe Customer. Ownership is verified server-side BEFORE
-    the detach call. Stripe's
-    detach endpoint takes only the PM id (no customer scope), so a
-    leaked ``pm_*`` id from logs / dashboard transcripts / accidental
-    client-side console output would otherwise let any
-    portal-authenticated tenant nuke another tenant's PM. We
-    retrieve the PM, compare ``pm.customer`` to the JWT-bound
-    tenant's ``stripe_customer_id``, and 404 on mismatch (same
-    response as a non-existent id, so a probe can't distinguish
-    \"wrong tenant\" from \"doesn't exist\"). One extra ~100ms Stripe
-    roundtrip on a user-initiated, infrequent path. The ``has_payment_method`` cache flag is updated by
-    the
-    ``payment_method.attached`` / ``.detached`` webhook handlers
-    (which use Stripe's ``previous_attributes`` to resolve the owner
-    when the post-detach event has ``customer=null``). The route does
-    NOT touch the cache directly — Stripe is source of truth and
-    webhooks are how we mirror it. On any Stripe-side error the route surfaces the SDK's curated
-    ``StripeError.user_message`` if present, falling back to a
-    generic message. Programming bugs (TypeError, AttributeError,
-    etc.) propagate to the global handler instead of being silently
-    served as 400s.
+     Detach a payment method from the tenant's account. Ownership is verified before the payment method is detached; a request for a payment method that does not belong to the calling tenant returns ``404`` (indistinguishable from a non-existent id). Returns ``204`` on success.
 
     Args:
         payment_method_id (str):
@@ -115,27 +95,7 @@ def sync(
 ) -> Any | HTTPValidationError | None:
     r"""Detach Tenant Payment Method
 
-     Detach a payment method from the tenant's Stripe Customer. Ownership is verified server-side BEFORE
-    the detach call. Stripe's
-    detach endpoint takes only the PM id (no customer scope), so a
-    leaked ``pm_*`` id from logs / dashboard transcripts / accidental
-    client-side console output would otherwise let any
-    portal-authenticated tenant nuke another tenant's PM. We
-    retrieve the PM, compare ``pm.customer`` to the JWT-bound
-    tenant's ``stripe_customer_id``, and 404 on mismatch (same
-    response as a non-existent id, so a probe can't distinguish
-    \"wrong tenant\" from \"doesn't exist\"). One extra ~100ms Stripe
-    roundtrip on a user-initiated, infrequent path. The ``has_payment_method`` cache flag is updated by
-    the
-    ``payment_method.attached`` / ``.detached`` webhook handlers
-    (which use Stripe's ``previous_attributes`` to resolve the owner
-    when the post-detach event has ``customer=null``). The route does
-    NOT touch the cache directly — Stripe is source of truth and
-    webhooks are how we mirror it. On any Stripe-side error the route surfaces the SDK's curated
-    ``StripeError.user_message`` if present, falling back to a
-    generic message. Programming bugs (TypeError, AttributeError,
-    etc.) propagate to the global handler instead of being silently
-    served as 400s.
+     Detach a payment method from the tenant's account. Ownership is verified before the payment method is detached; a request for a payment method that does not belong to the calling tenant returns ``404`` (indistinguishable from a non-existent id). Returns ``204`` on success.
 
     Args:
         payment_method_id (str):
@@ -161,27 +121,7 @@ async def asyncio_detailed(
 ) -> Response[Any | HTTPValidationError]:
     r"""Detach Tenant Payment Method
 
-     Detach a payment method from the tenant's Stripe Customer. Ownership is verified server-side BEFORE
-    the detach call. Stripe's
-    detach endpoint takes only the PM id (no customer scope), so a
-    leaked ``pm_*`` id from logs / dashboard transcripts / accidental
-    client-side console output would otherwise let any
-    portal-authenticated tenant nuke another tenant's PM. We
-    retrieve the PM, compare ``pm.customer`` to the JWT-bound
-    tenant's ``stripe_customer_id``, and 404 on mismatch (same
-    response as a non-existent id, so a probe can't distinguish
-    \"wrong tenant\" from \"doesn't exist\"). One extra ~100ms Stripe
-    roundtrip on a user-initiated, infrequent path. The ``has_payment_method`` cache flag is updated by
-    the
-    ``payment_method.attached`` / ``.detached`` webhook handlers
-    (which use Stripe's ``previous_attributes`` to resolve the owner
-    when the post-detach event has ``customer=null``). The route does
-    NOT touch the cache directly — Stripe is source of truth and
-    webhooks are how we mirror it. On any Stripe-side error the route surfaces the SDK's curated
-    ``StripeError.user_message`` if present, falling back to a
-    generic message. Programming bugs (TypeError, AttributeError,
-    etc.) propagate to the global handler instead of being silently
-    served as 400s.
+     Detach a payment method from the tenant's account. Ownership is verified before the payment method is detached; a request for a payment method that does not belong to the calling tenant returns ``404`` (indistinguishable from a non-existent id). Returns ``204`` on success.
 
     Args:
         payment_method_id (str):
@@ -210,27 +150,7 @@ async def asyncio(
 ) -> Any | HTTPValidationError | None:
     r"""Detach Tenant Payment Method
 
-     Detach a payment method from the tenant's Stripe Customer. Ownership is verified server-side BEFORE
-    the detach call. Stripe's
-    detach endpoint takes only the PM id (no customer scope), so a
-    leaked ``pm_*`` id from logs / dashboard transcripts / accidental
-    client-side console output would otherwise let any
-    portal-authenticated tenant nuke another tenant's PM. We
-    retrieve the PM, compare ``pm.customer`` to the JWT-bound
-    tenant's ``stripe_customer_id``, and 404 on mismatch (same
-    response as a non-existent id, so a probe can't distinguish
-    \"wrong tenant\" from \"doesn't exist\"). One extra ~100ms Stripe
-    roundtrip on a user-initiated, infrequent path. The ``has_payment_method`` cache flag is updated by
-    the
-    ``payment_method.attached`` / ``.detached`` webhook handlers
-    (which use Stripe's ``previous_attributes`` to resolve the owner
-    when the post-detach event has ``customer=null``). The route does
-    NOT touch the cache directly — Stripe is source of truth and
-    webhooks are how we mirror it. On any Stripe-side error the route surfaces the SDK's curated
-    ``StripeError.user_message`` if present, falling back to a
-    generic message. Programming bugs (TypeError, AttributeError,
-    etc.) propagate to the global handler instead of being silently
-    served as 400s.
+     Detach a payment method from the tenant's account. Ownership is verified before the payment method is detached; a request for a payment method that does not belong to the calling tenant returns ``404`` (indistinguishable from a non-existent id). Returns ``204`` on success.
 
     Args:
         payment_method_id (str):

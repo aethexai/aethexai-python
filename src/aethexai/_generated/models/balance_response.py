@@ -57,9 +57,7 @@ class BalanceResponse:
                 ``credits_granted`` after a PAYG top-up.
             plan (PlanInfo): Compact plan view used inside the balance response. The full
                 catalogue lives at ``GET /billing/plans`` for plan-picker UIs.
-            billing_mode (str | Unset): ``auto_charge`` (default) or ``invoice`` (enterprise wire/ACH). Surfaced so the
-                portal can suppress the cardless 'add a payment method' prompt for invoice-mode tenants, who the admission gate
-                exempts by design. Default: 'auto_charge'.
+            billing_mode (str | Unset): Billing mode for the tenant: ``auto_charge`` (default; charged to the card on file) or ``invoice`` (pay by invoice / wire / ACH). Default: 'auto_charge'.
             dunning (DunningState | None | Unset): Stripe dunning timeline when ``payment_status='past_due'``. ``None`` for
                 healthy / canceled tenants and for tenants we couldn't reach Stripe for at request time.
             payg_state (None | PaygState | Unset): Pay-as-you-go state when ``credit_balance < 0``. ``None`` when balance is

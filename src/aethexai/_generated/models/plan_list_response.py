@@ -19,10 +19,7 @@ T = TypeVar("T", bound="PlanListResponse")
 
 @_attrs_define
 class PlanListResponse:
-    """``GET /billing/plans`` payload. ``current_plan_slug`` lets the
-    plan-picker UI highlight the tenant's tier without a second
-    ``/billing/balance`` call. The hidden ``internal`` tier is filtered
-    out before this response is built; non-internal tenants never see it.
+    """Payload for ``GET /billing/plans``: the catalogue of selectable plans plus ``current_plan_slug`` so a plan picker can highlight the tenant's current tier without a second ``/billing/balance`` call.
 
         Attributes:
             current_plan_slug (str):

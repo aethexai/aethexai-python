@@ -4,6 +4,10 @@ All notable changes to this project are documented here. Format based on [Keep a
 
 ## [Unreleased]
 
+## [1.0.2] — 2026-06-25
+
+Minor documentation improvements to the generated client. No API, type, parameter, return-value, or behavior changes.
+
 ## [1.0.1] — 2026-06-18
 
 Resync to the current backend OpenAPI contract. The published `1.0.0` client was generated before the backend standardized its model-provider naming, so `list_models()` raised on the new values.

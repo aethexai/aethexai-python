@@ -72,19 +72,7 @@ def sync_detailed(
 ) -> Response[HTTPValidationError | UsageTriggerResponse]:
     """Create Trigger
 
-     Configure a usage threshold + callback URL. The evaluator (the task queue cron, every 5 minutes) checks active
-    triggers
-    and posts a signed webhook when the threshold is crossed for the
-    period. One firing per period; the trigger auto-rearms when the
-    period rolls over. Returns 409 when the tenant already has the per-tenant cap of
-    active triggers; PATCH ``is_active=false`` on an existing trigger
-    to recover a slot before adding a new one. Returns 400 when the tenant has no ``webhook_secret``
-    configured. Triggers without a signing secret would deliver an unsigned
-    webhook (or, more precisely, would be skipped by the evaluator
-    and audited as ``failed`` with no ability to deliver), so we
-    refuse the create at the boundary instead of accepting a
-    configuration that will never fire. The customer's recovery is
-    a single ``POST /usage/webhook-secret/rotate``.
+     Configure a usage threshold and callback URL. Active triggers are evaluated periodically and a signed webhook is posted when the threshold is crossed for the period. Each trigger fires once per period and re-arms when the period rolls over. Returns ``409`` when the tenant is at its active-trigger cap (deactivate one with ``PATCH ... is_active=false`` to free a slot). Returns ``400`` when the tenant has no ``webhook_secret`` configured - set one with ``POST /usage/webhook-secret/rotate`` first, since unsigned webhooks cannot be delivered.
 
     Args:
         body (UsageTriggerCreate):
@@ -115,19 +103,7 @@ def sync(
 ) -> HTTPValidationError | UsageTriggerResponse | None:
     """Create Trigger
 
-     Configure a usage threshold + callback URL. The evaluator (the task queue cron, every 5 minutes) checks active
-    triggers
-    and posts a signed webhook when the threshold is crossed for the
-    period. One firing per period; the trigger auto-rearms when the
-    period rolls over. Returns 409 when the tenant already has the per-tenant cap of
-    active triggers; PATCH ``is_active=false`` on an existing trigger
-    to recover a slot before adding a new one. Returns 400 when the tenant has no ``webhook_secret``
-    configured. Triggers without a signing secret would deliver an unsigned
-    webhook (or, more precisely, would be skipped by the evaluator
-    and audited as ``failed`` with no ability to deliver), so we
-    refuse the create at the boundary instead of accepting a
-    configuration that will never fire. The customer's recovery is
-    a single ``POST /usage/webhook-secret/rotate``.
+     Configure a usage threshold and callback URL. Active triggers are evaluated periodically and a signed webhook is posted when the threshold is crossed for the period. Each trigger fires once per period and re-arms when the period rolls over. Returns ``409`` when the tenant is at its active-trigger cap (deactivate one with ``PATCH ... is_active=false`` to free a slot). Returns ``400`` when the tenant has no ``webhook_secret`` configured - set one with ``POST /usage/webhook-secret/rotate`` first, since unsigned webhooks cannot be delivered.
 
     Args:
         body (UsageTriggerCreate):
@@ -153,19 +129,7 @@ async def asyncio_detailed(
 ) -> Response[HTTPValidationError | UsageTriggerResponse]:
     """Create Trigger
 
-     Configure a usage threshold + callback URL. The evaluator (the task queue cron, every 5 minutes) checks active
-    triggers
-    and posts a signed webhook when the threshold is crossed for the
-    period. One firing per period; the trigger auto-rearms when the
-    period rolls over. Returns 409 when the tenant already has the per-tenant cap of
-    active triggers; PATCH ``is_active=false`` on an existing trigger
-    to recover a slot before adding a new one. Returns 400 when the tenant has no ``webhook_secret``
-    configured. Triggers without a signing secret would deliver an unsigned
-    webhook (or, more precisely, would be skipped by the evaluator
-    and audited as ``failed`` with no ability to deliver), so we
-    refuse the create at the boundary instead of accepting a
-    configuration that will never fire. The customer's recovery is
-    a single ``POST /usage/webhook-secret/rotate``.
+     Configure a usage threshold and callback URL. Active triggers are evaluated periodically and a signed webhook is posted when the threshold is crossed for the period. Each trigger fires once per period and re-arms when the period rolls over. Returns ``409`` when the tenant is at its active-trigger cap (deactivate one with ``PATCH ... is_active=false`` to free a slot). Returns ``400`` when the tenant has no ``webhook_secret`` configured - set one with ``POST /usage/webhook-secret/rotate`` first, since unsigned webhooks cannot be delivered.
 
     Args:
         body (UsageTriggerCreate):
@@ -194,19 +158,7 @@ async def asyncio(
 ) -> HTTPValidationError | UsageTriggerResponse | None:
     """Create Trigger
 
-     Configure a usage threshold + callback URL. The evaluator (the task queue cron, every 5 minutes) checks active
-    triggers
-    and posts a signed webhook when the threshold is crossed for the
-    period. One firing per period; the trigger auto-rearms when the
-    period rolls over. Returns 409 when the tenant already has the per-tenant cap of
-    active triggers; PATCH ``is_active=false`` on an existing trigger
-    to recover a slot before adding a new one. Returns 400 when the tenant has no ``webhook_secret``
-    configured. Triggers without a signing secret would deliver an unsigned
-    webhook (or, more precisely, would be skipped by the evaluator
-    and audited as ``failed`` with no ability to deliver), so we
-    refuse the create at the boundary instead of accepting a
-    configuration that will never fire. The customer's recovery is
-    a single ``POST /usage/webhook-secret/rotate``.
+     Configure a usage threshold and callback URL. Active triggers are evaluated periodically and a signed webhook is posted when the threshold is crossed for the period. Each trigger fires once per period and re-arms when the period rolls over. Returns ``409`` when the tenant is at its active-trigger cap (deactivate one with ``PATCH ... is_active=false`` to free a slot). Returns ``400`` when the tenant has no ``webhook_secret`` configured - set one with ``POST /usage/webhook-secret/rotate`` first, since unsigned webhooks cannot be delivered.
 
     Args:
         body (UsageTriggerCreate):
